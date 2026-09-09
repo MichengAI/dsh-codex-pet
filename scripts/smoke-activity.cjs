@@ -119,6 +119,16 @@ app.whenReady().then(async () => {
     await waitFor(`document.querySelector('.mpi-status')?.textContent.includes('更新完成')`);
     assert.equal(await win.webContents.executeJavaScript(`document.querySelector('.mpi-dialog .mpi-primary').disabled`),true);
     await win.webContents.executeJavaScript(`document.querySelector('.mpi-dialog-close').click();window.fetch=window.originalPetFetch;document.querySelector('dialog[aria-label="宠物设置"]').close()`);
+    // 后端仍携带兼容中文 error，英文弹窗必须优先按 code 翻译。
+    await win.webContents.executeJavaScript(`petLocale.set({active:'en'});window.dispatchEvent(new Event('dcp-open-settings'));window.fetch=async(url,options)=>String(url).endsWith('/api/update')?(options?.method==='POST'?Response.json({code:'UPDATE_TIMEOUT',error:'更新超时，已请求取消；进程结束前不能再次安装。'},{status:503}):Response.json({packageName:'@michengai/dsh-codex-pet',currentVersion:'0.1.0',latestVersion:'0.2.0',notPublished:false,latestCheckFailed:false,updateAvailable:true,profileName:'smoke',canAutoUpdate:true})):originalPetFetch(url,options);void 0`);
+    await waitFor(`document.querySelector('.mpi-check')?.textContent==='Check for updates'`);
+    await win.webContents.executeJavaScript(`document.querySelector('.mpi-check').click()`);
+    await waitFor(`document.querySelector('.mpi-dialog .mpi-primary')?.disabled===false`);
+    await win.webContents.executeJavaScript(`document.querySelector('.mpi-dialog .mpi-primary').click()`);
+    await waitFor(`document.querySelector('.mpi-status')?.textContent.includes('timed out')`);
+    assert.equal(await win.webContents.executeJavaScript(`document.querySelector('.mpi-status').textContent.includes('更新超时')`),false);
+    writeFileSync('.preview/pet-update-error-en.png',(await win.webContents.capturePage()).toPNG());
+    await win.webContents.executeJavaScript(`document.querySelector('.mpi-dialog-close').click();window.fetch=originalPetFetch;document.querySelector('dialog[aria-label="Pet settings"]').close();petLocale.set({active:'zh'})`);
     // 受控桌面桥验证语言元数据传递和无变化时不重复发送。
     await win.webContents.executeJavaScript(`window.petSyncs=[];window.dshDesktopPet={notificationsVersion:2,sync:async s=>{petSyncs.push(s)},onAction:()=>()=>{},onCommand:()=>()=>{}};petLocale.set({active:'en'})`);
     await waitFor(`petSyncs.some(s=>s?.pet.displayLocale==='en')`);

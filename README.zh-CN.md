@@ -75,6 +75,10 @@ DSH Codex Pet 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-har
 
 ## 安装
 
+兼容要求：宿主必须提供 `locale` 客户端服务，并支持函数形式的 `settings.section` 标签。本地契约核验使用 `@deepseek-ai/cordis 4.0.2`、`@deepseek-ai/dsh-client-locale 0.1.2-rc.1` 及社区 DSH Codex UI 设置实现。这些是已核验组件版本，不代表已经验证的最低 DSH 版本；不支持缺少 locale 服务的宿主。
+
+自动更新命令使用 `--config.minimumReleaseAge=0`，以便立即安装刚发布的版本；该参数仅对本次安装跳过 pnpm 的发布时间等待，不改写全局配置。包名、npm registry 和解析后的版本仍由服务端固定。
+
 本文包含尚未发布的设置、本地化与 npm 更新功能；已发布的 v0.1.0 安装包不含这些新增改动，详见[未发布记录](CHANGELOG.zh-CN.md#未发布)。
 
 当前为 **0.1.0 开发预览版**，通过 [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.0) 分发。下载安装包和克隆源码均需要仓库访问权限，尚未发布 npm 包。以下命令使用 `web` profile，请按实际环境替换。
@@ -183,4 +187,4 @@ npm run build
 
 ## 验证与当前边界
 
-类型检查、23 项自动化测试、构建和受控 Electron 客户端交互验证已通过，覆盖任务通知和创建请求流程。完整图像生成、真实模型任务联动及正常 Desktop 安装仍待端到端验收。
+类型检查、25 项自动化测试、构建和受控 Electron 客户端交互验证已通过，覆盖任务通知和创建请求流程。完整图像生成、真实模型任务联动及正常 Desktop 安装仍待端到端验收。
