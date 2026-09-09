@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2] - 2026-09-09
+
+- License original plugin code under Apache-2.0 and include LICENSE and third-party artwork NOTICE in the npm package.
+- Automate npm publishing through GitHub Actions Trusted Publishing with provenance, version checks, tests, browser smoke checks, and package validation.
+- Create bilingual normal GitHub Releases after npm publishing, without tarball or checksum attachments; document npm installation and publisher configuration.
+
 ## [0.1.1] - 2026-09-09
 
 - Keep pet rendering inside DSH Web and expose a versioned consumer API for state, notifications, commands, and display handoff. Native window adaptation belongs to the consumer; remove native routes, renderer, bridge calls, and sibling-project tests.

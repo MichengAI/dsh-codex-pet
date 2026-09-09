@@ -1,6 +1,6 @@
 {
   "name": "@michengai/dsh-codex-pet",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "Apache-2.0",
   "description": "独立实现的 DSH 宠物插件：Codex 原始宠物库、Skill 创建、Web 页内显示与消费者接入接口",
   "type": "module",

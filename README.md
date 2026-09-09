@@ -12,7 +12,7 @@
 
 [![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/deepseek-ai/deepseek-harness)
 [![Node.js 22.19+](https://img.shields.io/badge/Node.js-22.19%2B-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Development preview](https://img.shields.io/badge/Status-Development%20preview-d97706.svg)](#validation-and-current-limits)
+[![npm](https://img.shields.io/npm/v/@michengai/dsh-codex-pet)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
 
 </div>
 
@@ -78,16 +78,16 @@ Compatibility: the host must provide the `locale` client service and support fun
 
 Automatic updates use `--config.minimumReleaseAge=0` for that install command so a newly published version can be installed immediately. This bypasses pnpm’s release-age delay for the command without changing the global configuration. The package name, npm registry, and resolved version remain fixed by the server.
 
-Version 0.1.1 includes the settings, localization, npm updater, and consumer API changes described here; see the [changelog](CHANGELOG.md).
+Version 0.1.2 includes the settings, localization, npm updater, and consumer API changes described here; see the [changelog](CHANGELOG.md).
 
-The current version is **0.1.1**, available on [npm](https://www.npmjs.com/package/@michengai/dsh-codex-pet). See [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases) for release notes. Replace `web` below with your actual DSH profile.
+The current version is **0.1.2**, available on [npm](https://www.npmjs.com/package/@michengai/dsh-codex-pet). See [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases) for release notes. Replace `web` below with your actual DSH profile.
 
 Run `dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://registry.npmjs.org/ --ignore-scripts`, then reload DSH. The source build instructions follow.
 
 ### Ask an agent to install it
 
 ```text
-Install DSH Codex Pet from my local source checkout into the DSH web profile. In that checkout, run npm ci, npm run check, npm test, and npm pack. If all checks pass, install the generated michengai-dsh-codex-pet-0.1.1.tgz using dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts. Run dsh --profile web --dump-config and confirm michengai-codex-pet is present. Explain how to reload DSH and open pet settings. Preserve existing tasks and user data.
+Install DSH Codex Pet from my local source checkout into the DSH web profile. In that checkout, run npm ci, npm run check, npm test, and npm pack. If all checks pass, install the generated michengai-dsh-codex-pet-0.1.2.tgz using dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.2.tgz --ignore-scripts. Run dsh --profile web --dump-config and confirm michengai-codex-pet is present. Explain how to reload DSH and open pet settings. Preserve existing tasks and user data.
 ```
 
 ### Build and install manually
@@ -102,7 +102,7 @@ npm ci
 npm run check
 npm test
 npm pack
-dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts
+dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.2.tgz --ignore-scripts
 dsh --profile web --dump-config
 ```
 
