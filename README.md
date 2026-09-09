@@ -18,9 +18,11 @@
 
 </div>
 
-DSH Codex Pet brings a pet library, task notifications, and a Skill-based creation flow to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). All nine built-in Codex pet sprite sheets ship with the plugin. Users do not need to install Codex.
+> DSH Codex Pet is a community-maintained pet plugin for DeepSeek Harness (DSH), not an official OpenAI or DeepSeek AI product.
 
 ## Features
+
+Keep a companion nearby while you work in DSH, follow task progress, and handle requests that need your attention. Choose a built-in pet or create your own with a Skill.
 
 - **Nine built-in pets**: choose a companion and adjust its size in pet settings. Assets are bundled locally.
 - **In-page companion**: keep a companion in DSH Web. Floating desktop pets require a desktop app with pet support.
@@ -125,5 +127,3 @@ Custom pets are stored in `.dsh/codex-pet/pets` under your user directory by def
 ## License
 
 Original plugin code is licensed under [Apache License 2.0](LICENSE). Bundled pet artwork originates from OpenAI Codex and is excluded from this project's Apache-2.0 license grant; see [NOTICE](NOTICE).
-
-This is a community-maintained project, not an official OpenAI or DeepSeek product.

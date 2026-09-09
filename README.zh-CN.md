@@ -10,17 +10,19 @@
 
 [English](README.md) · [更新日志](CHANGELOG.zh-CN.md) · [Apache-2.0](LICENSE)
 
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![许可证：Apache-2.0](https://img.shields.io/badge/许可证-Apache--2.0-blue.svg)](LICENSE)
 [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-codex-pet.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
-[![npm downloads](https://img.shields.io/npm/dt/%40michengai%2Fdsh-codex-pet.svg?label=npm%20downloads)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
+[![npm 下载量](https://img.shields.io/npm/dt/%40michengai%2Fdsh-codex-pet.svg?label=npm%20%E4%B8%8B%E8%BD%BD%E9%87%8F)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
 [![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/MichengAI/dsh-codex-pet)
 [![Node.js 22.19+](https://img.shields.io/badge/Node.js-22.19%2B-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
 
 </div>
 
-DSH Codex Pet 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 提供宠物库、任务通知和基于 Skill 的宠物创建功能。全部 9 只 Codex 内置宠物图集随插件提供，使用人员无需安装 Codex。
+> DSH Codex Pet 是社区维护的 DeepSeek Harness（DSH）宠物插件，并非 OpenAI 或 DeepSeek AI 官方产品。
 
 ## 功能概览
+
+让宠物陪你处理 DSH 任务，随时查看会话进展和待处理请求。你可以选择内置宠物，也可以通过 Skill 创建自己的伙伴。
 
 - **9 只内置宠物**：在宠物设置中选择伙伴、调整大小，资源随插件本地打包。
 - **页内陪伴**：在 DSH 网页中陪伴工作；桌面浮窗需要使用支持宠物功能的桌面端。
@@ -125,5 +127,3 @@ dsh plugin --profile web remove @michengai/dsh-codex-pet
 ## 许可证
 
 原创插件代码采用 [Apache License 2.0](LICENSE)。随包宠物图集来源于 OpenAI Codex，不属于本项目授予的 Apache-2.0 许可范围，详见 [NOTICE](NOTICE)。
-
-本项目由社区维护，不是 OpenAI 或 DeepSeek 官方产品。
