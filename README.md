@@ -206,3 +206,11 @@ The plugin publishes `window.dshPet` in the DSH page and emits `dsh-pet-ready` /
 | `acquireDisplay()` | Hides only the page overlay and returns an idempotent release function. Call release when disconnecting; the overlay returns after all consumers release. This does not change persisted visibility. |
 
 Consumers own their renderer, native window, IPC validation, and disconnect cleanup. The interface carries no native window implementation. User titles, questions, and answer options remain unchanged; the `language` field identifies the display locale.
+
+## Automated releases
+
+GitHub Actions runs type checking, unit tests, Chromium smoke tests, and package validation on main pushes and pull requests. Pushing a stable version tag matching package.json (for example v0.1.2) runs publish.yml, validates the package, and publishes through npm OIDC. After npm succeeds, it extracts the matching entries from both changelogs and creates a normal Latest GitHub Release with Chinese followed by English, without tarball or checksum attachments.
+
+Before the first automated release, configure a GitHub Actions Trusted Publisher in the npm package Settings: owner MichengAI, repository dsh-codex-pet, workflow filename publish.yml, and no Environment. NPM_TOKEN is not required. The workflow cannot create this npm-side trust relationship itself.
+
+Update package.json, package-lock.json, and both changelogs before committing and pushing a new version tag. Published npm versions cannot be overwritten; fixes require a version increment. CI also supports manual workflow_dispatch runs without publishing.

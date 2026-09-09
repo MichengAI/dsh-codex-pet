@@ -208,3 +208,11 @@ npm run build
 | `acquireDisplay()` | 暂时隐藏页内浮层，返回幂等释放函数。消费者断开时必须释放，所有接管者释放后恢复页内显示，不改持久化可见性配置。 |
 
 消费者负责自身渲染器、原生窗口、IPC 校验和断开清理；接口不携带原生窗口实现。用户标题、问题与回答选项保持原文，language 字段提供显示语言。
+
+## 自动发布
+
+GitHub Actions 在 main 推送与 PR 上运行类型检查、单元测试、Chromium 冒烟及完整包校验。推送与 package.json 一致的正式版本标签（例如 v0.1.2）后，publish.yml 重新验证并通过 npm OIDC 发布；成功后从两份 CHANGELOG 提取对应版本内容，生成中文在前、英文在后的正式 Latest Release，不附加 tgz 或校验文件。
+
+首次启用需在 npm 包 Settings 的 Trusted Publisher 中选择 GitHub Actions，填写组织/用户 MichengAI、仓库 dsh-codex-pet、工作流文件 publish.yml，Environment 留空。不需要 NPM_TOKEN。此 npm 端绑定必须完成后才能发布；本仓库工作流无法替 npm 创建该信任关系。
+
+发布前同步 package.json、package-lock.json 和双语 CHANGELOG，再提交并推送新版本标签。已发布的 npm 版本不可覆盖，修复需递增版本。CI 可通过 workflow_dispatch 手动运行，不会发布包。

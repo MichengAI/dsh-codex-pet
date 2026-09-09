@@ -1,0 +1,46 @@
+name: 发布 npm 与 GitHub Release
+
+on:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - name: 校验标签并生成双语说明
+        run: node scripts/release-notes.mjs "$GITHUB_REF_NAME" "$RUNNER_TEMP/release-notes.md"
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run check
+      - run: npm test
+      - run: npm run smoke
+      - name: 打包并校验内置宠物与 Skill
+        run: npm pack --pack-destination "$RUNNER_TEMP"
+      - name: 通过 npm Trusted Publishing 发布
+        run: npm publish "$RUNNER_TEMP/michengai-dsh-codex-pet-${GITHUB_REF_NAME#v}.tgz" --access public --provenance --registry=https://registry.npmjs.org/
+      - name: 创建或更新正式 Release，不附加安装包
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md" --prerelease=false --latest
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md" --latest
+          fi
