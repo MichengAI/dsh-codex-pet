@@ -58,7 +58,7 @@ const ZH = {
     "自动更新失败时，可在当前 DSH 终端执行以下命令，完成后重启 DSH Web。",
   intro: "仅检查并更新当前插件，不会联动安装其他插件。",
   restart: "更新完成，请重启 DSH Web。",
-  restarting: "更新完成，正在重启 DSH Desktop…",
+  restarting: "更新完成，正在重新加载 DSH…",
   unavailable: "当前环境不支持自动更新，请使用手工更新命令。",
 };
 const EN = {
@@ -87,7 +87,7 @@ const EN = {
   intro:
     "Only this plugin is checked and updated. Other plugins are not changed.",
   restart: "Update complete. Restart DSH Web.",
-  restarting: "Update complete. Restarting DSH Desktop…",
+  restarting: "Update complete. Reloading DSH…",
   unavailable: "Automatic update is unavailable. Use the manual command.",
 };
 

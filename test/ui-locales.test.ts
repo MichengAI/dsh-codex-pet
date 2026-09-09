@@ -14,7 +14,7 @@ test('界面翻译支持语言回退和插值，未知文案及缺失参数保�
 
 test('更新错误按稳定代码翻译，未知代码安全回退', () => {
   assert.match(updateErrorMessage('UPDATE_TIMEOUT', 'en'), /timed out/);
-  assert.match(updateErrorMessage('CANCEL_FAILED', 'zh-CN'), /取消失败/);
+  assert.match(updateErrorMessage('UPDATE_TIMEOUT', 'zh-CN'), /已请求取消/);
   assert.equal(updateErrorMessage('NOT_PUBLISHED', 'en'), 'The plugin has not been published to npm yet.');
   for (const code of [undefined, null, 'toString', '__proto__', 'FUTURE_CODE']) {
     assert.equal(updateErrorMessage(code, 'en'), 'The update failed. Check the server logs.');

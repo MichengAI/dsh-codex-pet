@@ -21,7 +21,7 @@ DSH Codex Pet 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-har
 ## 功能概览
 
 - **9 只内置宠物**：在宠物设置中选择伙伴、调整大小，资源随插件本地打包。
-- **网页与桌面陪伴**：Web 在页面内显示；兼容的 DSH Desktop 宠物桥接可提供原生桌面浮窗。
+- **页内陪伴**：插件在 DSH Web 页面内显示宠物，并提供消费者接口；外部宿主自行适配窗口与 IPC。
 - **多会话动态**：查看运行中、完成、错误和待处理请求；没有通知时只显示宠物。
 - **就近处理任务**：从通知打开对应会话、停止当前轮次，或处理支持的审批、问题和计划请求。
 - **按需安静**：关闭单条提醒不会停止任务；通过菜单或设置收起、恢复宠物。
@@ -52,7 +52,7 @@ DSH Codex Pet 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-har
 
 ## DSH 产品生态
 
-可使用 [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop) 作为桌面工作台，也可以为已有 DeepSeek Harness 环境按需安装插件。原生宠物浮窗需要包含兼容宠物桥接的 Desktop 构建。
+为已有 DeepSeek Harness 环境按需安装插件；外部消费者可独立接入宠物接口。
 
 | 插件 | 你可以用它做什么 |
 | --- | --- |
@@ -70,7 +70,6 @@ DSH Codex Pet 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-har
 
 - 已安装 DeepSeek Harness，可使用 Web 界面和 `dsh` 命令。
 - 从源码构建需要 **Node.js 22.19 或更高版本**。
-- 原生桌面显示需要兼容的 DSH Desktop 宠物桥接；旧 Desktop 构建会回退到网页浮层。
 - 创建自定义宠物需要在 DSH 中配置可用的图像生成工具。
 
 ## 安装
@@ -111,7 +110,7 @@ dsh --profile web --dump-config
 
 ### 重新加载
 
-等待正在执行的任务结束后，重启对应 DSH Web 服务或重新加载 Desktop。仅刷新浏览器不能替换已经加载的 Host 模块。
+等待正在执行的任务结束后，重启对应 DSH Web 服务并刷新页面。仅刷新浏览器不能替换已经加载的 Host 模块。
 
 ## 使用
 
@@ -150,7 +149,7 @@ dsh --profile web --dump-config
 
 ## 插件更新
 
-宠物设置页显示当前运行版本、GitHub 和问题反馈链接，以及**检查更新**入口。更新器查询 npm，通过 Desktop 安装器或 DSH CLI 安装到当前 profile；npm 尚未发布时会明确提示。宿主不支持在线安装时，可复制手动更新命令。请等待任务结束后更新，并按提示重新加载 DSH。
+宠物设置页显示当前运行版本、GitHub 和问题反馈链接，以及**检查更新**入口。更新器查询 npm，通过已验证的 DSH CLI 安装到当前 profile；npm 尚未发布时会明确提示。宿主不支持在线安装时，可复制手动更新命令。请等待任务结束后更新，并按提示重新加载 DSH。
 
 ## 卸载
 
@@ -181,13 +180,31 @@ npm run build
 - `scripts/`：构建、资源维护、安装包校验和隔离 Electron smoke 检查。
 - `lib/`：生成的运行产物，修改源码应在 `src/` 中进行。
 
-项目不提供独立 HTML 预览页，请在 DSH 内验证；`/desktop.html` 保留为原生宠物窗口入口。`assets:import` 仅供维护者更新原始资源，使用者安装时无需执行。
+项目不提供独立 HTML 预览页或原生窗口入口，请在 DSH 内验证。`assets:import` 仅供维护者更新原始资源，使用者安装时无需执行。
 
 使用 CodeGraph 时，首次运行 `codegraph init .`，修改后运行 `codegraph sync .`，通过 `codegraph status .` 检查索引新鲜度。索引与 `docs/` 下的本地项目文档均不纳入 Git。
 
 ## 验证与当前边界
 
-类型检查、26 项自动化测试、构建和受控 Electron 客户端交互验证已通过，覆盖任务通知和创建请求流程。完整图像生成、真实模型任务联动及正常 Desktop 安装仍待端到端验收。
+类型检查、25 项自动化测试、构建和受控浏览器客户端交互验证已通过，覆盖任务通知和创建请求流程。完整图像生成、真实模型任务联动及真实 npm 更新仍待端到端验收。
 
 
-冒烟测试：`npm run smoke` 会先构建插件，再运行会话与 Desktop 两套检查。通过 `DSH_ELECTRON_PATH` 指定 Electron 可执行文件的绝对路径，或通过 `NODE_PATH` 提供可解析的 `electron` 包；Desktop 检查还需要相邻 `dsh-codex-desktop` 仓库的构建产物。只验证客户端时，先构建，再运行 `node scripts/run-smoke.cjs activity`。每次运行使用独立的系统临时目录，Electron 退出后自动清理截图、隔离数据及缓存，失败时同样清理，不依赖或写入 `.preview`、docs。
+
+## 浏览器冒烟测试
+
+执行 `npm ci` 后，运行 `npx playwright install chromium`，再执行 `npm run smoke`。Playwright 是本项目的开发依赖，测试使用无头 Chromium 和独立系统临时目录，测试进程退出后自动清理；不需要 Electron、相邻仓库、`.preview` 或 docs 输出。
+
+## 消费者接口 v1
+
+插件在 DSH 页面提供 `window.dshPet`，发布 `dsh-pet-ready` / `dsh-pet-disposed` 事件。消费者主动订阅和展示，插件不导入或探测消费者。旧原生窗口路由与窗口桥接已移除，已有原生适配需迁移到此接口。
+
+| 方法 | 约定 |
+| --- | --- |
+| `getSnapshot()` | 返回独立副本 `{pet, config, language, notifications}`；未加载或卸载后为 `null`。宠物资源相对 URL 按 DSH 页面 origin 解析。 |
+| `subscribe(listener)` | 内容变化时通知，卸载时收到 `null`；返回退订函数。初始状态另行调用 getSnapshot。 |
+| `command(value)` | 执行通知操作：open、stop、dismiss、restore、approve、reject、answer、sort。目标操作携带当前通知 id、token；请求回答另带 requestKey。校验和拒绝由插件执行。 |
+| `updateConfig(value)` | 通过现有 Host 校验接口更新宠物设置。 |
+| `openSettings()` | 在 DSH 打开宠物设置。 |
+| `acquireDisplay()` | 暂时隐藏页内浮层，返回幂等释放函数。消费者断开时必须释放，所有接管者释放后恢复页内显示，不改持久化可见性配置。 |
+
+消费者负责自身渲染器、原生窗口、IPC 校验和断开清理；接口不携带原生窗口实现。用户标题、问题与回答选项保持原文，language 字段提供显示语言。

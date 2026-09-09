@@ -2,13 +2,12 @@
 
 ## [Unreleased]
 
-- Run smoke tests in unique system temporary directories and clean up after Electron exits; stop writing screenshots and test profiles into the project.
-- Return stable update error codes and localize failures in the dialog; cover translator interpolation and fallback, and document host compatibility and command-scoped release-age behavior.
-- Localize built-in pet names and descriptions, settings navigation, creation controls, notifications, and floating pet menus using the DSH locale. Preserve custom pet and conversation content.
-- Add the installed version, GitHub and issue links, and the shared npm update dialog; fix opening the custom pet folder on Windows.
-- Cancel Desktop updates after ten minutes and retain the installation lock until the process settles. Distinguish an unpublished npm package (409) from registry failure (503).
-- Share pet-library polling across page entries and avoid publishing unchanged notifications to the Desktop bridge. Remove the obsolete client creation API.
-- Pass type checking, 26 automated tests, the build, and controlled Electron checks for language switching, update dialogs, and native pet rendering. Real npm installation and normal Desktop installation still require end-to-end acceptance.
+- Keep pet rendering inside DSH Web and expose a versioned consumer API for state, notifications, commands, and display handoff. Native window adaptation belongs to the consumer; remove native routes, renderer, bridge calls, and sibling-project tests.
+- Use only the verified DSH CLI for npm updates, with a ten-minute timeout and an installation lock retained until process completion. Return stable localized error codes.
+- Localize pet names, descriptions, settings, notifications, and menus; preserve user content. Add version and project links, shared update dialog, and Windows folder opening.
+- Share library polling and publish only changed notification snapshots.
+- Run independent Playwright Chromium smoke tests in temporary directories with automatic cleanup. No Electron or sibling checkout is needed.
+- Pass type checking, 25 automated tests, build, and browser smoke checks. Real image generation, real-model interaction, and real npm updates still require acceptance testing.
 
 ## [0.1.0] - 2026-09-09
 

@@ -394,7 +394,6 @@ export function FloatingPet({
   open,
   settings,
   tray,
-  native = false,
 }: {
   pet: Pet;
   config: Config;
@@ -403,7 +402,6 @@ export function FloatingPet({
   open(): void;
   settings(): void;
   tray?: TrayProps;
-  native?: boolean;
 }) {
   const t = translator(pet.displayLocale ?? "zh");
   const root = useRef<HTMLDivElement>(null);
@@ -426,18 +424,8 @@ export function FloatingPet({
   const place = useCallback(() => {
     const width = Math.max(0, innerWidth - config.size - 16),
       height = Math.max(0, innerHeight - petHeight - 32);
-    setPosition(
-      native
-        ? {
-            left: innerWidth - config.size - 12,
-            top: innerHeight - petHeight - 30,
-          }
-        : {
-            left: config.position ? config.position.x * width : width,
-            top: config.position ? config.position.y * height : height,
-          },
-    );
-  }, [config.size, config.position, petHeight, native]);
+    setPosition({ left: config.position ? config.position.x * width : width, top: config.position ? config.position.y * height : height });
+  }, [config.size, config.position, petHeight]);
   useEffect(() => {
     place();
     window.addEventListener("resize", place);
@@ -544,10 +532,10 @@ export function FloatingPet({
         <button
           className="dcp-bubble"
           style={{
-            ...(!native && position.top < 84
+            ...(position.top < 84
               ? { top: "calc(100% + 28px)", bottom: "auto" }
               : {}),
-            ...(!native && position.left < 240
+            ...(position.left < 240
               ? { left: 0, right: "auto" }
               : {}),
           }}
@@ -597,8 +585,6 @@ export function FloatingPet({
           if (!point.moved) return;
           setLook(null);
           setAction(dx < 0 ? "running-left" : "running-right");
-          if (native) window.petWindow?.move(dx, dy);
-          else
             setPosition({
               left: Math.max(
                 0,
@@ -622,7 +608,7 @@ export function FloatingPet({
           const point = drag.current;
           drag.current = null;
           setAction(null);
-          if (point?.moved && !native) void persistPosition();
+          if (point?.moved) void persistPosition();
           else if (!point?.moved) perform("waving");
         }}
         onPointerCancel={() => {
@@ -658,10 +644,10 @@ export function FloatingPet({
         <div
           className="dcp-menu"
           style={{
-            ...(!native && position.top < 220
+            ...(position.top < 220
               ? { top: "calc(100% + 28px)", bottom: "auto" }
               : {}),
-            ...(!native && position.left < 160
+            ...(position.left < 160
               ? { left: 0, right: "auto" }
               : {}),
           }}
@@ -731,8 +717,7 @@ export function FloatingPet({
           <button
             role="menuitem"
             onClick={() => {
-              if (native) window.petWindow?.action("hide");
-              else void update({ visible: false }).catch(() => {});
+              void update({ visible: false }).catch(() => {});
             }}
           >
             {t("收起宠物")}
@@ -767,66 +752,7 @@ export function Companion({
         : undefined,
     [selected, controller.language],
   );
-  const bridge =
-    tray && window.dshDesktopPet?.notificationsVersion !== 2
-      ? undefined
-      : window.dshDesktopPet;
-  const [bridgeError, setBridgeError] = useState("");
-  useEffect(() => {
-    if (!bridge) return;
-    let active = true;
-    void bridge
-      .sync(
-        pet && library?.config.visible
-          ? {
-              pet,
-              config: library.config,
-              activity,
-              notifications: tray?.state,
-            }
-          : null,
-      )
-      .then(() => {
-        if (active) setBridgeError("");
-      })
-      .catch(() => {
-        if (active) setBridgeError("桌面宠物暂不可用，请重启 Desktop 后重试。");
-      });
-    return () => {
-      active = false;
-    };
-  }, [bridge, pet, library?.config, activity, tray?.state]);
-  useEffect(() => {
-    if (!bridge) return;
-    return bridge.onAction((action) => {
-      if (action === "hide")
-        void controller.update({ visible: false }).catch(() => {});
-      else if (action === "open") open();
-      else settings();
-    });
-  }, [bridge, controller.update, open, settings]);
-  useEffect(() => {
-    if (!bridge?.onCommand || !tray) return;
-    return bridge.onCommand(tray.command);
-  }, [bridge, tray?.command]);
-  useEffect(
-    () => () => {
-      void bridge?.sync(null).catch(() => {});
-    },
-    [bridge],
-  );
-  if (bridgeError && library?.config.visible)
-    return (
-      <div
-        className="dcp"
-        role="alert"
-        style={{ position: "fixed", right: 20, bottom: 20, zIndex: 2147483000 }}
-      >
-        <style>{styles}</style>
-        <div className="dcp-error">{t(bridgeError)}</div>
-      </div>
-    );
-  if (!pet || !library?.config.visible || bridge) return null;
+  if (!pet || !library?.config.visible) return null;
   return (
     <FloatingPet
       pet={pet}

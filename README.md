@@ -21,7 +21,7 @@ DSH Codex Pet brings a pet library, task notifications, and a Skill-based creati
 ## Features
 
 - **Nine built-in pets**: choose a companion and adjust its size in pet settings. Assets are bundled locally.
-- **Web and desktop**: pets stay inside the page on Web; a compatible DSH Desktop bridge enables a native desktop window.
+- **In-page companion**: the plugin displays pets within DSH Web and exposes a consumer API. External hosts own their window and IPC adapters.
 - **Multiple tasks at a glance**: follow running tasks, completion, errors, and requests that need your attention. An empty notification list leaves only the pet visible.
 - **Act from the notification**: open the associated task, stop its current turn, or handle supported approval, question, and plan requests.
 - **Quiet when you need it**: dismiss an individual reminder without stopping its task; collapse or restore the pet through its menu or settings.
@@ -52,7 +52,7 @@ Keep working in DSH while the pet and task notifications remain in the corner of
 
 ## DSH product ecosystem
 
-Use [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop) as a desktop workbench, or add plugins to an existing DeepSeek Harness environment. Native pet windows require a Desktop build with the compatible pet bridge.
+Install plugins as needed in an existing DeepSeek Harness environment. External consumers may integrate the pet API independently.
 
 | Plugin | What you can do |
 | --- | --- |
@@ -70,7 +70,6 @@ Use [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop) as a des
 
 - DeepSeek Harness with its Web interface and the `dsh` command available.
 - Node.js **22.19 or newer** for building from source.
-- A compatible DSH Desktop pet bridge for native desktop display. Older Desktop builds fall back to the Web overlay.
 - A configured image-generation tool in DSH to create custom pets.
 
 ## Installation
@@ -111,7 +110,7 @@ Stop if any command fails. `npm pack` builds the plugin and checks that the nine
 
 ### Reloading
 
-After active tasks finish, restart the relevant DSH Web service or reload Desktop. A browser refresh alone does not replace an already loaded Host module.
+After active tasks finish, restart the relevant DSH Web service and refresh its Web interface. A browser refresh alone does not replace an already loaded Host module.
 
 ## Usage
 
@@ -150,7 +149,7 @@ The plugin is independently implemented and community maintained. The bundled Co
 
 ## Plugin updates
 
-Pet settings show the running version, GitHub and issue links, and **Check for updates**. The updater queries npm and installs into the current DSH profile using the Desktop installer or DSH CLI. Until the package is published to npm, it reports that updates are not yet available. Unsupported hosts can copy a manual update command. Wait for active tasks to finish before installing an update; reload DSH when prompted.
+Pet settings show the running version, GitHub and issue links, and **Check for updates**. The updater queries npm and installs into the current DSH profile using the verified DSH CLI. Until the package is published to npm, it reports that updates are not yet available. Unsupported hosts can copy a manual update command. Wait for active tasks to finish before installing an update; reload DSH when prompted.
 
 ## Uninstallation
 
@@ -181,12 +180,30 @@ npm run build
 - `scripts/`: build, asset maintenance, package verification, and isolated Electron smoke checks.
 - `lib/`: generated runtime output; edit `src/` instead.
 
-There is no standalone HTML preview. Verify the plugin inside DSH; `/desktop.html` remains the native pet window entry. `assets:import` is a maintainer command for updating original assets, not an installation requirement.
+There is no standalone HTML preview or native window entry. Verify the plugin inside DSH. `assets:import` is a maintainer command for updating original assets, not an installation requirement.
 
 For CodeGraph, run `codegraph init .` once, `codegraph sync .` after changes, and `codegraph status .` to check freshness. The index and local project documentation under `docs/` are excluded from Git.
 
 ## Validation and current limits
 
-Type checking, 26 automated tests, the build, and controlled Electron client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction, and the normal Desktop installation still need end-to-end acceptance testing.
+Type checking, 25 automated tests, the build, and controlled browser client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction and real npm updates still need end-to-end acceptance testing.
 
-Smoke tests: `npm run smoke` builds the plugin and runs both activity and Desktop checks. Provide Electron through `DSH_ELECTRON_PATH` (the absolute executable path), or make the `electron` package resolvable through `NODE_PATH`. Desktop checks also require the built sibling `dsh-codex-desktop` checkout. To run only client checks, build first, then run `node scripts/run-smoke.cjs activity`. Each run uses a unique system temporary directory; screenshots, profile data, and caches are removed after Electron exits, including on failure. No `.preview` or docs directory is required or written.
+
+## Browser smoke test
+
+After `npm ci`, run `npx playwright install chromium`, then `npm run smoke`. Playwright is a development dependency of this project. The test uses headless Chromium and a unique system temporary directory, cleaned after the test process exits. No Electron, sibling repository, `.preview`, or docs output is required.
+
+## Consumer API v1
+
+The plugin publishes `window.dshPet` in the DSH page and emits `dsh-pet-ready` / `dsh-pet-disposed`. Consumers subscribe and render independently; the plugin never imports or probes a consumer. Previous native window routes and window bridges have been removed. Existing native adapters must migrate to this contract.
+
+| Method | Contract |
+| --- | --- |
+| `getSnapshot()` | Returns a copied `{pet, config, language, notifications}` or `null` before loading/after disposal. Resolve relative pet asset URLs against the DSH page origin. |
+| `subscribe(listener)` | Receives changed snapshots or `null` on disposal; returns an unsubscribe function. Read the initial snapshot separately. |
+| `command(value)` | Executes notification commands (`open`, `stop`, `dismiss`, `restore`, `approve`, `reject`, `answer`, `sort`). Targeted commands require the current notification `id` and `token`; request answers also require `requestKey`. Validation and rejection stay in the plugin. |
+| `updateConfig(value)` | Updates pet settings through the existing validated Host API. |
+| `openSettings()` | Opens plugin settings in DSH. |
+| `acquireDisplay()` | Hides only the page overlay and returns an idempotent release function. Call release when disconnecting; the overlay returns after all consumers release. This does not change persisted visibility. |
+
+Consumers own their renderer, native window, IPC validation, and disconnect cleanup. The interface carries no native window implementation. User titles, questions, and answer options remain unchanged; the `language` field identifies the display locale.

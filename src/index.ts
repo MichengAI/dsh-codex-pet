@@ -1,5 +1,5 @@
 import { registerPluginUpdater, type HostRequest, type HostResponse } from './plugin-updater.ts';
-/** DSH Host 插件与独立预览共用同一路由实现。 */
+/** DSH Host 插件的宠物资源和配置路由。 */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { readFile, mkdir } from 'node:fs/promises';
@@ -26,12 +26,12 @@ async function body(req: IncomingMessage): Promise<Record<string, unknown>> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('请求必须是 JSON 对象');
   return value as Record<string, unknown>;
 }
-export async function createHost(options: { root?: string; dataRoot?: string; skillRoot?: string; getService?(name: string): unknown } = {}) {
+export async function createHost(options: { root?: string; dataRoot?: string; skillRoot?: string } = {}) {
   const root = options.root ?? packageRoot;
   const library = new PetLibrary(join(root, 'assets', 'codex'), options.dataRoot, options.skillRoot);
   await library.init();
   let updateHandler: ((req: HostRequest, res: HostResponse) => Promise<void>) | undefined;
-  registerPluginUpdater({ get: options.getService, logger: { warn: message => console.warn('[dsh-codex-pet]', message) }, webServer: { register(route) { updateHandler = route.handler; return () => { updateHandler = undefined; }; } } }, { endpoint: `${BASE}/api/update`, packageName: '@michengai/dsh-codex-pet', manifestUrl: new URL('../package.json', import.meta.url) });
+  registerPluginUpdater({ logger: { warn: message => console.warn('[dsh-codex-pet]', message) }, webServer: { register(route) { updateHandler = route.handler; return () => { updateHandler = undefined; }; } } }, { endpoint: `${BASE}/api/update`, packageName: '@michengai/dsh-codex-pet', manifestUrl: new URL('../package.json', import.meta.url) });
   const snapshot = () => ({ ...library.snapshot(), creationAvailable: false, creation: null });
   const handler = async (req: IncomingMessage, res: ServerResponse) => {
     try {
@@ -46,11 +46,6 @@ export async function createHost(options: { root?: string; dataRoot?: string; sk
         const png = bytes[0] === 137;
         res.writeHead(200, { 'content-type': png ? 'image/png' : 'image/webp', 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' }); res.end(bytes); return;
       }
-      if (req.method === 'GET' && path === `${BASE}/desktop.html`) {
-        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; frame-ancestors 'self'" });
-        res.end(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>宠物 · DSH</title></head><body><div id="root"></div><script type="module" src="${BASE}/standalone.js"></script></body></html>`); return;
-      }
-      if (req.method === 'GET' && path === `${BASE}/standalone.js`) { res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' }); res.end(await readFile(join(root, 'lib', 'standalone.js'))); return; }
       if (!path.startsWith(`${BASE}/api/`)) { json(res, 404, { error: '未找到资源' }); return; }
       if (req.method !== 'POST') { json(res, 405, { error: '方法不支持' }); return; }
       if (!trustedWrite(req)) { json(res, 403, { error: '请求来源校验失败' }); return; }
@@ -80,7 +75,7 @@ interface HostContext { get(name: string): { register(route: { kind: 'prefix'; p
 export function apply(ctx: HostContext): void {
   ctx.effect(() => {
     let disposed = false, remove: (() => void) | undefined, host: Awaited<ReturnType<typeof createHost>> | undefined;
-    void createHost({ getService: name => ctx.get(name) }).then(value => { host = value; if (disposed) { host.dispose(); return; } remove = ctx.get('webServer').register({ kind: 'prefix', path: BASE, handler: (req, res) => { void value.handler(req, res); } }); }).catch(error => console.error('[dsh-codex-pet] 初始化失败', error));
+    void createHost().then(value => { host = value; if (disposed) { host.dispose(); return; } remove = ctx.get('webServer').register({ kind: 'prefix', path: BASE, handler: (req, res) => { void value.handler(req, res); } }); }).catch(error => console.error('[dsh-codex-pet] 初始化失败', error));
     return () => { disposed = true; remove?.(); host?.dispose(); };
   });
 }

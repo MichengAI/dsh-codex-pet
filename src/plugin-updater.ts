@@ -8,7 +8,6 @@ import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PLUGIN_UPDATE_HEADER = "x-michengai-plugin-update";
-export const PLUGIN_UPDATE_IPC = "apply-plugin-updates";
 
 export type HostRequest = {
   method?: string;
@@ -27,20 +26,8 @@ type WebServer = {
     handler(request: HostRequest, response: HostResponse): Promise<void>;
   }): () => void;
 };
-type DesktopPnpmHandle = {
-  done: Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>;
-  cancel(): void;
-};
-type DesktopPnpm = {
-  runPlugin(
-    args: readonly string[],
-    invokingDir: string,
-    signal?: AbortSignal,
-  ): DesktopPnpmHandle;
-};
 export type UpdateContext = {
   webServer: WebServer;
-  get?(name: string): unknown;
   logger: { warn(message: string): void };
 };
 
@@ -53,7 +40,6 @@ export type PluginUpdaterOptions = {
 type Runtime = {
   profileName: string;
   profileDir: string;
-  desktopPnpm?: DesktopPnpm;
   cliEntry?: string;
 };
 type VersionPayload = {
@@ -175,26 +161,7 @@ function cliEntry(): string | undefined {
   }
 }
 
-function runtime(ctx: UpdateContext): Runtime {
-  const profiles = ctx.get?.("desktopProfiles") as
-    | { current?: { name?: unknown; dir?: unknown } }
-    | undefined;
-  const desktopPnpm = ctx.get?.("desktopPnpm") as DesktopPnpm | undefined;
-  if (profiles?.current !== undefined) {
-    const current = profiles.current;
-    if (
-      !validProfileName(current.name) ||
-      typeof current.dir !== "string" ||
-      !isAbsolute(current.dir)
-    ) {
-      throw new UpdateFailure("INVALID_PROFILE");
-    }
-    return {
-      profileName: current.name,
-      profileDir: resolve(current.dir),
-      ...(typeof desktopPnpm?.runPlugin === "function" ? { desktopPnpm } : {}),
-    };
-  }
+function runtime(): Runtime {
   const profileDir = resolve(
     process.env.DSH_PROFILE_DIR ??
       resolve(homedir(), ".dsh", "profiles", "web"),
@@ -326,107 +293,31 @@ async function status(
     updateAvailable: latest != null && isNewerVersion(current, latest),
     profileName: target.profileName,
     canAutoUpdate:
-      target.desktopPnpm !== undefined || target.cliEntry !== undefined,
+      target.cliEntry !== undefined,
   };
 }
 
-async function runCliInstall(
-  target: Runtime,
-  packageSpec: string,
-): Promise<void> {
-  if (target.cliEntry === undefined)
-    throw new UpdateFailure("AUTO_UPDATE_UNAVAILABLE");
-  await new Promise<void>((resolvePromise, reject) => {
-    const child = spawn(
-      process.execPath,
-      [
-        target.cliEntry!,
-        "plugin",
-        "--profile",
-        target.profileName,
-        "add",
-        "--config.minimumReleaseAge=0",
-        packageSpec,
-        "--registry=https://registry.npmjs.org/",
-      ],
-      {
-        cwd: target.profileDir,
-        windowsHide: true,
-        stdio: ["ignore", "pipe", "pipe"],
-        env: { ...process.env, NO_COLOR: "1" },
-      },
-    );
-    let detail = "";
-    child.stdout?.on("data", (chunk) => {
-      detail = (detail + String(chunk)).slice(-4_000);
-    });
-    child.stderr?.on("data", (chunk) => {
-      detail = (detail + String(chunk)).slice(-4_000);
-    });
-    const timer = setTimeout(() => {
-      child.kill();
-      reject(new UpdateFailure("CLI_TIMEOUT"));
-    }, 10 * 60_000);
-    child.once("error", (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    child.once("exit", (code) => {
-      clearTimeout(timer);
-      if (code === 0) resolvePromise();
-      else
-        reject(
-          new UpdateFailure(
-            "UPDATE_FAILED",
-            detail.trim() || `更新进程退出码 ${String(code)}`,
-          ),
-        );
-    });
+async function install(target: Runtime, packageSpec: string, track: (done: Promise<unknown>) => void): Promise<void> {
+  if (!target.cliEntry) throw new UpdateFailure("AUTO_UPDATE_UNAVAILABLE");
+  const child = spawn(process.execPath, [target.cliEntry, 'plugin', '--profile', target.profileName, 'add', '--config.minimumReleaseAge=0', packageSpec, '--registry=https://registry.npmjs.org/'], {
+    cwd: target.profileDir, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NO_COLOR: '1' },
   });
-}
-
-async function install(
-  target: Runtime,
-  packageSpec: string,
-  track: (done: Promise<unknown>) => void,
-): Promise<void> {
-  if (target.desktopPnpm === undefined)
-    return runCliInstall(target, packageSpec);
-  const handle = target.desktopPnpm.runPlugin(
-    [
-      "add",
-      "--config.minimumReleaseAge=0",
-      packageSpec,
-      "--registry=https://registry.npmjs.org/",
-    ],
-    target.profileDir,
-  );
-  // 超时只结束 HTTP 等待；安装锁直到进程确认结束才释放，避免并发修改 Profile。
-  track(handle.done);
+  let detail = '';
+  child.stdout.on('data', chunk => { detail = (detail + String(chunk)).slice(-4000); });
+  child.stderr.on('data', chunk => { detail = (detail + String(chunk)).slice(-4000); });
+  const done = new Promise<void>((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', code => code === 0 ? resolve() : reject(new UpdateFailure('UPDATE_FAILED', detail.trim() || `更新进程退出码 ${code}`)));
+  });
+  track(done);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const result = await Promise.race([
-      handle.done,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          try {
-            handle.cancel();
-          } catch {
-            reject(new UpdateFailure("CANCEL_FAILED"));
-            return;
-          }
-          reject(new UpdateFailure("UPDATE_TIMEOUT"));
-        }, 10 * 60_000);
-      }),
-    ]);
-    if (result.exitCode !== 0)
-      throw new UpdateFailure(
-        "UPDATE_FAILED",
-        `更新进程退出码 ${String(result.exitCode)}。`,
-      );
-  } finally {
-    clearTimeout(timer);
-  }
+    await Promise.race([done, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        child.kill(); reject(new UpdateFailure('UPDATE_TIMEOUT'));
+      }, 10 * 60_000);
+    })]);
+  } finally { clearTimeout(timer); }
 }
 
 function json(
@@ -452,7 +343,7 @@ export function registerPluginUpdater(
     path: options.endpoint,
     handler: async (request, response) => {
       try {
-        const target = runtime(host);
+        const target = runtime();
         if (request.method === "GET" || request.method === "HEAD") {
           const payload = await status(options, target);
           response.writeHead(200, {
@@ -503,20 +394,12 @@ export function registerPluginUpdater(
               pendingInstall = done;
             },
           );
-          const notifyParent =
-            target.desktopPnpm === undefined &&
-            typeof process.send === "function";
-          const autoReload = target.desktopPnpm !== undefined || notifyParent;
           json(response, 200, {
             ...before,
             updatedVersion: before.latestVersion,
             restartRequired: true,
-            autoReload,
+            autoReload: false,
           });
-          if (notifyParent)
-            setTimeout(() => {
-              process.send?.(PLUGIN_UPDATE_IPC);
-            }, 150).unref?.();
         } finally {
           if (pendingInstall)
             void pendingInstall.then(

@@ -1,6 +1,4 @@
-import type { NotificationState } from "./notifications.ts";
-import type { TrayCommand } from "./notification-tray.tsx";
-/** 两种显示端共享的数据与图集协议，不依赖宿主或第三方宠物实现。 */
+/** 宠物公开数据与图集协议，不依赖宿主或第三方宠物实现。 */
 export const BASE = "/dsh-codex-pet";
 export const BUILTINS = [
   ["codex", "Codex", "The original Codex companion."],
@@ -86,33 +84,6 @@ export interface Library {
   skillPath: string;
   creationAvailable: boolean;
   creation: Creation | null;
-}
-export interface DesktopState {
-  pet: Pet;
-  config: Config;
-  activity: Activity;
-  notifications?: NotificationState;
-}
-export interface DesktopBridge {
-  notificationsVersion?: number;
-  onCommand?(listener: (command: TrayCommand) => Promise<void>): () => void;
-  sync(state: DesktopState | null): Promise<void>;
-  onAction(
-    listener: (action: "hide" | "open" | "settings") => void,
-  ): () => void;
-}
-declare global {
-  interface Window {
-    dshDesktopPet?: DesktopBridge;
-    petWindow?: {
-      onState(listener: (value: DesktopState) => void): () => void;
-      command?(value: TrayCommand): Promise<void>;
-      ready(): void;
-      pointer(interactive: boolean): void;
-      move(dx: number, dy: number): void;
-      action(action: "hide" | "open" | "settings"): void;
-    };
-  }
 }
 export function normalizeConfig(
   value: unknown,

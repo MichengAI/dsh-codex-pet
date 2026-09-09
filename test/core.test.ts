@@ -53,7 +53,7 @@ test('HTTP真实路由：错误方法不写配置；资产越界、跨站与DNS 
   try {
     assert.equal((await fetch(base + '/api/config')).status, 405);
     assert.equal((await fetch(base + '/preview.html')).status, 404);
-    assert.equal((await fetch(base + '/desktop.html')).status, 200);
+    assert.equal((await fetch(base + '/desktop.html')).status, 404);
     // fetch 会重写 Host；用底层 HTTP 客户端验证真实的恶意 Host 请求。
     const hostStatus = await new Promise<number | undefined>((done, reject) => { const req = httpRequest(base + '/api/state', { headers: { host: 'evil.test' } }, response => { response.resume(); done(response.statusCode); }); req.on('error', reject); req.end(); });
     assert.equal(hostStatus, 403);

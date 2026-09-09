@@ -37,7 +37,6 @@ const en: Record<string, string> = {
   "恢复已关闭通知": "Restore dismissed notifications",
   "恢复失败": "Restore failed",
   "查看任务": "View task",
-  "桌面宠物暂不可用，请重启 Desktop 后重试。": "Desktop pet is unavailable. Restart Desktop and try again.",
   "提交失败": "Submission failed",
   "工具审批": "Tool approval",
   "此工具需要你的批准。": "This tool needs your approval.",

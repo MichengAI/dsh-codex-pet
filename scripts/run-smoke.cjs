@@ -1,4 +1,4 @@
-// Node 父进程负责隔离与清理；等待 Electron 退出后再删除其缓存，避免 Windows 文件锁。
+// Node 父进程负责隔离与清理；等待浏览器测试进程退出后再删除缓存，避免 Windows 文件锁。
 const { mkdtempSync, mkdirSync, rmSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join, resolve, dirname } = require('node:path');
@@ -6,9 +6,8 @@ const { spawn } = require('node:child_process');
 
 async function main() {
   const modes = process.argv.slice(2);
-  if (!modes.length) modes.push('activity', 'desktop');
-  if (modes.some(mode => !['activity', 'desktop'].includes(mode))) throw new Error('仅支持 activity 或 desktop 冒烟测试。');
-  const electron = process.env.DSH_ELECTRON_PATH || require('electron');
+  if (!modes.length) modes.push('activity');
+  if (modes.some(mode => mode !== 'activity')) throw new Error('仅支持 activity 客户端冒烟测试。');
   const base = resolve(tmpdir());
   const root = mkdtempSync(join(base, 'dsh-pet-smoke-'));
   try {
@@ -17,9 +16,8 @@ async function main() {
       mkdirSync(runDir);
       console.log(`运行 ${mode} 冒烟测试（系统临时目录）`);
       const env = { ...process.env, DSH_PET_SMOKE_DIR: runDir };
-      delete env.ELECTRON_RUN_AS_NODE;
       await new Promise((done, reject) => {
-        const child = spawn(electron, [join(__dirname, `smoke-${mode}.cjs`)], {
+        const child = spawn(process.execPath, [join(__dirname, `smoke-${mode}.cjs`)], {
           cwd: resolve(__dirname, '..'), env, stdio: 'inherit', windowsHide: true,
         });
         child.once('error', reject);

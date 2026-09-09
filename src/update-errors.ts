@@ -1,9 +1,5 @@
 /** 更新接口的稳定错误码与显示文案；底层安装诊断只写入 Host 日志。 */
 const messages = {
-  "INVALID_PROFILE": [
-    "当前 Desktop Profile 信息无效，请重启后重试。",
-    "The Desktop profile is invalid. Restart and try again."
-  ],
   "INVALID_VERSION": [
     "无法读取当前插件版本。",
     "Could not read the current plugin version."
@@ -11,14 +7,6 @@ const messages = {
   "AUTO_UPDATE_UNAVAILABLE": [
     "当前环境不支持自动更新，请使用手工更新命令。",
     "Automatic updates are unavailable. Use the manual update command."
-  ],
-  "CLI_TIMEOUT": [
-    "更新超时，请改用手工更新。",
-    "The update timed out. Use the manual update command."
-  ],
-  "CANCEL_FAILED": [
-    "更新超时且取消失败，请重启 Host 后重试。",
-    "The update timed out and could not be cancelled. Restart the Host before trying again."
   ],
   "UPDATE_TIMEOUT": [
     "更新超时，已请求取消；进程结束前不能再次安装。",
