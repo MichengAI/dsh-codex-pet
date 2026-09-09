@@ -1,0 +1,14 @@
+DSH Codex Pet
+Copyright 2026 MichengAI contributors
+
+本项目原创插件代码采用 Apache License 2.0，详见 LICENSE。
+assets/codex 下的宠物图集来源于 OpenAI Codex，并非本项目原创素材。
+Apache License 2.0 不为这些第三方素材授予新的许可或商标权；其权利归原权利人所有。
+本项目由社区维护，不是 OpenAI 或 DeepSeek 官方产品。
+
+Original plugin code is licensed under the Apache License, Version 2.0.
+The pet artwork under assets/codex originates from OpenAI Codex and is not
+original artwork of this project. This project's Apache License does not
+grant new rights to that third-party artwork or its trademarks. Those rights
+remain with their respective owners. This is a community-maintained project,
+not an official OpenAI or DeepSeek product.
