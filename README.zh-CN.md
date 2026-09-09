@@ -80,9 +80,9 @@ DSH Codex Pet 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-har
 
 v0.1.1 安装包包含本文描述的设置、本地化、npm 更新器和消费者接口改动，详见[更新日志](CHANGELOG.zh-CN.md)。
 
-当前为 **0.1.1 开发预览版**，通过 [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.1) 分发。尚未发布 npm 包。以下命令使用 `web` profile，请按实际环境替换。
+当前版本为 **0.1.1**，通过 [npm](https://www.npmjs.com/package/@michengai/dsh-codex-pet) 安装；版本记录见 [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases)。以下命令使用 `web` profile，请按实际环境替换。
 
-从 Release 下载 `michengai-dsh-codex-pet-0.1.1.tgz`，在下载目录执行 `dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts`，然后重新加载 DSH。也可按下面的步骤从源码构建。
+执行 `dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://registry.npmjs.org/ --ignore-scripts`，然后重新加载 DSH。也可按下面的步骤从源码构建。
 
 ### 让 Agent 帮你安装
 

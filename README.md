@@ -80,9 +80,9 @@ Automatic updates use `--config.minimumReleaseAge=0` for that install command so
 
 Version 0.1.1 includes the settings, localization, npm updater, and consumer API changes described here; see the [changelog](CHANGELOG.md).
 
-This is a **0.1.1 development preview**, distributed through [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.1). No npm package has been published. Replace `web` below with your actual DSH profile.
+The current version is **0.1.1**, available on [npm](https://www.npmjs.com/package/@michengai/dsh-codex-pet). See [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases) for release notes. Replace `web` below with your actual DSH profile.
 
-Download `michengai-dsh-codex-pet-0.1.1.tgz` from the release and run `dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts` from its download directory, then reload DSH. The source build instructions follow.
+Run `dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://registry.npmjs.org/ --ignore-scripts`, then reload DSH. The source build instructions follow.
 
 ### Ask an agent to install it
 
@@ -149,7 +149,7 @@ The plugin is independently implemented and community maintained. The bundled Co
 
 ## Plugin updates
 
-Pet settings show the running version, GitHub and issue links, and **Check for updates**. The updater queries npm and installs into the current DSH profile using the verified DSH CLI. Until the package is published to npm, it reports that updates are not yet available. Unsupported hosts can copy a manual update command. Wait for active tasks to finish before installing an update; reload DSH when prompted.
+Pet settings show the running version, GitHub and issue links, and **Check for updates**. The updater queries npm and installs into the current DSH profile using the verified DSH CLI. Unsupported hosts can copy a manual update command. Wait for active tasks to finish before installing an update; reload DSH when prompted.
 
 ## Uninstallation
 

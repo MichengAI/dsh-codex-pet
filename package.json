@@ -3,7 +3,18 @@
   "version": "0.1.1",
   "description": "独立实现的 DSH 宠物插件：Codex 原始宠物库、Skill 创建、Web 页内显示与消费者接入接口",
   "type": "module",
-  "private": true,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MichengAI/dsh-codex-pet.git"
+  },
+  "homepage": "https://github.com/MichengAI/dsh-codex-pet#readme",
+  "bugs": {
+    "url": "https://github.com/MichengAI/dsh-codex-pet/issues"
+  },
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
