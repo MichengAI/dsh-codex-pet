@@ -6,3 +6,4 @@ assets/codex/source.json
 
 .codegraph/
 *.log
+docs/
