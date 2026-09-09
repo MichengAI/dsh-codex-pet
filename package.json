@@ -13,9 +13,14 @@
   "files": [
     "lib",
     "assets/codex/*/spritesheet.webp",
+    "assets/branding/dsh-codex-pet-banner.png",
+    "assets/screenshots/*.png",
     "skills",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "CHANGELOG.zh-CN.md"
   ],
   "dsh": {
     "bundle": {
