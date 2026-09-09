@@ -1,0 +1,3 @@
+- insert:
+    - id: michengai-codex-pet
+      name: '@michengai/dsh-codex-pet'

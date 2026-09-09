@@ -1,0 +1,8 @@
+node_modules/
+lib/
+.preview/
+*.tgz
+assets/codex/source.json
+
+.codegraph/
+*.log
