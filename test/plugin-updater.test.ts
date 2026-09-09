@@ -26,7 +26,10 @@ test("更新入口区分未发布和网络错误，安装固定npm版本且拒�
       get(name) {
         if (name === "desktopProfiles")
           return {
-            current: { name: "pet-test", dir: resolve(".preview/update-test") },
+            current: {
+              name: "pet-test",
+              dir: resolve("test/update-profile-fixture"),
+            },
           };
         if (name === "desktopPnpm")
           return {
@@ -109,7 +112,7 @@ test("更新入口区分未发布和网络错误，安装固定npm版本且拒�
         "@michengai/dsh-codex-pet@999.0.0",
         "--registry=https://registry.npmjs.org/",
       ],
-      dir: resolve(".preview/update-test"),
+      dir: resolve("test/update-profile-fixture"),
     });
     exitCode = 1;
     const failed = request("POST");
@@ -184,7 +187,9 @@ test("桌面更新超时请求取消，确认进程结束前保持互斥，结�
         writeHead(code) {
           status = code;
         },
-        end(value) { lastBody = value ?? ""; },
+        end(value) {
+          lastBody = value ?? "";
+        },
       },
     );
     return status;
@@ -214,4 +219,59 @@ test("版本比较不降级，支持预发布并拒绝无效版本", () => {
   assert.equal(isNewerVersion("1.0.0-rc.2", "1.0.0-rc.10"), true);
   assert.equal(isNewerVersion("1.0.0-rc.10", "1.0.0"), true);
   assert.equal(isNewerVersion("1.0.0", "not-a-version"), false);
+});
+
+test("Web 缺少 Desktop 服务时仍返回状态和 profile，禁用自动更新", async () => {
+  const originalFetch = globalThis.fetch;
+  const previousProfile = process.env.DSH_PROFILE_DIR;
+  const lookups: string[] = [];
+  let handler!: (req: HostRequest, res: HostResponse) => Promise<void>;
+  registerPluginUpdater(
+    {
+      logger: { warn() {} },
+      get(name) {
+        lookups.push(name);
+        return undefined;
+      },
+      webServer: {
+        register(route) {
+          handler = route.handler;
+          return () => {};
+        },
+      },
+    },
+    {
+      endpoint: "/update",
+      packageName: "@michengai/pet-web-fallback-test",
+      manifestUrl: new URL("../package.json", import.meta.url),
+    },
+  );
+  try {
+    process.env.DSH_PROFILE_DIR = resolve("test/web");
+    globalThis.fetch = async () => Response.json({ version: "999.0.0" });
+    let status = 0,
+      body = "";
+    await handler(
+      { method: "GET" },
+      {
+        writeHead(code) {
+          status = code;
+        },
+        end(value) {
+          body = value ?? "";
+        },
+      },
+    );
+    const value = JSON.parse(body);
+    assert.equal(status, 200);
+    assert.equal(value.profileName, "web");
+    assert.equal(value.latestVersion, "999.0.0");
+    assert.equal(value.updateAvailable, true);
+    assert.equal(value.canAutoUpdate, false);
+    assert.deepEqual(lookups, ["desktopProfiles", "desktopPnpm"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (previousProfile === undefined) delete process.env.DSH_PROFILE_DIR;
+    else process.env.DSH_PROFILE_DIR = previousProfile;
+  }
 });

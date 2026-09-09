@@ -187,4 +187,7 @@ npm run build
 
 ## 验证与当前边界
 
-类型检查、25 项自动化测试、构建和受控 Electron 客户端交互验证已通过，覆盖任务通知和创建请求流程。完整图像生成、真实模型任务联动及正常 Desktop 安装仍待端到端验收。
+类型检查、26 项自动化测试、构建和受控 Electron 客户端交互验证已通过，覆盖任务通知和创建请求流程。完整图像生成、真实模型任务联动及正常 Desktop 安装仍待端到端验收。
+
+
+冒烟测试：`npm run smoke` 会先构建插件，再运行会话与 Desktop 两套检查。通过 `DSH_ELECTRON_PATH` 指定 Electron 可执行文件的绝对路径，或通过 `NODE_PATH` 提供可解析的 `electron` 包；Desktop 检查还需要相邻 `dsh-codex-desktop` 仓库的构建产物。只验证客户端时，先构建，再运行 `node scripts/run-smoke.cjs activity`。每次运行使用独立的系统临时目录，Electron 退出后自动清理截图、隔离数据及缓存，失败时同样清理，不依赖或写入 `.preview`、docs。

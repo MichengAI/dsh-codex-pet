@@ -41,6 +41,7 @@
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
+    "smoke": "npm run build && node scripts/run-smoke.cjs",
     "assets:import": "tsx scripts/import-codex.ts"
   },
   "peerDependencies": {

@@ -2,15 +2,17 @@
 const { app, BrowserWindow } = require('electron');
 const { join, resolve } = require('node:path');
 const { pathToFileURL } = require('node:url');
-const { mkdirSync, writeFileSync } = require('node:fs');
+const { writeFileSync } = require('node:fs');
 const assert = require('node:assert/strict');
 const desktop = resolve('../dsh-codex-desktop');
+const smokeRoot = process.env.DSH_PET_SMOKE_DIR;
+if (!smokeRoot) throw new Error('请通过 node scripts/run-smoke.cjs 运行冒烟测试。');
 app.disableHardwareAcceleration();
-app.setPath('userData', resolve('.preview/electron'));
+app.setPath('userData', resolve(smokeRoot, 'electron'));
 app.setAppPath(desktop);
 app.whenReady().then(async () => {
   const { createHost } = await import('../lib/index.js');
-  const host = await createHost({ dataRoot: resolve('.preview/desktop-data') });
+  const host = await createHost({ dataRoot: resolve(smokeRoot, 'desktop-data') });
   const server = require('node:http').createServer((req, res) => void host.handler(req, res));
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const { installPetWindow } = await import(pathToFileURL(join(desktop, 'dist/src/pet-window.js')).href);
@@ -28,8 +30,7 @@ app.whenReady().then(async () => {
     assert.match(status.label, /Codex/); assert.equal(status.background, 'rgba(0, 0, 0, 0)');
     await pet.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
     const image = await pet.webContents.capturePage();
-    mkdirSync('docs/01-当前工作/I001-Codex宠物双端实现', { recursive: true });
-    writeFileSync('docs/01-当前工作/I001-Codex宠物双端实现/06-桌面窗口.png', image.toPNG());
+    writeFileSync(resolve(smokeRoot, 'desktop.png'), image.toPNG());
     await source.webContents.executeJavaScript(`window.dshDesktopPet.sync(${JSON.stringify({ ...state, config: { ...state.config, size: 224 } })})`);
     await pet.webContents.executeJavaScript(`new Promise(resolve=>setTimeout(resolve,100))`);
     const geometry = await pet.webContents.executeJavaScript(`(()=>{const pet=document.querySelector('.dcp-pet-button').getBoundingClientRect();const bubble=document.querySelector('.dcp-tray').getBoundingClientRect();return {petBottom:pet.bottom,bubbleTop:bubble.top,height:innerHeight};})()`);

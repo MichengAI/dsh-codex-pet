@@ -374,7 +374,13 @@ async function runCliInstall(
     child.once("exit", (code) => {
       clearTimeout(timer);
       if (code === 0) resolvePromise();
-      else reject(new UpdateFailure("UPDATE_FAILED", detail.trim() || `更新进程退出码 ${String(code)}`));
+      else
+        reject(
+          new UpdateFailure(
+            "UPDATE_FAILED",
+            detail.trim() || `更新进程退出码 ${String(code)}`,
+          ),
+        );
     });
   });
 }
@@ -414,7 +420,10 @@ async function install(
       }),
     ]);
     if (result.exitCode !== 0)
-      throw new UpdateFailure("UPDATE_FAILED", `更新进程退出码 ${String(result.exitCode)}。`);
+      throw new UpdateFailure(
+        "UPDATE_FAILED",
+        `更新进程退出码 ${String(result.exitCode)}。`,
+      );
   } finally {
     clearTimeout(timer);
   }
@@ -431,7 +440,6 @@ function json(
   });
   response.end(JSON.stringify(value));
 }
-
 
 export function registerPluginUpdater(
   ctx: UpdateContext,
@@ -474,7 +482,10 @@ export function registerPluginUpdater(
         try {
           const before = await status(options, target);
           if (before.notPublished) {
-            json(response, 409, { ...before, ...updateErrorPayload("NOT_PUBLISHED") });
+            json(response, 409, {
+              ...before,
+              ...updateErrorPayload("NOT_PUBLISHED"),
+            });
             return;
           }
           if (before.latestVersion === undefined) {
@@ -520,7 +531,13 @@ export function registerPluginUpdater(
         }
       } catch (error) {
         ctx.logger.warn(`plugin updater failed: ${String(error)}`);
-        json(response, 503, updateErrorPayload(error instanceof UpdateFailure ? error.code : "UPDATE_FAILED"));
+        json(
+          response,
+          503,
+          updateErrorPayload(
+            error instanceof UpdateFailure ? error.code : "UPDATE_FAILED",
+          ),
+        );
       }
     },
   });

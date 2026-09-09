@@ -187,4 +187,6 @@ For CodeGraph, run `codegraph init .` once, `codegraph sync .` after changes, an
 
 ## Validation and current limits
 
-Type checking, 25 automated tests, the build, and controlled Electron client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction, and the normal Desktop installation still need end-to-end acceptance testing.
+Type checking, 26 automated tests, the build, and controlled Electron client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction, and the normal Desktop installation still need end-to-end acceptance testing.
+
+Smoke tests: `npm run smoke` builds the plugin and runs both activity and Desktop checks. Provide Electron through `DSH_ELECTRON_PATH` (the absolute executable path), or make the `electron` package resolvable through `NODE_PATH`. Desktop checks also require the built sibling `dsh-codex-desktop` checkout. To run only client checks, build first, then run `node scripts/run-smoke.cjs activity`. Each run uses a unique system temporary directory; screenshots, profile data, and caches are removed after Electron exits, including on failure. No `.preview` or docs directory is required or written.

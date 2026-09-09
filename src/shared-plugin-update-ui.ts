@@ -137,11 +137,12 @@ async function requestStatus(
           ...signalOption,
         },
   );
-  const value = (await response.json()) as UpdatePayload & { code?: unknown; error?: unknown };
+  const value = (await response.json()) as UpdatePayload & {
+    code?: unknown;
+    error?: unknown;
+  };
   if (!response.ok || !validPayload(value))
-    throw new Error(
-      updateErrorMessage(value.code, language),
-    );
+    throw new Error(updateErrorMessage(value.code, language));
   return value;
 }
 
