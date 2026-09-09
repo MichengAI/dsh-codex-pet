@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.1] - 2026-09-09
 
 - Keep pet rendering inside DSH Web and expose a versioned consumer API for state, notifications, commands, and display handoff. Native window adaptation belongs to the consumer; remove native routes, renderer, bridge calls, and sibling-project tests.
 - Use only the verified DSH CLI for npm updates, with a ten-minute timeout and an installation lock retained until process completion. Return stable localized error codes.

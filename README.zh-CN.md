@@ -78,16 +78,16 @@ DSH Codex Pet 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-har
 
 自动更新命令使用 `--config.minimumReleaseAge=0`，以便立即安装刚发布的版本；该参数仅对本次安装跳过 pnpm 的发布时间等待，不改写全局配置。包名、npm registry 和解析后的版本仍由服务端固定。
 
-本文包含尚未发布的设置、本地化与 npm 更新功能；已发布的 v0.1.0 安装包不含这些新增改动，详见[未发布记录](CHANGELOG.zh-CN.md#未发布)。
+v0.1.1 安装包包含本文描述的设置、本地化、npm 更新器和消费者接口改动，详见[更新日志](CHANGELOG.zh-CN.md)。
 
-当前为 **0.1.0 开发预览版**，通过 [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.0) 分发。下载安装包和克隆源码均需要仓库访问权限，尚未发布 npm 包。以下命令使用 `web` profile，请按实际环境替换。
+当前为 **0.1.1 开发预览版**，通过 [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.1) 分发。尚未发布 npm 包。以下命令使用 `web` profile，请按实际环境替换。
 
-从 Release 下载 `michengai-dsh-codex-pet-0.1.0.tgz`，在下载目录执行 `dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.0.tgz --ignore-scripts`，然后重新加载 DSH。也可按下面的步骤从源码构建。
+从 Release 下载 `michengai-dsh-codex-pet-0.1.1.tgz`，在下载目录执行 `dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts`，然后重新加载 DSH。也可按下面的步骤从源码构建。
 
 ### 让 Agent 帮你安装
 
 ```text
-请从我的本地源码目录将 DSH Codex Pet 安装到 DSH 的 web profile。在源码目录依次执行 npm ci、npm run check、npm test 和 npm pack。检查通过后，执行 dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.0.tgz --ignore-scripts 安装生成的包，再执行 dsh --profile web --dump-config，确认包含 michengai-codex-pet。说明如何重新加载 DSH 并打开宠物设置，保留已有任务和用户数据。
+请从我的本地源码目录将 DSH Codex Pet 安装到 DSH 的 web profile。在源码目录依次执行 npm ci、npm run check、npm test 和 npm pack。检查通过后，执行 dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts 安装生成的包，再执行 dsh --profile web --dump-config，确认包含 michengai-codex-pet。说明如何重新加载 DSH 并打开宠物设置，保留已有任务和用户数据。
 ```
 
 ### 手动构建并安装
@@ -102,7 +102,7 @@ npm ci
 npm run check
 npm test
 npm pack
-dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.0.tgz --ignore-scripts
+dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts
 dsh --profile web --dump-config
 ```
 

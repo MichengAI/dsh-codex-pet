@@ -90,35 +90,61 @@ function Overlay({
     await engine.command(value);
   };
   const [externalDisplay, setExternalDisplay] = useState(false);
-  const actions = useRef({ command, updateConfig: controller.update, openSettings });
+  const actions = useRef({
+    command,
+    updateConfig: controller.update,
+    openSettings,
+  });
   actions.current = { command, updateConfig: controller.update, openSettings };
-  const provider = useRef<ReturnType<typeof createCompanionProvider> | null>(null);
+  const provider = useRef<ReturnType<typeof createCompanionProvider> | null>(
+    null,
+  );
   useEffect(() => {
     const value = createCompanionProvider({
-      command: command => actions.current.command(command),
-      updateConfig: config => actions.current.updateConfig(config),
+      command: (command) => actions.current.command(command),
+      updateConfig: (config) => actions.current.updateConfig(config),
       openSettings: () => actions.current.openSettings(),
       externalDisplay: setExternalDisplay,
     });
-    provider.current = value; window.dshPet = value.api;
-    window.dispatchEvent(new Event('dsh-pet-ready'));
-    return () => { value.dispose(); provider.current = null; if (window.dshPet === value.api) delete window.dshPet; window.dispatchEvent(new Event('dsh-pet-disposed')); };
+    provider.current = value;
+    window.dshPet = value.api;
+    window.dispatchEvent(new Event("dsh-pet-ready"));
+    return () => {
+      value.dispose();
+      provider.current = null;
+      if (window.dshPet === value.api) delete window.dshPet;
+      window.dispatchEvent(new Event("dsh-pet-disposed"));
+    };
   }, []);
   useEffect(() => {
     const library = controller.library;
-    provider.current?.publish(library ? { pet: library.pets.find(pet => pet.id === library.config.selected) ?? null, config: library.config, language: controller.language, notifications: state } : null);
+    provider.current?.publish(
+      library
+        ? {
+            pet:
+              library.pets.find((pet) => pet.id === library.config.selected) ??
+              null,
+            config: library.config,
+            language: controller.language,
+            notifications: state,
+          }
+        : null,
+    );
   }, [controller.library, controller.language, state]);
   return (
     <>
-      {!externalDisplay && <Companion
-        controller={controller}
-        activity={state.activity}
-        tray={{ state, command }}
-        open={() => {
-          if (state.activity.sessionId) sessions.open(state.activity.sessionId);
-        }}
-        settings={openSettings}
-      />}
+      {!externalDisplay && (
+        <Companion
+          controller={controller}
+          activity={state.activity}
+          tray={{ state, command }}
+          open={() => {
+            if (state.activity.sessionId)
+              sessions.open(state.activity.sessionId);
+          }}
+          settings={openSettings}
+        />
+      )}
       <dialog
         ref={settingsDialog}
         className="dcp dcp-dialog"

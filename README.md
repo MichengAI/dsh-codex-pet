@@ -78,16 +78,16 @@ Compatibility: the host must provide the `locale` client service and support fun
 
 Automatic updates use `--config.minimumReleaseAge=0` for that install command so a newly published version can be installed immediately. This bypasses pnpm’s release-age delay for the command without changing the global configuration. The package name, npm registry, and resolved version remain fixed by the server.
 
-The settings, localization, and npm updater changes described here include unreleased source changes. The published v0.1.0 archive does not include them; see [Unreleased](CHANGELOG.md#unreleased).
+Version 0.1.1 includes the settings, localization, npm updater, and consumer API changes described here; see the [changelog](CHANGELOG.md).
 
-This is a **0.1.0 development preview**, distributed through [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.0). Repository access is required to download the archive or clone the source. No npm package has been published. Replace `web` below with your actual DSH profile.
+This is a **0.1.1 development preview**, distributed through [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.1). No npm package has been published. Replace `web` below with your actual DSH profile.
 
-Download `michengai-dsh-codex-pet-0.1.0.tgz` from the release and run `dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.0.tgz --ignore-scripts` from its download directory, then reload DSH. The source build instructions follow.
+Download `michengai-dsh-codex-pet-0.1.1.tgz` from the release and run `dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts` from its download directory, then reload DSH. The source build instructions follow.
 
 ### Ask an agent to install it
 
 ```text
-Install DSH Codex Pet from my local source checkout into the DSH web profile. In that checkout, run npm ci, npm run check, npm test, and npm pack. If all checks pass, install the generated michengai-dsh-codex-pet-0.1.0.tgz using dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.0.tgz --ignore-scripts. Run dsh --profile web --dump-config and confirm michengai-codex-pet is present. Explain how to reload DSH and open pet settings. Preserve existing tasks and user data.
+Install DSH Codex Pet from my local source checkout into the DSH web profile. In that checkout, run npm ci, npm run check, npm test, and npm pack. If all checks pass, install the generated michengai-dsh-codex-pet-0.1.1.tgz using dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts. Run dsh --profile web --dump-config and confirm michengai-codex-pet is present. Explain how to reload DSH and open pet settings. Preserve existing tasks and user data.
 ```
 
 ### Build and install manually
@@ -102,7 +102,7 @@ npm ci
 npm run check
 npm test
 npm pack
-dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.0.tgz --ignore-scripts
+dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.1.tgz --ignore-scripts
 dsh --profile web --dump-config
 ```
 
@@ -187,7 +187,6 @@ For CodeGraph, run `codegraph init .` once, `codegraph sync .` after changes, an
 ## Validation and current limits
 
 Type checking, 25 automated tests, the build, and controlled browser client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction and real npm updates still need end-to-end acceptance testing.
-
 
 ## Browser smoke test
 

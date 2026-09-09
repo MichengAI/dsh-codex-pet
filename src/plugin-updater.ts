@@ -292,32 +292,70 @@ async function status(
     latestCheckFailed: latest === undefined,
     updateAvailable: latest != null && isNewerVersion(current, latest),
     profileName: target.profileName,
-    canAutoUpdate:
-      target.cliEntry !== undefined,
+    canAutoUpdate: target.cliEntry !== undefined,
   };
 }
 
-async function install(target: Runtime, packageSpec: string, track: (done: Promise<unknown>) => void): Promise<void> {
+async function install(
+  target: Runtime,
+  packageSpec: string,
+  track: (done: Promise<unknown>) => void,
+): Promise<void> {
   if (!target.cliEntry) throw new UpdateFailure("AUTO_UPDATE_UNAVAILABLE");
-  const child = spawn(process.execPath, [target.cliEntry, 'plugin', '--profile', target.profileName, 'add', '--config.minimumReleaseAge=0', packageSpec, '--registry=https://registry.npmjs.org/'], {
-    cwd: target.profileDir, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NO_COLOR: '1' },
+  const child = spawn(
+    process.execPath,
+    [
+      target.cliEntry,
+      "plugin",
+      "--profile",
+      target.profileName,
+      "add",
+      "--config.minimumReleaseAge=0",
+      packageSpec,
+      "--registry=https://registry.npmjs.org/",
+    ],
+    {
+      cwd: target.profileDir,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, NO_COLOR: "1" },
+    },
+  );
+  let detail = "";
+  child.stdout.on("data", (chunk) => {
+    detail = (detail + String(chunk)).slice(-4000);
   });
-  let detail = '';
-  child.stdout.on('data', chunk => { detail = (detail + String(chunk)).slice(-4000); });
-  child.stderr.on('data', chunk => { detail = (detail + String(chunk)).slice(-4000); });
+  child.stderr.on("data", (chunk) => {
+    detail = (detail + String(chunk)).slice(-4000);
+  });
   const done = new Promise<void>((resolve, reject) => {
-    child.once('error', reject);
-    child.once('close', code => code === 0 ? resolve() : reject(new UpdateFailure('UPDATE_FAILED', detail.trim() || `更新进程退出码 ${code}`)));
+    child.once("error", reject);
+    child.once("close", (code) =>
+      code === 0
+        ? resolve()
+        : reject(
+            new UpdateFailure(
+              "UPDATE_FAILED",
+              detail.trim() || `更新进程退出码 ${code}`,
+            ),
+          ),
+    );
   });
   track(done);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    await Promise.race([done, new Promise<never>((_, reject) => {
-      timer = setTimeout(() => {
-        child.kill(); reject(new UpdateFailure('UPDATE_TIMEOUT'));
-      }, 10 * 60_000);
-    })]);
-  } finally { clearTimeout(timer); }
+    await Promise.race([
+      done,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          child.kill();
+          reject(new UpdateFailure("UPDATE_TIMEOUT"));
+        }, 10 * 60_000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function json(

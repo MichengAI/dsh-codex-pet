@@ -424,7 +424,10 @@ export function FloatingPet({
   const place = useCallback(() => {
     const width = Math.max(0, innerWidth - config.size - 16),
       height = Math.max(0, innerHeight - petHeight - 32);
-    setPosition({ left: config.position ? config.position.x * width : width, top: config.position ? config.position.y * height : height });
+    setPosition({
+      left: config.position ? config.position.x * width : width,
+      top: config.position ? config.position.y * height : height,
+    });
   }, [config.size, config.position, petHeight]);
   useEffect(() => {
     place();
@@ -535,9 +538,7 @@ export function FloatingPet({
             ...(position.top < 84
               ? { top: "calc(100% + 28px)", bottom: "auto" }
               : {}),
-            ...(position.left < 240
-              ? { left: 0, right: "auto" }
-              : {}),
+            ...(position.left < 240 ? { left: 0, right: "auto" } : {}),
           }}
           onClick={open}
           title={t("打开关联任务")}
@@ -585,22 +586,22 @@ export function FloatingPet({
           if (!point.moved) return;
           setLook(null);
           setAction(dx < 0 ? "running-left" : "running-right");
-            setPosition({
-              left: Math.max(
-                0,
-                Math.min(
-                  innerWidth - config.size - 16,
-                  point.left + event.screenX - point.startX,
-                ),
+          setPosition({
+            left: Math.max(
+              0,
+              Math.min(
+                innerWidth - config.size - 16,
+                point.left + event.screenX - point.startX,
               ),
-              top: Math.max(
-                0,
-                Math.min(
-                  innerHeight - petHeight - 32,
-                  point.top + event.screenY - point.startY,
-                ),
+            ),
+            top: Math.max(
+              0,
+              Math.min(
+                innerHeight - petHeight - 32,
+                point.top + event.screenY - point.startY,
               ),
-            });
+            ),
+          });
           point.x = event.screenX;
           point.y = event.screenY;
         }}
@@ -647,9 +648,7 @@ export function FloatingPet({
             ...(position.top < 220
               ? { top: "calc(100% + 28px)", bottom: "auto" }
               : {}),
-            ...(position.left < 160
-              ? { left: 0, right: "auto" }
-              : {}),
+            ...(position.left < 160 ? { left: 0, right: "auto" } : {}),
           }}
           role="menu"
           onKeyDown={(event) => {
