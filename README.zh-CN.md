@@ -75,6 +75,8 @@ DSH Codex Pet 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-har
 
 ## 安装
 
+本文包含尚未发布的设置、本地化与 npm 更新功能；已发布的 v0.1.0 安装包不含这些新增改动，详见[未发布记录](CHANGELOG.zh-CN.md#未发布)。
+
 当前为 **0.1.0 开发预览版**，通过 [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.0) 分发。下载安装包和克隆源码均需要仓库访问权限，尚未发布 npm 包。以下命令使用 `web` profile，请按实际环境替换。
 
 从 Release 下载 `michengai-dsh-codex-pet-0.1.0.tgz`，在下载目录执行 `dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.0.tgz --ignore-scripts`，然后重新加载 DSH。也可按下面的步骤从源码构建。
@@ -181,4 +183,4 @@ npm run build
 
 ## 验证与当前边界
 
-类型检查、21 项自动化测试、构建和受控 Electron 客户端交互验证已通过，覆盖任务通知和创建请求流程。完整图像生成、真实模型任务联动及正常 Desktop 安装仍待端到端验收。
+类型检查、23 项自动化测试、构建和受控 Electron 客户端交互验证已通过，覆盖任务通知和创建请求流程。完整图像生成、真实模型任务联动及正常 Desktop 安装仍待端到端验收。

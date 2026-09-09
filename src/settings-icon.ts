@@ -3,7 +3,7 @@ const PAW = '<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle
 export function observePetSettingsIcon(): () => void {
   const apply = () => {
     for (const button of document.querySelectorAll('.dcu-settings-link')) {
-      if (button.textContent?.trim() !== '宠物') continue;
+      if (!['宠物', 'Pets'].includes(button.textContent?.trim() ?? '')) continue;
       const svg = button.querySelector('svg');
       if (!svg || svg.getAttribute('data-pet-icon') === 'codex-paw') continue;
       svg.setAttribute('data-pet-icon', 'codex-paw');

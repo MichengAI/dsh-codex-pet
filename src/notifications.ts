@@ -39,6 +39,7 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
   const answered = new Set<string>();
   let state: NotificationState = { items: [], activity: IDLE, hidden: 0 }, latestFirst = false;
   let publishing = false;
+  let lastPublished = '';
   const publish = () => {
     if (publishing) return;
     publishing = true;
@@ -89,7 +90,9 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         items.push({ ...activity, id, token, updatedAt: record.updatedAt, request: request && typeof request.key === 'string' ? { key: request.key, kind: String(request.kind), toolName: request.toolName, reason: request.reason, questions: request.questions } : undefined });
       }
       items.sort((a, b) => (latestFirst ? 0 : priority[a.pose] - priority[b.pose]) || b.updatedAt - a.updatedAt || a.id.localeCompare(b.id));
-      state = { items, hidden, activity: items[0] ?? IDLE }; notify(state);
+      state = { items, hidden, activity: items[0] ?? IDLE };
+      const signature = JSON.stringify(state);
+      if (signature !== lastPublished) { lastPublished = signature; notify(state); }
     } finally { publishing = false; }
   };
   const offList = sessions.list.subscribe(publish), offPending = pending.subscribe(publish);

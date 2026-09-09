@@ -1,5 +1,6 @@
 /** 直接复用同系列插件更新弹窗，仅补充宠物的未发布状态与嵌入容器适配。 */
 export type PluginUpdateUiOptions = {
+  readonly language: string
   readonly root?: HTMLElement
   readonly endpoint: string
   readonly packageName: string
@@ -47,10 +48,8 @@ const EN = {
 
 type UpdateStrings = { [Key in keyof typeof ZH]: string }
 
-function strings(): UpdateStrings {
-  const lang = document.documentElement.lang.toLowerCase()
-  const settings = document.querySelector('[role="dialog"]')?.textContent ?? ''
-  return lang.startsWith('en') || (settings.includes('Settings') && !settings.includes('设置')) ? EN : ZH
+function strings(language: string): UpdateStrings {
+  return /^zh(?:-|$)/i.test(language) ? ZH : EN
 }
 
 function ensureStyle(): void {
@@ -70,13 +69,13 @@ function validPayload(value: unknown): value is UpdatePayload {
     && (item.latestVersion === undefined || typeof item.latestVersion === 'string')
 }
 
-async function requestStatus(endpoint: string, method: 'GET' | 'POST', signal?: AbortSignal): Promise<UpdatePayload> {
+async function requestStatus(endpoint: string, method: 'GET' | 'POST', signal?: AbortSignal, language = 'zh'): Promise<UpdatePayload> {
   const signalOption = signal === undefined ? {} : { signal }
   const response = await fetch(endpoint, method === 'GET' ? { cache: 'no-store', ...signalOption } : {
     method: 'POST', headers: { 'content-type': 'application/json', [UPDATE_HEADER]: '1' }, body: '{}', ...signalOption,
   })
   const value = await response.json() as UpdatePayload & { error?: unknown }
-  if (!response.ok || !validPayload(value)) throw new Error(typeof value.error === 'string' ? value.error : strings().failed)
+  if (!response.ok || !validPayload(value)) throw new Error(typeof value.error === 'string' ? value.error : strings(language).failed)
   return value
 }
 
@@ -133,13 +132,13 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
     button.type = 'button'
     button.className = 'mpi-check'
     button.dataset.mpiCheck = options.packageName
-    setButtonContent(button, strings().check, 'refresh')
+    setButtonContent(button, strings(options.language).check, 'refresh')
     button.addEventListener('click', openDialog)
     links.append(button)
   }
 
   const load = async (): Promise<UpdatePayload> => {
-    payload = await requestStatus(options.endpoint, 'GET', controller.signal)
+    payload = await requestStatus(options.endpoint, 'GET', controller.signal, options.language)
     applyControls()
     return payload
   }
@@ -148,7 +147,7 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
 
   function openDialog(): void {
     closeDialog()
-    const text = strings()
+    const text = strings(options.language)
     overlay = document.createElement('div')
     overlay.className = 'mpi-overlay'
     const dialog = document.createElement('section')
@@ -156,7 +155,7 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
     dialog.setAttribute('role', 'dialog')
     dialog.setAttribute('aria-modal', 'true')
     dialog.innerHTML = `<header class="mpi-head"><h2></h2><button type="button" class="mpi-dialog-close" data-action="close"></button></header><p class="mpi-intro"></p><dl class="mpi-meta"><dt></dt><dd data-role="current"></dd><dt></dt><dd data-role="latest"></dd><dt></dt><dd data-role="profile"></dd></dl><div class="mpi-status" role="status"></div><div class="mpi-progress" hidden></div><section class="mpi-manual"><h3></h3><p></p><div class="mpi-command"><code></code><button type="button" class="mpi-action" data-action="copy"></button></div></section><footer class="mpi-actions"><div class="mpi-actions-group"><button type="button" class="mpi-action" data-action="check"></button><button type="button" class="mpi-action mpi-primary" data-action="update"></button></div></footer>`
-    const name = document.documentElement.lang.toLowerCase().startsWith('en') ? options.enName : options.zhName
+    const name = /^zh(?:-|$)/i.test(options.language) ? options.zhName : options.enName
     dialog.querySelector('h2')!.textContent = `${name} ${text.update}`
     dialog.querySelector<HTMLElement>('.mpi-intro')!.textContent = text.intro
     const terms = dialog.querySelectorAll('dt')
@@ -217,7 +216,7 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
       if (busy) return
       setBusy(true); setButtonLabel(update, text.updating); setMessage(text.updating)
       try {
-        payload = await requestStatus(options.endpoint, 'POST', controller.signal)
+        payload = await requestStatus(options.endpoint, 'POST', controller.signal, options.language)
         if (payload.updatedVersion) payload.updateAvailable = false
         applyControls(); render()
         setMessage(payload.autoReload === true ? text.restarting : text.restart, 'success')

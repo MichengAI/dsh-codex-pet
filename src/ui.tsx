@@ -1,3 +1,5 @@
+import { createLibraryStore } from './library-store.ts';
+import { translator } from './ui-locales.ts';
 import { PluginUpdateHeader } from './plugin-update-ui.tsx';
 import { localizePet, type PetLocaleStore } from './pet-locales.ts';
 import { NotificationTray, trayStyles, polishedTrayStyles, type TrayProps } from './notification-tray.tsx';
@@ -10,27 +12,14 @@ export async function request(path: string, data?: unknown): Promise<Library> {
   const result = await response.json();
   if (!response.ok) throw new Error(result.error ?? '宠物服务暂不可用'); return result as Library;
 }
-export interface PetController { library: Library | null; error: string; update(value: Partial<Config>): Promise<void>; refresh(): Promise<void>; create(description: string): Promise<void>; folder(): Promise<void> }
-/** 各入口独立订阅后端；只在成功写入后更新已确认配置。 */
+export interface PetController { library: Library | null; language: string; error: string; update(value: Partial<Config>): Promise<void>; refresh(): Promise<void>; folder(): Promise<void> }
+const libraryStore = createLibraryStore(request);
+/** 设置页与浮窗共享后端状态，显示文案跟随当前语言。 */
 export function usePetController(locale?: PetLocaleStore): PetController {
   const language = useSyncExternalStore(listener => locale ? locale.subscribe(listener) : () => {}, () => locale?.getSnapshot().active ?? 'zh');
-  const [library, setLibrary] = useState<Library | null>(null), [error, setError] = useState('');
-  const mounted = useRef(true); const sequence = useRef(0);
-  const run = useCallback(async (path: string, data?: unknown) => {
-    const seq = ++sequence.current;
-    try { const next = await request(path, data); if (mounted.current && seq === sequence.current) { setLibrary(next); setError(''); } }
-    catch (err) { if (mounted.current) setError(err instanceof Error ? err.message : '操作失败'); throw err; }
-  }, []);
-  useEffect(() => {
-    mounted.current = true;
-    const read = () => { if (!document.hidden) void run('state').catch(() => {}); };
-    read(); const timer = setInterval(read, 2500); window.addEventListener('focus', read);
-    const changed = () => read(); window.addEventListener('dcp-changed', changed);
-    return () => { mounted.current = false; clearInterval(timer); window.removeEventListener('focus', read); window.removeEventListener('dcp-changed', changed); };
-  }, [run]);
-  const change = async (path: string, data: unknown) => { await run(path, data); window.dispatchEvent(new Event('dcp-changed')); };
+  const { library, error } = useSyncExternalStore(libraryStore.subscribe, libraryStore.getSnapshot);
   const localizedLibrary = useMemo(() => library ? { ...library, pets: library.pets.map(pet => localizePet(pet, language)) } : null, [library, language]);
-  return { library: localizedLibrary, error, update: value => change('config', value), refresh: () => change('refresh', {}), create: description => change('create', { description }), folder: () => run('open-folder', {}) };
+  return { library: localizedLibrary, language, error, update: value => libraryStore.run('config', value), refresh: () => libraryStore.run('refresh', {}), folder: () => libraryStore.run('open-folder', {}) };
 }
 export function Sprite({ pet, size, pose = 'idle', animate = false, look = null }: { pet: Pet; size: number; pose?: Pose; animate?: boolean; look?: { row: number; col: number } | null }) {
   const element = useRef<HTMLDivElement>(null);
@@ -51,6 +40,7 @@ export function Sprite({ pet, size, pose = 'idle', animate = false, look = null 
   return <div ref={element} className="dcp-sprite" style={{ width: size, height: size * 208 / 192, backgroundImage: `url("${pet.url}")`, backgroundSize: `${size * 8}px ${size * 208 / 192 * (pet.version === 2 ? 11 : 9)}px` }} />;
 }
 export function Settings({ controller, create, locale }: { locale?: PetLocaleStore; controller: PetController; create?(description: string): Promise<void> }) {
+  const t = translator(controller.language);
   const { library, error } = controller; const [busy, setBusy] = useState(false), [showCreate, setShowCreate] = useState(false), [description, setDescription] = useState('');
   const [size, setSize] = useState(library?.config.size ?? 120); const dialog = useRef<HTMLDialogElement>(null);
   const [creationError, setCreationError] = useState('');
@@ -59,37 +49,38 @@ export function Settings({ controller, create, locale }: { locale?: PetLocaleSto
   const act = async (action: () => Promise<void>) => { setBusy(true); try { await action(); } catch { /* 错误由控制器统一展示。 */ } finally { setBusy(false); } };
   return <div className="dcp dcp-page"><style>{styles}</style>
     <PluginUpdateHeader locale={locale} />
-    <header className="dcp-head"><div><h2>选择宠物</h2><p className="dcp-sub">宠物会管理对话串，并突出显示需要关注的事项</p></div>
-      <div className="dcp-actions"><button className="dcp-icon" title="刷新宠物库" aria-label="刷新宠物库" disabled={busy} onClick={() => void act(controller.refresh)}><ReloadIcon /></button>
-        <button className="dcp-button" disabled={!library || busy} onClick={() => setShowCreate(true)}>创建</button>
-        <button className="dcp-button" disabled={!library || busy} onClick={() => void act(() => controller.update({ visible: !library?.config.visible }))}>{library?.config.visible === false ? '显示宠物' : '收起宠物'}</button></div>
+    <header className="dcp-head"><div><h2>{t('选择宠物')}</h2><p className="dcp-sub">{t('宠物会管理对话串，并突出显示需要关注的事项')}</p></div>
+      <div className="dcp-actions"><button className="dcp-icon" title={t('刷新宠物库')} aria-label={t('刷新宠物库')} disabled={busy} onClick={() => void act(controller.refresh)}><ReloadIcon /></button>
+        <button className="dcp-button" disabled={!library || busy} onClick={() => setShowCreate(true)}>{t('创建')}</button>
+        <button className="dcp-button" disabled={!library || busy} onClick={() => void act(() => controller.update({ visible: !library?.config.visible }))}>{library?.config.visible === false ? t('显示宠物') : t('收起宠物')}</button></div>
     </header>
-    {error && <div role="alert" className="dcp-error">{error}</div>}
+    {error && <div role="alert" className="dcp-error">{t(error)}</div>}
     <div className="dcp-card">
-      {!library && <div className="dcp-empty" role="status">正在加载宠物…</div>}
+      {!library && <div className="dcp-empty" role="status">{t('正在加载宠物…')}</div>}
       {library?.pets.map(pet => <div className="dcp-row" key={pet.id}>
         <div className="dcp-preview"><Sprite pet={pet} size={44} /></div><div className="dcp-info"><div className="dcp-name">{pet.name}</div><div className="dcp-description">{pet.description}</div></div>
-        <button className="dcp-button" aria-label={library.config.selected === pet.id ? `已选择 ${pet.name}` : `选择 ${pet.name}`} aria-pressed={library.config.selected === pet.id} disabled={busy || library.config.selected === pet.id} onClick={() => void act(() => controller.update({ selected: pet.id }))}>{library.config.selected === pet.id ? '已选' : '选择'}</button>
+        <button className="dcp-button" aria-label={library.config.selected === pet.id ? `${t('已选择')} ${pet.name}` : `${t('选择')} ${pet.name}`} aria-pressed={library.config.selected === pet.id} disabled={busy || library.config.selected === pet.id} onClick={() => void act(() => controller.update({ selected: pet.id }))}>{library.config.selected === pet.id ? t('已选') : t('选择')}</button>
       </div>)}
-      {library?.pets.length === 0 && <div className="dcp-empty">尚未加载宠物。内置资源缺失，请重新安装完整插件。</div>}
-      <div className="dcp-folder"><div><div>DSH 自定义宠物</div><div className="dcp-path">{library?.customPath ?? '正在读取目录…'}</div></div><button className="dcp-folder-button" disabled={!library || busy} onClick={() => void act(controller.folder)}>打开文件夹 <ArrowTopRightIcon /></button></div>
+      {library?.pets.length === 0 && <div className="dcp-empty">{t('尚未加载宠物。内置资源缺失，请重新安装完整插件。')}</div>}
+      <div className="dcp-folder"><div><div>{t('DSH 自定义宠物')}</div><div className="dcp-path">{library?.customPath ?? t('正在读取目录…')}</div></div><button className="dcp-folder-button" disabled={!library || busy} onClick={() => void act(controller.folder)}>{t('打开文件夹')} <ArrowTopRightIcon /></button></div>
     </div>
-    {!!library?.warnings.length && <details className="dcp-note"><summary>有 {library.warnings.length} 项宠物资源需要检查</summary>{library.warnings.map(message => <p key={message}>{message}</p>)}</details>}
-    <section className="dcp-appearance"><h2>外观</h2><div className="dcp-card dcp-size"><label htmlFor="dcp-size">宠物大小<small>调整宠物大小</small></label><input id="dcp-size" aria-label="宠物大小" type="range" min="64" max="224" step="4" value={size} disabled={!library || busy} onChange={event => setSize(Number(event.target.value))} onPointerUp={() => void act(() => controller.update({ size }))} onKeyUp={() => void act(() => controller.update({ size }))} /></div></section>
+    {!!library?.warnings.length && <details className="dcp-note"><summary>{t('有 {count} 项宠物资源需要检查', { count: library.warnings.length })}</summary>{library.warnings.map(message => <p key={message}>{message}</p>)}</details>}
+    <section className="dcp-appearance"><h2>{t('外观')}</h2><div className="dcp-card dcp-size"><label htmlFor="dcp-size">{t('宠物大小')}<small>{t('调整宠物大小')}</small></label><input id="dcp-size" aria-label={t('宠物大小')} type="range" min="64" max="224" step="4" value={size} disabled={!library || busy} onChange={event => setSize(Number(event.target.value))} onPointerUp={() => void act(() => controller.update({ size }))} onKeyUp={() => void act(() => controller.update({ size }))} /></div></section>
     {library?.creation && <div className="dcp-note dcp-creation" role="status">{library.creation.message}</div>}
     <dialog ref={dialog} className="dcp-dialog" onCancel={() => setShowCreate(false)} onClose={() => setShowCreate(false)}>
-      <form onSubmit={event => { event.preventDefault(); if (!create) return; setBusy(true); setCreationError(''); void create(description).then(() => { setShowCreate(false); setDescription(''); }).catch(error => setCreationError(error instanceof Error ? error.message : '创建失败')).finally(() => setBusy(false)); }}>
-        <h2>创建宠物</h2>
-        <textarea autoFocus aria-label="宠物描述" placeholder="例如：一只戴着圆眼镜的小海獭，安静、好奇，毛绒玩具风格…" maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} required />
-        <p className="dcp-note">在 DSH 新会话中使用随插件提供的 Skill 创建，成品保存到 DSH 宠物目录。需要当前会话具备图像生成工具。</p>
-        {!create && <p role="status">请在 DSH 主界面的宠物设置中发起创建；独立预览不提供会话服务。</p>}
-        {creationError && <p role="alert" className="dcp-error">{creationError}</p>}
-        <footer><button type="button" className="dcp-button" onClick={() => setShowCreate(false)}>取消</button><button type="submit" className="dcp-button dcp-primary" disabled={busy || !description.trim() || !library?.skillAvailable || !create}>在 DSH 中创建</button></footer>
+      <form onSubmit={event => { event.preventDefault(); if (!create) return; setBusy(true); setCreationError(''); void create(description).then(() => { setShowCreate(false); setDescription(''); }).catch(error => setCreationError(error instanceof Error ? error.message : t('创建失败'))).finally(() => setBusy(false)); }}>
+        <h2>{t('创建宠物')}</h2>
+        <textarea autoFocus aria-label={t('宠物描述')} placeholder={t('例如：一只戴着圆眼镜的小海獭，安静、好奇，毛绒玩具风格…')} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} required />
+        <p className="dcp-note">{t('在 DSH 新会话中使用随插件提供的 Skill 创建，成品保存到 DSH 宠物目录。需要当前会话具备图像生成工具。')}</p>
+        {!create && <p role="status">{t('请在 DSH 主界面的宠物设置中发起创建；独立预览不提供会话服务。')}</p>}
+        {creationError && <p role="alert" className="dcp-error">{t(creationError)}</p>}
+        <footer><button type="button" className="dcp-button" onClick={() => setShowCreate(false)}>{t('取消')}</button><button type="submit" className="dcp-button dcp-primary" disabled={busy || !description.trim() || !library?.skillAvailable || !create}>{t('在 DSH 中创建')}</button></footer>
       </form>
     </dialog>
   </div>;
 }
 export function FloatingPet({ pet, config, activity, update, open, settings, tray, native = false }: { pet: Pet; config: Config; activity: Activity; update(value: Partial<Config>): Promise<void>; open(): void; settings(): void; tray?: TrayProps; native?: boolean }) {
+  const t = translator(pet.displayLocale ?? 'zh');
   const root = useRef<HTMLDivElement>(null); const drag = useRef<{ x: number; y: number; startX: number; startY: number; left: number; top: number; moved: boolean } | null>(null);
   const [position, setPosition] = useState({ left: 0, top: 0 }), [action, setAction] = useState<Pose | null>(null), [look, setLook] = useState<{ row: number; col: number } | null>(null), [menu, setMenu] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -117,9 +108,9 @@ export function FloatingPet({ pet, config, activity, update, open, settings, tra
   const persistPosition = () => update({ position: { x: position.left / Math.max(1, innerWidth - config.size - 16), y: position.top / Math.max(1, innerHeight - petHeight - 32) } }).catch(() => {});
   return <div className="dcp dcp-floating" ref={root} style={{ left: position.left, top: position.top, width: config.size, height: petHeight }}>
     <style>{styles}</style>
-    {tray && !menu && <div style={{ ['--tray-height' as string]: `${Math.max(100, Math.min(420, position.top < innerHeight / 2 ? innerHeight - position.top - petHeight - 44 : position.top - 24))}px`, ['--tray-top' as string]: position.top < innerHeight / 2 ? 'calc(100% + 28px)' : 'auto', ['--tray-bottom' as string]: position.top < innerHeight / 2 ? 'auto' : 'calc(100% + 12px)', ['--tray-right' as string]: position.left < 296 - config.size ? 'auto' : '0', ['--tray-left' as string]: position.left < 296 - config.size ? '0' : 'auto' }}><style>{trayStyles + polishedTrayStyles}</style><NotificationTray {...tray} /></div>}
-    {!tray && activity.text && !menu && <button className="dcp-bubble" style={{ ...(!native && position.top < 84 ? { top: 'calc(100% + 28px)', bottom: 'auto' } : {}), ...(!native && position.left < 240 ? { left: 0, right: 'auto' } : {}) }} onClick={open} title="打开关联任务"><strong>{activity.title}</strong><span>{activity.text}</span></button>}
-    <button className="dcp-pet-button" aria-label={`${pet.name}，${activity.text || '空闲'}；拖动移动，双击跳跃，右键菜单`} onContextMenu={event => { event.preventDefault(); setMenu(value => !value); }}
+    {tray && !menu && <div style={{ ['--tray-height' as string]: `${Math.max(100, Math.min(420, position.top < innerHeight / 2 ? innerHeight - position.top - petHeight - 44 : position.top - 24))}px`, ['--tray-top' as string]: position.top < innerHeight / 2 ? 'calc(100% + 28px)' : 'auto', ['--tray-bottom' as string]: position.top < innerHeight / 2 ? 'auto' : 'calc(100% + 12px)', ['--tray-right' as string]: position.left < 296 - config.size ? 'auto' : '0', ['--tray-left' as string]: position.left < 296 - config.size ? '0' : 'auto' }}><style>{trayStyles + polishedTrayStyles}</style><NotificationTray {...tray} language={pet.displayLocale} /></div>}
+    {!tray && activity.text && !menu && <button className="dcp-bubble" style={{ ...(!native && position.top < 84 ? { top: 'calc(100% + 28px)', bottom: 'auto' } : {}), ...(!native && position.left < 240 ? { left: 0, right: 'auto' } : {}) }} onClick={open} title={t('打开关联任务')}><strong>{activity.title}</strong><span>{t(activity.text)}</span></button>}
+    <button className="dcp-pet-button" aria-label={t('{name}，{status}；拖动移动，双击跳跃，右键菜单', { name: pet.name, status: t(activity.text || '空闲') })} onContextMenu={event => { event.preventDefault(); setMenu(value => !value); }}
       onPointerDown={event => { if (event.button !== 0) return; event.currentTarget.setPointerCapture(event.pointerId); drag.current = { x: event.screenX, y: event.screenY, startX: event.screenX, startY: event.screenY, left: position.left, top: position.top, moved: false }; setMenu(false); }}
       onPointerMove={event => {
         const point = drag.current; if (!point) return;
@@ -138,16 +129,18 @@ export function FloatingPet({ pet, config, activity, update, open, settings, tra
       <Sprite pet={pet} size={config.size} pose={action ?? activity.pose} animate look={look} />
     </button>
     {menu && <div className="dcp-menu" style={{ ...(!native && position.top < 220 ? { top: 'calc(100% + 28px)', bottom: 'auto' } : {}), ...(!native && position.left < 160 ? { left: 0, right: 'auto' } : {}) }} role="menu" onKeyDown={event => { if (event.key === 'Escape') setMenu(false); }}>
-      <button role="menuitem" onClick={() => { perform('waving'); setMenu(false); }}>打个招呼</button><button role="menuitem" onClick={() => { perform('jumping'); setMenu(false); }}>跳一跳</button>
-      {!!tray?.state.hidden && <button role="menuitem" onClick={() => { setMenuError(''); void tray.command({ type: 'restore' }).then(() => setMenu(false)).catch(error => setMenuError(error instanceof Error ? error.message : '恢复失败')); }}>恢复已关闭通知</button>}
-      {menuError && <p role="alert">{menuError}</p>}
-      {activity.sessionId && <button role="menuitem" onClick={() => { open(); setMenu(false); }}>查看任务</button>}<hr /><button role="menuitem" onClick={() => { settings(); setMenu(false); }}>宠物设置</button><button role="menuitem" onClick={() => { if (native) window.petWindow?.action('hide'); else void update({ visible: false }).catch(() => {}); }}>收起宠物</button>
+      <button role="menuitem" onClick={() => { perform('waving'); setMenu(false); }}>{t('打个招呼')}</button><button role="menuitem" onClick={() => { perform('jumping'); setMenu(false); }}>{t('跳一跳')}</button>
+      {!!tray?.state.hidden && <button role="menuitem" onClick={() => { setMenuError(''); void tray.command({ type: 'restore' }).then(() => setMenu(false)).catch(error => setMenuError(error instanceof Error ? error.message : t('恢复失败'))); }}>{t('恢复已关闭通知')}</button>}
+      {menuError && <p role="alert">{t(menuError)}</p>}
+      {activity.sessionId && <button role="menuitem" onClick={() => { open(); setMenu(false); }}>{t('查看任务')}</button>}<hr /><button role="menuitem" onClick={() => { settings(); setMenu(false); }}>{t('宠物设置')}</button><button role="menuitem" onClick={() => { if (native) window.petWindow?.action('hide'); else void update({ visible: false }).catch(() => {}); }}>{t('收起宠物')}</button>
     </div>}
   </div>;
 }
 export function Companion({ controller, activity = IDLE, open = () => {}, settings = () => {}, tray }: { controller: PetController; activity?: Activity; tray?: TrayProps; open?(): void; settings?(): void }) {
+  const t = translator(controller.language);
   const library = controller.library;
-  const pet = library?.pets.find(item => item.id === library.config.selected);
+  const selected = library?.pets.find(item => item.id === library.config.selected);
+  const pet = useMemo(() => selected ? { ...selected, displayLocale: controller.language } : undefined, [selected, controller.language]);
   const bridge = tray && window.dshDesktopPet?.notificationsVersion !== 2 ? undefined : window.dshDesktopPet;
   const [bridgeError, setBridgeError] = useState('');
   useEffect(() => {
@@ -159,7 +152,7 @@ export function Companion({ controller, activity = IDLE, open = () => {}, settin
   useEffect(() => { if (!bridge) return; return bridge.onAction(action => { if (action === 'hide') void controller.update({ visible: false }).catch(() => {}); else if (action === 'open') open(); else settings(); }); }, [bridge, controller.update, open, settings]);
   useEffect(() => { if (!bridge?.onCommand || !tray) return; return bridge.onCommand(tray.command); }, [bridge, tray?.command]);
   useEffect(() => () => { void bridge?.sync(null).catch(() => {}); }, [bridge]);
-  if (bridgeError && library?.config.visible) return <div className="dcp" role="alert" style={{ position: 'fixed', right: 20, bottom: 20, zIndex: 2147483000 }}><style>{styles}</style><div className="dcp-error">{bridgeError}</div></div>;
+  if (bridgeError && library?.config.visible) return <div className="dcp" role="alert" style={{ position: 'fixed', right: 20, bottom: 20, zIndex: 2147483000 }}><style>{styles}</style><div className="dcp-error">{t(bridgeError)}</div></div>;
   if (!pet || !library?.config.visible || bridge) return null;
   return <FloatingPet pet={pet} config={library.config} activity={activity} tray={tray} update={controller.update} open={open} settings={settings} />;
 }

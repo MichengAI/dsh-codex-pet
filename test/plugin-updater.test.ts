@@ -19,7 +19,7 @@ test('更新入口区分未发布和网络错误，安装固定npm版本且拒�
   try {
     globalThis.fetch = async () => new Response('{}', { status: 404 });
     const absent = await request('GET'); assert.equal(absent.value.notPublished, true); assert.equal(absent.value.updateAvailable, false);
-    assert.equal((await request('POST')).status, 503); assert.equal(calls.length, 0);
+    assert.equal((await request('POST')).status, 409); assert.equal(calls.length, 0);
     globalThis.fetch = async () => { throw new Error('offline'); };
     const offline = await request('GET'); assert.equal(offline.value.latestCheckFailed, true); assert.equal(offline.value.notPublished, false);
     assert.equal((await request('POST', false)).status, 403);
@@ -40,6 +40,37 @@ test('更新入口区分未发布和网络错误，安装固定npm版本且拒�
     const retry = request('POST');
     while (calls.length < 3) await new Promise(done => setImmediate(done));
     release(); assert.equal((await retry).status, 200);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('桌面更新超时请求取消，确认进程结束前保持互斥，结束后允许重试', async context => {
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  const originalFetch = globalThis.fetch;
+  let handler!: (req: HostRequest, res: HostResponse) => Promise<void>;
+  let finish!: () => void;
+  let started = 0, cancelled = 0;
+  registerPluginUpdater({ logger: { warn() {} }, webServer: { register(route) { handler = route.handler; return () => {}; } }, get(name) {
+    if (name === 'desktopProfiles') return { current: { name: 'test', dir: resolve('.') } };
+    if (name === 'desktopPnpm') return { runPlugin() { started++; return { done: new Promise(done => { finish = () => done({ exitCode: 0, signal: null }); }), cancel() { cancelled++; } }; } };
+  } }, { endpoint: '/update', packageName: '@michengai/pet-timeout-test', manifestUrl: new URL('../package.json', import.meta.url) });
+  const request = async () => {
+    let status = 0;
+    await handler({ method: 'POST', socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:1234', origin: 'http://127.0.0.1:1234', 'x-michengai-plugin-update': '1' } }, { writeHead(code) { status = code; }, end() {} });
+    return status;
+  };
+  try {
+    globalThis.fetch = async () => Response.json({ version: '999.0.0' });
+    const first = request();
+    while (!started) await new Promise(done => setImmediate(done));
+    context.mock.timers.tick(600_000);
+    assert.equal(await first, 503);
+    assert.equal(cancelled, 1);
+    assert.equal(await request(), 409);
+    assert.equal(started, 1);
+    finish(); await new Promise(done => setImmediate(done));
+    const retry = request();
+    while (started < 2) await new Promise(done => setImmediate(done));
+    finish(); assert.equal(await retry, 200);
   } finally { globalThis.fetch = originalFetch; }
 });
 test('版本比较不降级，支持预发布并拒绝无效版本', () => {

@@ -210,11 +210,22 @@ async function runCliInstall(target: Runtime, packageSpec: string): Promise<void
   })
 }
 
-async function install(target: Runtime, packageSpec: string): Promise<void> {
+async function install(target: Runtime, packageSpec: string, track: (done: Promise<unknown>) => void): Promise<void> {
   if (target.desktopPnpm === undefined) return runCliInstall(target, packageSpec)
   const handle = target.desktopPnpm.runPlugin(['add', '--config.minimumReleaseAge=0', packageSpec, '--registry=https://registry.npmjs.org/'], target.profileDir)
-  const result = await handle.done
-  if (result.exitCode !== 0) throw new Error(`更新进程退出码 ${String(result.exitCode)}。`)
+  // 超时只结束 HTTP 等待；安装锁直到进程确认结束才释放，避免并发修改 Profile。
+  track(handle.done)
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const result = await Promise.race([handle.done, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        try { handle.cancel() }
+        catch { reject(new Error('更新超时且取消失败，请重启 Host 后重试。')); return }
+        reject(new Error('更新超时，已请求取消；进程结束前不能再次安装。'))
+      }, 10 * 60_000)
+    })])
+    if (result.exitCode !== 0) throw new Error(`更新进程退出码 ${String(result.exitCode)}。`)
+  } finally { clearTimeout(timer) }
 }
 
 function json(response: HostResponse, statusCode: number, value: unknown): void {
@@ -245,16 +256,21 @@ export function registerPluginUpdater(ctx: UpdateContext, options: PluginUpdater
         if (!isTrustedUpdateRequest(request)) { json(response, 403, { error: '已拒绝非本机同源更新请求。' }); return }
         if (installing) { json(response, 409, { error: '当前插件正在更新，请稍候。' }); return }
         installing = true
+        let pendingInstall: Promise<unknown> | undefined
         try {
         const before = await status(options, target)
+        if (before.notPublished) { json(response, 409, { ...before, error: '插件尚未发布到 npm。' }); return }
         if (before.latestVersion === undefined) { json(response, 503, { error: '暂时无法获取最新版本。' }); return }
         if (!before.updateAvailable) { json(response, 200, before); return }
-        await install(target, `${options.packageName}@${before.latestVersion}`)
+        await install(target, `${options.packageName}@${before.latestVersion}`, done => { pendingInstall = done })
         const notifyParent = target.desktopPnpm === undefined && typeof process.send === 'function'
         const autoReload = target.desktopPnpm !== undefined || notifyParent
         json(response, 200, { ...before, updatedVersion: before.latestVersion, restartRequired: true, autoReload })
         if (notifyParent) setTimeout(() => { process.send?.(PLUGIN_UPDATE_IPC) }, 150).unref?.()
-        } finally { installing = false }
+        } finally {
+          if (pendingInstall) void pendingInstall.then(() => { installing = false }, () => { installing = false })
+          else installing = false
+        }
       } catch (error) {
         ctx.logger.warn(`plugin updater failed: ${String(error)}`)
         json(response, 503, { error: publicError(error) })

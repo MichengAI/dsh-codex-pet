@@ -23,7 +23,7 @@ export const ANIMATIONS: Record<Pose, { row: number; durations: readonly number[
   waiting: { row: 6, durations: [150, 150, 150, 150, 150, 260] },
   running: { row: 7, durations: [120, 120, 120, 120, 120, 220] }, review: { row: 8, durations: [150, 150, 150, 150, 150, 280] },
 };
-export interface Pet { id: string; name: string; description: string; url: string; version: 1 | 2; source: 'builtin' | 'custom' }
+export interface Pet { displayLocale?: string; id: string; name: string; description: string; url: string; version: 1 | 2; source: 'builtin' | 'custom' }
 export interface Config { selected: string; visible: boolean; size: number; position: { x: number; y: number } | null }
 export const DEFAULT_CONFIG: Config = { selected: 'codex', visible: true, size: 120, position: null };
 export interface Activity { pose: Pose; title: string; text: string; sessionId?: string }

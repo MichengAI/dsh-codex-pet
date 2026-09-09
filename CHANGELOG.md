@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+- Localize built-in pet names and descriptions, settings navigation, creation controls, notifications, and floating pet menus using the DSH locale. Preserve custom pet and conversation content.
+- Add the installed version, GitHub and issue links, and the shared npm update dialog; fix opening the custom pet folder on Windows.
+- Cancel Desktop updates after ten minutes and retain the installation lock until the process settles. Distinguish an unpublished npm package (409) from registry failure (503).
+- Share pet-library polling across page entries and avoid publishing unchanged notifications to the Desktop bridge. Remove the obsolete client creation API.
+- Pass type checking, 23 automated tests, the build, and controlled Electron checks for language switching, update dialogs, and native pet rendering. Real npm installation and normal Desktop installation still require end-to-end acceptance.
+
 ## [0.1.0] - 2026-09-09
 
 - Bundle nine pets, pet settings, and a DSH Skill-based entry for creating custom companions.

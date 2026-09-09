@@ -29,7 +29,7 @@ app.whenReady().then(async () => {
       live.prompt=async parts=>{window.petSent=parts[0].text;return {ok:true}};
       const binding={session:live,eventSource:events};
       window.petLocale=store({active:'zh'});
-      petPlugin.apply({locale:petLocale,sessions:{list:petList,binding:id=>id==='background'?background:binding,async create(){petList.set({...petList.value,ids:[...petList.value.ids,'new-task'],byId:{...petList.value.byId,'new-task':{id:'new-task',title:'新会话',running:false}}});return 'new-task'},open(id){window.openedPetSession=id}},uiSession:{pendingInteractions:pending},slots:{inject(name,fn){fn()},register(options,Component){if(options.name==='shell.overlay')renderPet(Component);return()=>{}}}});
+      petPlugin.apply({locale:petLocale,sessions:{list:petList,binding:id=>id==='background'?background:binding,async create(){petList.set({...petList.value,ids:[...petList.value.ids,'new-task'],byId:{...petList.value.byId,'new-task':{id:'new-task',title:'新会话',running:false}}});return 'new-task'},open(id){window.openedPetSession=id}},uiSession:{pendingInteractions:pending},slots:{inject(name,fn){fn()},register(options,Component){if(options.name==='settings.section')window.petSection=options;if(options.name==='shell.overlay')renderPet(Component);return()=>{}}}});
     `);
     const waitFor = condition => win.webContents.executeJavaScript(`new Promise((resolve,reject)=>{const deadline=Date.now()+5000;const check=()=>{if(${condition})resolve(true);else if(Date.now()>deadline)reject(new Error('渲染超时'));else setTimeout(check,30)};check()})`);
     await waitFor(`document.querySelector('.dcp-pet-button') && document.querySelector('[data-pet-icon="codex-paw"]')`);
@@ -82,6 +82,24 @@ app.whenReady().then(async () => {
     await win.webContents.executeJavaScript(`petLocale.set({active:'en'})`);
     await waitFor(`document.querySelector('.dcp-page')?.textContent.includes('A calm companion for focused workspace days.')`);
     assert.equal(await win.webContents.executeJavaScript(`document.querySelector('.dcp-page').textContent.includes('露露')`), false);
+    assert.equal(await win.webContents.executeJavaScript(`petSection.label()`), 'Pets');
+    await waitFor(`document.querySelector('.dcp-head h2')?.textContent==='Choose a pet' && document.querySelector('.mpi-check')?.textContent==='Check for updates'`);
+    assert.equal(await win.webContents.executeJavaScript(`document.querySelector('.dcp-folder-button').textContent.trim()`), 'Open folder');
+    win.setContentSize(1000,1100);
+    await new Promise(resolve=>setTimeout(resolve,150));
+    writeFileSync('.preview/pet-settings-en.png',(await win.webContents.capturePage()).toPNG());
+    await win.webContents.executeJavaScript(`document.querySelector('.mpi-check').click()`);
+    await waitFor(`document.querySelector('.mpi-dialog h2')?.textContent.includes('Pets')`);
+    await win.webContents.executeJavaScript(`document.querySelector('.mpi-dialog-close').click()`);
+
+    assert.equal(await win.webContents.executeJavaScript(`document.querySelector('textarea[aria-label="Pet description"]')!==null`), true);
+    await win.webContents.executeJavaScript(`petList.set({current:'english',ids:['english'],byId:{english:{id:'english',title:'用户标题保持原文',running:true}}});live.set({running:true,lastAgentError:null})`);
+    await waitFor(`document.querySelector('.dcp-bubble-link')?.textContent.includes('Working')`);
+    assert.equal(await win.webContents.executeJavaScript(`document.querySelector('.dcp-bubble-link strong').textContent`), '用户标题保持原文');
+    assert.equal(await win.webContents.executeJavaScript(`document.querySelector('button[title="Stop current turn"]')!==null`), true);
+    await win.webContents.executeJavaScript(`document.querySelector('.dcp-pet-button').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}))`);
+    await waitFor(`Array.from(document.querySelectorAll('[role="menuitem"]')).some(b=>b.textContent==='Pet settings')`);
+    await win.webContents.executeJavaScript(`document.querySelector('.dcp-pet-button').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}));petList.set({ids:[],byId:{}})`);
     await win.webContents.executeJavaScript(`petLocale.set({active:'zh-CN'})`);
     await waitFor(`document.querySelector('.dcp-page')?.textContent.includes('露露')`);
     win.setContentSize(1000, 1100);
@@ -101,6 +119,24 @@ app.whenReady().then(async () => {
     await waitFor(`document.querySelector('.mpi-status')?.textContent.includes('更新完成')`);
     assert.equal(await win.webContents.executeJavaScript(`document.querySelector('.mpi-dialog .mpi-primary').disabled`),true);
     await win.webContents.executeJavaScript(`document.querySelector('.mpi-dialog-close').click();window.fetch=window.originalPetFetch;document.querySelector('dialog[aria-label="宠物设置"]').close()`);
+    // 受控桌面桥验证语言元数据传递和无变化时不重复发送。
+    await win.webContents.executeJavaScript(`window.petSyncs=[];window.dshDesktopPet={notificationsVersion:2,sync:async s=>{petSyncs.push(s)},onAction:()=>()=>{},onCommand:()=>()=>{}};petLocale.set({active:'en'})`);
+    await waitFor(`petSyncs.some(s=>s?.pet.displayLocale==='en')`);
+    const syncCount = await win.webContents.executeJavaScript('petSyncs.length');
+    await new Promise(resolve=>setTimeout(resolve,3100));
+    assert.equal(await win.webContents.executeJavaScript('petSyncs.length'),syncCount,'状态未变化不重复同步');
+    const desktopState = await win.webContents.executeJavaScript('petSyncs.find(s=>s?.pet.displayLocale==="en")');
+    const native = new BrowserWindow({show:false,width:441,height:560,webPreferences:{contextIsolation:true,sandbox:true,offscreen:true}});
+    try {
+      await native.loadURL(`http://127.0.0.1:${server.address().port}/dsh-codex-pet/api/state`);
+      await native.webContents.executeJavaScript(`document.body.innerHTML='<div id="root"></div>';window.petWindow={onState(fn){window.deliverPet=fn;return()=>{}},ready(){deliverPet(${JSON.stringify(desktopState)})},pointer(){},action(){},move(){},command:async()=>{}};void 0`);
+      await native.webContents.executeJavaScript(readFileSync('lib/standalone.js','utf8'));
+      await new Promise(resolve=>setTimeout(resolve,250));
+      await native.webContents.executeJavaScript(`document.querySelector('.dcp-pet-button').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}))`);
+      await new Promise(resolve=>setTimeout(resolve,100));
+      assert.equal(await native.webContents.executeJavaScript(`Array.from(document.querySelectorAll('[role="menuitem"]')).some(b=>b.textContent==='Pet settings')`),true);
+      writeFileSync('.preview/pet-native-en.png',(await native.webContents.capturePage()).toPNG());
+    } finally { native.destroy(); }
     console.log('PASS：实际客户端多会话展开、审批及计划回答回传、完成保留、任务跳转、视口边界、空通知隐藏与菜单恢复');
   } finally { win.destroy(); host.dispose(); server.close(); app.quit(); }
 }).catch(error => { console.error(error); app.exit(1); });

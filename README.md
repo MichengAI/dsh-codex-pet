@@ -75,6 +75,8 @@ Use [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop) as a des
 
 ## Installation
 
+The settings, localization, and npm updater changes described here include unreleased source changes. The published v0.1.0 archive does not include them; see [Unreleased](CHANGELOG.md#unreleased).
+
 This is a **0.1.0 development preview**, distributed through [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases/tag/v0.1.0). Repository access is required to download the archive or clone the source. No npm package has been published. Replace `web` below with your actual DSH profile.
 
 Download `michengai-dsh-codex-pet-0.1.0.tgz` from the release and run `dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.0.tgz --ignore-scripts` from its download directory, then reload DSH. The source build instructions follow.
@@ -181,4 +183,4 @@ For CodeGraph, run `codegraph init .` once, `codegraph sync .` after changes, an
 
 ## Validation and current limits
 
-Type checking, 21 automated tests, the build, and controlled Electron client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction, and the normal Desktop installation still need end-to-end acceptance testing.
+Type checking, 23 automated tests, the build, and controlled Electron client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction, and the normal Desktop installation still need end-to-end acceptance testing.
