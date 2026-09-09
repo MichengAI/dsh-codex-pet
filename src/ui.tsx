@@ -1,5 +1,7 @@
+import { PluginUpdateHeader } from './plugin-update-ui.tsx';
+import { localizePet, type PetLocaleStore } from './pet-locales.ts';
 import { NotificationTray, trayStyles, polishedTrayStyles, type TrayProps } from './notification-tray.tsx';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore, useMemo } from 'react';
 import { ReloadIcon, ArrowTopRightIcon } from '@radix-ui/react-icons';
 import { ANIMATIONS, BASE, IDLE, lookCell, type Activity, type Config, type Library, type Pet, type Pose } from './model.ts';
 import { styles } from './styles.ts';
@@ -10,7 +12,8 @@ export async function request(path: string, data?: unknown): Promise<Library> {
 }
 export interface PetController { library: Library | null; error: string; update(value: Partial<Config>): Promise<void>; refresh(): Promise<void>; create(description: string): Promise<void>; folder(): Promise<void> }
 /** 各入口独立订阅后端；只在成功写入后更新已确认配置。 */
-export function usePetController(): PetController {
+export function usePetController(locale?: PetLocaleStore): PetController {
+  const language = useSyncExternalStore(listener => locale ? locale.subscribe(listener) : () => {}, () => locale?.getSnapshot().active ?? 'zh');
   const [library, setLibrary] = useState<Library | null>(null), [error, setError] = useState('');
   const mounted = useRef(true); const sequence = useRef(0);
   const run = useCallback(async (path: string, data?: unknown) => {
@@ -26,7 +29,8 @@ export function usePetController(): PetController {
     return () => { mounted.current = false; clearInterval(timer); window.removeEventListener('focus', read); window.removeEventListener('dcp-changed', changed); };
   }, [run]);
   const change = async (path: string, data: unknown) => { await run(path, data); window.dispatchEvent(new Event('dcp-changed')); };
-  return { library, error, update: value => change('config', value), refresh: () => change('refresh', {}), create: description => change('create', { description }), folder: () => run('open-folder', {}) };
+  const localizedLibrary = useMemo(() => library ? { ...library, pets: library.pets.map(pet => localizePet(pet, language)) } : null, [library, language]);
+  return { library: localizedLibrary, error, update: value => change('config', value), refresh: () => change('refresh', {}), create: description => change('create', { description }), folder: () => run('open-folder', {}) };
 }
 export function Sprite({ pet, size, pose = 'idle', animate = false, look = null }: { pet: Pet; size: number; pose?: Pose; animate?: boolean; look?: { row: number; col: number } | null }) {
   const element = useRef<HTMLDivElement>(null);
@@ -46,7 +50,7 @@ export function Sprite({ pet, size, pose = 'idle', animate = false, look = null 
   }, [pet.id, pet.version, size, pose, animate, look]);
   return <div ref={element} className="dcp-sprite" style={{ width: size, height: size * 208 / 192, backgroundImage: `url("${pet.url}")`, backgroundSize: `${size * 8}px ${size * 208 / 192 * (pet.version === 2 ? 11 : 9)}px` }} />;
 }
-export function Settings({ controller, create }: { controller: PetController; create?(description: string): Promise<void> }) {
+export function Settings({ controller, create, locale }: { locale?: PetLocaleStore; controller: PetController; create?(description: string): Promise<void> }) {
   const { library, error } = controller; const [busy, setBusy] = useState(false), [showCreate, setShowCreate] = useState(false), [description, setDescription] = useState('');
   const [size, setSize] = useState(library?.config.size ?? 120); const dialog = useRef<HTMLDialogElement>(null);
   const [creationError, setCreationError] = useState('');
@@ -54,7 +58,7 @@ export function Settings({ controller, create }: { controller: PetController; cr
   useEffect(() => { if (showCreate) dialog.current?.showModal(); else dialog.current?.close(); }, [showCreate]);
   const act = async (action: () => Promise<void>) => { setBusy(true); try { await action(); } catch { /* 错误由控制器统一展示。 */ } finally { setBusy(false); } };
   return <div className="dcp dcp-page"><style>{styles}</style>
-    <h1>宠物</h1>
+    <PluginUpdateHeader locale={locale} />
     <header className="dcp-head"><div><h2>选择宠物</h2><p className="dcp-sub">宠物会管理对话串，并突出显示需要关注的事项</p></div>
       <div className="dcp-actions"><button className="dcp-icon" title="刷新宠物库" aria-label="刷新宠物库" disabled={busy} onClick={() => void act(controller.refresh)}><ReloadIcon /></button>
         <button className="dcp-button" disabled={!library || busy} onClick={() => setShowCreate(true)}>创建</button>

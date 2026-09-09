@@ -1,0 +1,50 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
+import { registerPluginUpdater, type HostRequest, type HostResponse, isNewerVersion } from '../src/plugin-updater.ts';
+
+test('更新入口区分未发布和网络错误，安装固定npm版本且拒绝跨站和并发', async () => {
+  const originalFetch = globalThis.fetch;
+  let handler!: (req: HostRequest, res: HostResponse) => Promise<void>;
+  const calls: unknown[] = []; let release!: () => void; let exitCode = 0;
+  registerPluginUpdater({ logger: { warn() {} }, webServer: { register(route) { handler = route.handler; return () => {}; } }, get(name) {
+    if (name === 'desktopProfiles') return { current: { name: 'pet-test', dir: resolve('.preview/update-test') } };
+    if (name === 'desktopPnpm') return { runPlugin(args: string[], dir: string) { calls.push({ args, dir }); return { done: new Promise(done => { release = () => done({ exitCode, signal: null }); }), cancel() {} }; } };
+  } }, { endpoint: '/update', packageName: '@michengai/dsh-codex-pet', manifestUrl: new URL('../package.json', import.meta.url) });
+  const request = async (method: string, trusted = true) => {
+    let status = 0, body = '';
+    await handler({ method, socket: { remoteAddress: '127.0.0.1' }, headers: { host: '127.0.0.1:1234', origin: trusted ? 'http://127.0.0.1:1234' : 'https://evil.test', 'sec-fetch-site': trusted ? 'same-origin' : 'cross-site', 'x-michengai-plugin-update': '1' } }, { writeHead(code) { status = code; }, end(value) { body = value ?? ''; } });
+    return { status, value: body ? JSON.parse(body) : null };
+  };
+  try {
+    globalThis.fetch = async () => new Response('{}', { status: 404 });
+    const absent = await request('GET'); assert.equal(absent.value.notPublished, true); assert.equal(absent.value.updateAvailable, false);
+    assert.equal((await request('POST')).status, 503); assert.equal(calls.length, 0);
+    globalThis.fetch = async () => { throw new Error('offline'); };
+    const offline = await request('GET'); assert.equal(offline.value.latestCheckFailed, true); assert.equal(offline.value.notPublished, false);
+    assert.equal((await request('POST', false)).status, 403);
+    globalThis.fetch = async () => Response.json({ version: '999.0.0' });
+    const available = await request('GET'); assert.equal(available.value.profileName, 'pet-test'); assert.equal(available.value.updateAvailable, true);
+    const installing = request('POST');
+    const duplicate = await request('POST'); assert.equal(duplicate.status, 409);
+    while (!release) await new Promise(done => setImmediate(done));
+    release(); const result = await installing;
+    assert.equal(result.status, 200); assert.equal(result.value.updatedVersion, '999.0.0');
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0], { args: ['add', '--config.minimumReleaseAge=0', '@michengai/dsh-codex-pet@999.0.0', '--registry=https://registry.npmjs.org/'], dir: resolve('.preview/update-test') });
+    exitCode = 1;
+    const failed = request('POST');
+    while (calls.length < 2) await new Promise(done => setImmediate(done));
+    release(); assert.equal((await failed).status, 503);
+    exitCode = 0;
+    const retry = request('POST');
+    while (calls.length < 3) await new Promise(done => setImmediate(done));
+    release(); assert.equal((await retry).status, 200);
+  } finally { globalThis.fetch = originalFetch; }
+});
+test('版本比较不降级，支持预发布并拒绝无效版本', () => {
+  assert.equal(isNewerVersion('1.0.0', '0.9.0'), false);
+  assert.equal(isNewerVersion('1.0.0-rc.2', '1.0.0-rc.10'), true);
+  assert.equal(isNewerVersion('1.0.0-rc.10', '1.0.0'), true);
+  assert.equal(isNewerVersion('1.0.0', 'not-a-version'), false);
+});

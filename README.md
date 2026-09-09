@@ -142,6 +142,10 @@ The bundled `skills/hatch-pet/SKILL.md` is adapted for DSH and the compatible sp
 
 The plugin is independently implemented and community maintained. The bundled Codex pet artwork comes from Codex; it is not original artwork by this project. This project is not an official OpenAI or DeepSeek product.
 
+## Plugin updates
+
+Pet settings show the running version, GitHub and issue links, and **Check for updates**. The updater queries npm and installs into the current DSH profile using the Desktop installer or DSH CLI. Until the package is published to npm, it reports that updates are not yet available. Unsupported hosts can copy a manual update command. Wait for active tasks to finish before installing an update; reload DSH when prompted.
+
 ## Uninstallation
 
 ```powershell
@@ -177,4 +181,4 @@ For CodeGraph, run `codegraph init .` once, `codegraph sync .` after changes, an
 
 ## Validation and current limits
 
-Type checking, 17 automated tests, the build, and controlled Electron client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction, and the normal Desktop installation still need end-to-end acceptance testing.
+Type checking, 21 automated tests, the build, and controlled Electron client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction, and the normal Desktop installation still need end-to-end acceptance testing.
