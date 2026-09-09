@@ -1,18 +1,20 @@
 <p align="center">
-  <img src="assets/branding/dsh-codex-pet-banner.png" alt="DSH Codex Pet — a companion for your tasks" width="100%">
+  <img src="assets/branding/dsh-codex-pet-banner.png" alt="DSH Codex Pet" width="100%">
 </p>
 
 <div align="center">
 
 # DSH Codex Pet
 
-**A little companion for your DeepSeek Harness tasks.**
+**A little companion for your DeepSeek Harness tasks**
 
-[简体中文](README.zh-CN.md) · [Screenshots](#screenshots) · [Features](#features) · [Installation](#installation) · [Usage](#usage) · [Development](#development) · [Changelog](CHANGELOG.md)
+[简体中文](README.zh-CN.md) · [Changelog](CHANGELOG.md) · [Apache-2.0](LICENSE)
 
-[![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/deepseek-ai/deepseek-harness)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-codex-pet.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
+[![npm downloads](https://img.shields.io/npm/dt/%40michengai%2Fdsh-codex-pet.svg?label=npm%20downloads)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
+[![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/MichengAI/dsh-codex-pet)
 [![Node.js 22.19+](https://img.shields.io/badge/Node.js-22.19%2B-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![npm](https://img.shields.io/npm/v/@michengai/dsh-codex-pet)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
 
 </div>
 
@@ -21,7 +23,7 @@ DSH Codex Pet brings a pet library, task notifications, and a Skill-based creati
 ## Features
 
 - **Nine built-in pets**: choose a companion and adjust its size in pet settings. Assets are bundled locally.
-- **In-page companion**: the plugin displays pets within DSH Web and exposes a consumer API. External hosts own their window and IPC adapters.
+- **In-page companion**: keep a companion in DSH Web. Floating desktop pets require a desktop app with pet support.
 - **Multiple tasks at a glance**: follow running tasks, completion, errors, and requests that need your attention. An empty notification list leaves only the pet visible.
 - **Act from the notification**: open the associated task, stop its current turn, or handle supported approval, question, and plan requests.
 - **Quiet when you need it**: dismiss an individual reminder without stopping its task; collapse or restore the pet through its menu or settings.
@@ -52,7 +54,7 @@ Keep working in DSH while the pet and task notifications remain in the corner of
 
 ## DSH product ecosystem
 
-Install plugins as needed in an existing DeepSeek Harness environment. External consumers may integrate the pet API independently.
+Add plugins as needed to your existing DeepSeek Harness environment.
 
 | Plugin | What you can do |
 | --- | --- |
@@ -66,51 +68,18 @@ Install plugins as needed in an existing DeepSeek Harness environment. External 
 | [Simplify](https://github.com/MichengAI/dsh-simplify) | Improve code within your Git changes |
 | [Codex Pet](https://github.com/MichengAI/dsh-codex-pet) | Keep a companion nearby and handle task notifications |
 
-## Prerequisites
-
-- DeepSeek Harness with its Web interface and the `dsh` command available.
-- Node.js **22.19 or newer** for building from source.
-- A configured image-generation tool in DSH to create custom pets.
-
 ## Installation
 
-Compatibility: the host must provide the `locale` client service and support function-valued `settings.section` labels. Local contract checks used `@deepseek-ai/cordis 4.0.2` and `@deepseek-ai/dsh-client-locale 0.1.2-rc.1`, plus the community DSH Codex UI settings implementation. These are checked component versions, not a verified minimum DSH release. Hosts without the locale service are not supported.
-
-Automatic updates use `--config.minimumReleaseAge=0` for that install command so a newly published version can be installed immediately. This bypasses pnpm’s release-age delay for the command without changing the global configuration. The package name, npm registry, and resolved version remain fixed by the server.
-
-Version 0.1.2 includes the settings, localization, npm updater, and consumer API changes described here; see the [changelog](CHANGELOG.md).
-
-The current version is **0.1.2**, available on [npm](https://www.npmjs.com/package/@michengai/dsh-codex-pet). See [GitHub Releases](https://github.com/MichengAI/dsh-codex-pet/releases) for release notes. Replace `web` below with your actual DSH profile.
-
-Run `dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://registry.npmjs.org/ --ignore-scripts`, then reload DSH. The source build instructions follow.
-
-### Ask an agent to install it
-
-```text
-Install DSH Codex Pet from my local source checkout into the DSH web profile. In that checkout, run npm ci, npm run check, npm test, and npm pack. If all checks pass, install the generated michengai-dsh-codex-pet-0.1.2.tgz using dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.2.tgz --ignore-scripts. Run dsh --profile web --dump-config and confirm michengai-codex-pet is present. Explain how to reload DSH and open pet settings. Preserve existing tasks and user data.
-```
-
-### Build and install manually
-
-Run from the project root:
+Install DeepSeek Harness first and make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
-npm ci
-npm run check
-npm test
-npm pack
-dsh plugin --profile web add .\michengai-dsh-codex-pet-0.1.2.tgz --ignore-scripts
-dsh --profile web --dump-config
+dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://registry.npmjs.org/ --ignore-scripts
 ```
 
-Stop if any command fails. `npm pack` builds the plugin and checks that the nine sprite sheets and creation Skill are present. The generated archive includes the runtime assets.
-
-### Reloading
-
-After active tasks finish, restart the relevant DSH Web service and refresh its Web interface. A browser refresh alone does not replace an already loaded Host module.
+Restart DSH after installation, then open **Settings → Pets**.
 
 ## Usage
 
@@ -136,24 +105,13 @@ The pet is a notification and action surface. Start new conversations and write 
 3. Follow that task's progress. Creation uses DSH's configured model and image tools.
 4. Once the pet files are saved, refresh the pet library and select the new companion.
 
-The bundled `skills/hatch-pet/SKILL.md` is adapted for DSH and the compatible sprite-sheet format. The creation flow does not invoke the Codex CLI. A missing image tool must be resolved in DSH; opening the creation task alone does not mean a pet has been generated.
+Creating pets requires an image-generation tool configured in DSH.
 
-## Data and assets
+## Updates and uninstallation
 
-- Built-in sprite sheets: `assets/codex/`, included with the plugin.
-- Custom pets: `${DSH_HOME}\codex-pet\pets`; when `DSH_HOME` is unset, the base directory is the user's `.dsh` directory.
-- Existing Codex pets are not automatically read, moved, or migrated.
-- Uninstalling the plugin leaves custom pet files and configuration in place.
+Use **Settings → Pets → Check for updates**. If automatic installation is unavailable, copy the update command shown in the dialog. Wait for running tasks to finish, then update and restart DSH as prompted.
 
-The plugin is independently implemented and community maintained. The bundled Codex pet artwork comes from Codex; it is not original artwork by this project. This project is not an official OpenAI or DeepSeek product.
-
-Original plugin code is licensed under [Apache-2.0](LICENSE), matching the other plugins in this series. Third-party pet artwork is excluded from that license grant; see [NOTICE](NOTICE).
-
-## Plugin updates
-
-Pet settings show the running version, GitHub and issue links, and **Check for updates**. The updater queries npm and installs into the current DSH profile using the verified DSH CLI. Unsupported hosts can copy a manual update command. Wait for active tasks to finish before installing an update; reload DSH when prompted.
-
-## Uninstallation
+To uninstall:
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -162,57 +120,10 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 dsh plugin --profile web remove @michengai/dsh-codex-pet
 ```
 
-Reload DSH afterward. Keep your DSH data directory when switching versions.
+Custom pets are stored in `.dsh/codex-pet/pets` under your user directory by default; open the folder from pet settings. If `DSH_HOME` is set, pets are stored in its `codex-pet/pets` folder. Uninstalling keeps those files and settings.
 
-## Development
+## License
 
-```powershell
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$OutputEncoding = [System.Text.Encoding]::UTF8
+Original plugin code is licensed under [Apache License 2.0](LICENSE). Bundled pet artwork originates from OpenAI Codex and is excluded from this project's Apache-2.0 license grant; see [NOTICE](NOTICE).
 
-npm ci
-npm run check
-npm test
-npm run build
-```
-
-- `src/`: Host service, pet settings, animation, and task notifications.
-- `skills/`: the bundled pet creation Skill.
-- `test/`: library, creation, and notification regression tests.
-- `scripts/`: build, asset maintenance, package verification, and isolated Electron smoke checks.
-- `lib/`: generated runtime output; edit `src/` instead.
-
-There is no standalone HTML preview or native window entry. Verify the plugin inside DSH. `assets:import` is a maintainer command for updating original assets, not an installation requirement.
-
-For CodeGraph, run `codegraph init .` once, `codegraph sync .` after changes, and `codegraph status .` to check freshness. The index and local project documentation under `docs/` are excluded from Git.
-
-## Validation and current limits
-
-Type checking, 25 automated tests, the build, and controlled browser client interaction checks have passed. These cover task notifications and the creation request flow. Complete image generation, real-model task interaction and real npm updates still need end-to-end acceptance testing.
-
-## Browser smoke test
-
-After `npm ci`, run `npx playwright install chromium`, then `npm run smoke`. Playwright is a development dependency of this project. The test uses headless Chromium and a unique system temporary directory, cleaned after the test process exits. No Electron, sibling repository, `.preview`, or docs output is required.
-
-## Consumer API v1
-
-The plugin publishes `window.dshPet` in the DSH page and emits `dsh-pet-ready` / `dsh-pet-disposed`. Consumers subscribe and render independently; the plugin never imports or probes a consumer. Previous native window routes and window bridges have been removed. Existing native adapters must migrate to this contract.
-
-| Method | Contract |
-| --- | --- |
-| `getSnapshot()` | Returns a copied `{pet, config, language, notifications}` or `null` before loading/after disposal. Resolve relative pet asset URLs against the DSH page origin. |
-| `subscribe(listener)` | Receives changed snapshots or `null` on disposal; returns an unsubscribe function. Read the initial snapshot separately. |
-| `command(value)` | Executes notification commands (`open`, `stop`, `dismiss`, `restore`, `approve`, `reject`, `answer`, `sort`). Targeted commands require the current notification `id` and `token`; request answers also require `requestKey`. Validation and rejection stay in the plugin. |
-| `updateConfig(value)` | Updates pet settings through the existing validated Host API. |
-| `openSettings()` | Opens plugin settings in DSH. |
-| `acquireDisplay()` | Hides only the page overlay and returns an idempotent release function. Call release when disconnecting; the overlay returns after all consumers release. This does not change persisted visibility. |
-
-Consumers own their renderer, native window, IPC validation, and disconnect cleanup. The interface carries no native window implementation. User titles, questions, and answer options remain unchanged; the `language` field identifies the display locale.
-
-## Automated releases
-
-GitHub Actions runs type checking, unit tests, Chromium smoke tests, and package validation on main pushes and pull requests. Pushing a stable version tag matching package.json (for example v0.1.2) runs publish.yml, validates the package, and publishes through npm OIDC. After npm succeeds, it extracts the matching entries from both changelogs and creates a normal Latest GitHub Release with Chinese followed by English, without tarball or checksum attachments.
-
-Before the first automated release, configure a GitHub Actions Trusted Publisher in the npm package Settings: owner MichengAI, repository dsh-codex-pet, workflow filename publish.yml, and no Environment. NPM_TOKEN is not required. The workflow cannot create this npm-side trust relationship itself.
-
-Update package.json, package-lock.json, and both changelogs before committing and pushing a new version tag. Published npm versions cannot be overwritten; fixes require a version increment. CI also supports manual workflow_dispatch runs without publishing.
+This is a community-maintained project, not an official OpenAI or DeepSeek product.
