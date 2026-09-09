@@ -87,3 +87,28 @@ test('停止按钮只调用目标会话 cancel，并透传宿主拒绝', async (
     assert.equal(called, 1); assert.equal(x.bindings.a.session.value.running, true);
   } finally { x.engine.dispose(); }
 });
+
+test('子代理不产生通知、不绑定或操作；后补来源标记时清理已有订阅', async () => {
+  const x = setup();
+  try {
+    const old = x.state.items.find(item => item.id === 'b')!;
+    const child = { ...x.list.value.byId.b, origin: 'subagent' };
+    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, b: child } });
+    assert.deepEqual(x.state.items.map(item => item.id), ['a']);
+    assert.equal(x.bindings.b.session.listeners.size, 0);
+    assert.equal(x.bindings.b.eventSource.listeners.size, 0);
+    for (const type of ['open', 'stop'] as const) {
+      await assert.rejects(x.engine.command({ type, id: old.id, token: old.token }), /更新/);
+    }
+    x.pending.set(new Map([['b', { kind: 'approval', key: 'child-request', sessionId: 'b' }]]));
+    await x.engine.command({ type: 'restore' });
+    assert.deepEqual(x.state.items.map(item => item.id), ['a']);
+    assert.equal(x.state.hidden, 0);
+  } finally { x.engine.dispose(); }
+
+  const child = { id: 'child', running: true, origin: 'subagent' };
+  const list = new State<SessionList>({ ids: ['child'], byId: { child } });
+  const engine = createNotifications({ list, binding() { throw new Error('不应绑定子代理'); }, open() { throw new Error('不应打开子代理'); } }, new State(new Map()), () => {});
+  try { assert.equal(engine.getSnapshot().items.length, 0); assert.equal(engine.getSnapshot().activity.pose, 'idle'); }
+  finally { engine.dispose(); }
+});

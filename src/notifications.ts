@@ -44,11 +44,12 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
     publishing = true;
     try {
       const list = sessions.list.getSnapshot(), requests = pending.getSnapshot();
-      const ids = new Set(list.ids);
+      // 子代理由宿主路由管理，不能作为独立通知绑定或操作。
+      const ids = new Set(list.ids.filter(id => list.byId[id] && list.byId[id].origin !== 'subagent'));
       for (const id of records.keys()) if (!ids.has(id)) { records.delete(id); dismissed.delete(id); }
       for (const [id, bound] of bindings) if (!ids.has(id)) { bound.off(); bindings.delete(id); records.delete(id); dismissed.delete(id); }
       const items: Notice[] = []; let hidden = 0;
-      for (const id of list.ids) {
+      for (const id of ids) {
         const row = list.byId[id]; if (!row) continue;
         const binding = sessions.binding(id);
         let record = records.get(id);
