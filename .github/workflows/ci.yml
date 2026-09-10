@@ -19,10 +19,14 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run check
       - run: npm test
       - run: npm run smoke
+      - run: npm run test:e2e
       - name: 校验完整发布包
         run: npm pack --pack-destination "$RUNNER_TEMP"

@@ -72,7 +72,7 @@ Add plugins as needed to your existing DeepSeek Harness environment.
 
 ## Installation
 
-Install DeepSeek Harness first and make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
+DeepSeek Harness **`0.1.5-rc.1`** is supported; older versions are outside the current support range. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -123,6 +123,25 @@ dsh plugin --profile web remove @michengai/dsh-codex-pet
 ```
 
 Custom pets are stored in `.dsh/codex-pet/pets` under your user directory by default; open the folder from pet settings. If `DSH_HOME` is set, pets are stored in its `codex-pet/pets` folder. Uninstalling keeps those files and settings.
+
+## Development checks
+
+Known upstream limitation: cancelling before the model returns an HTTP response in DSH `0.1.5-rc.1` can report a non-JSON-serializable `turn/end` error, which the pet displays as a failure notification. Cancellation after streaming has started passed end-to-end validation.
+
+Development dependencies and the lockfile pin DSH `0.1.5-rc.1`. Use `npm ci` to reproduce the environment; `npm run check` also checks the plugin against official service types.
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+npm ci
+npx playwright install chromium
+npm run check
+npm test
+npm run smoke
+npm run test:e2e
+```
+
+End-to-end tests also require pnpm on PATH (CI uses `11.25.0`). They install the local package through the official CLI and boot the full DSH Web app to test pet settings, persistence, session creation, question responses, completion and failure notifications, and cancellation. Only the external model HTTP service is replaced with a local fixture; no paid model or image generation is used. Tests use a separate `DSH_HOME` and keep logs and screenshots in the ignored `.preview/e2e-latest-*` directory without changing your everyday profile.
 
 ## License
 

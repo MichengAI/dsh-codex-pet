@@ -72,7 +72,7 @@
 
 ## 安装
 
-需要已安装 DeepSeek Harness，并可使用 `dsh` 命令。以下示例使用 `web` profile，请按实际环境替换。
+支持 DeepSeek Harness **`0.1.5-rc.1`**，需要可使用 `dsh` 命令。旧版不在当前支持范围内。以下示例使用 `web` profile，请按实际环境替换。
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -100,6 +100,8 @@ dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://
 
 宠物承担通知和待处理操作。新建会话、输入后续消息仍在 DSH 主界面完成。
 
+已知上游边界：DSH `0.1.5-rc.1` 在模型尚未返回 HTTP 响应时停止任务，可能因 `turn/end` 数据不可 JSON 序列化而上报错误，宠物会显示失败通知。已开始流式响应时的停止操作已通过端到端验证。
+
 ### 创建自定义宠物
 
 1. 打开宠物设置，点击 **创建**，描述想要的伙伴。
@@ -123,6 +125,23 @@ dsh plugin --profile web remove @michengai/dsh-codex-pet
 ```
 
 自定义宠物默认保存在用户目录的 `.dsh/codex-pet/pets` 下，可从宠物设置打开。设置了 `DSH_HOME` 时使用该目录下的 `codex-pet/pets`。卸载插件会保留这些文件与配置。
+
+## 开发验证
+
+开发依赖和锁文件固定 DSH `0.1.5-rc.1`。使用 `npm ci` 复现，`npm run check` 同时检查插件与官方服务类型的兼容性。
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+npm ci
+npx playwright install chromium
+npm run check
+npm test
+npm run smoke
+npm run test:e2e
+```
+
+端到端测试另需 PATH 中有 pnpm（CI 使用 `11.25.0`）。它通过官方 CLI 安装本地发行包、启动完整 DSH Web，验证宠物设置、持久化、创建会话、提问回传、完成与失败通知和停止任务。只有外部模型 HTTP 服务使用本地夹具，不调用付费模型或生成图片。测试使用独立 `DSH_HOME`，日志和截图保存在忽略的 `.preview/e2e-latest-*` 下，不改动日常 Profile。
 
 ## 许可证
 
