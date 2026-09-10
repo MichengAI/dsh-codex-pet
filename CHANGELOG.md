@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.4] - 2026-09-11
+
+- Restore compatibility with DSH `0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, and `0.1.5-rc.1` while retaining `0.1.5-rc.2`. Adapt legacy session requests so pet notifications can answer questions and approvals on older hosts.
+
 ## [0.1.3] - 2026-09-11
 
 - Support DSH Web `0.1.5-rc.2` and correct client service injection so the plugin loads with the updated host. Older DSH versions are outside the supported range.

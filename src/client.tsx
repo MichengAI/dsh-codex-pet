@@ -1,3 +1,5 @@
+import { compatibleSessions } from "./session-compat.ts";
+import { compatiblePending } from "./legacy-pending.ts";
 import { createCompanionProvider } from "./companion-api.ts";
 import { translator } from "./ui-locales.ts";
 import type { PetLocaleStore } from "./pet-locales.ts";
@@ -16,7 +18,8 @@ import { observePetSettingsIcon } from "./settings-icon.ts";
 interface ClientContext {
   locale: PetLocaleStore;
   sessions: Sessions & CreationSessions;
-  uiSession: { pendingInteractions: PendingStore };
+  uiSession?: { pendingInteractions: PendingStore };
+  reflect?: { get(name: string): unknown };
   slots: {
     inject(name: string, register: () => () => void): void;
     register(
@@ -31,7 +34,7 @@ interface ClientContext {
   };
 }
 export const name = "michengai-codex-pet";
-export const inject = ["slots", "sessions", "uiSession", "locale"];
+export const inject = ["slots", "sessions", "locale"];
 function openSettings(): void {
   const trigger = document.querySelector("[data-dcu-settings-trigger]");
   if (trigger)
@@ -206,6 +209,12 @@ function Page({
   );
 }
 export function apply(ctx: ClientContext): void {
+  const sessions = compatibleSessions(ctx.sessions);
+  // Cordis 的 reflect.get 允许探测旧版不存在的服务，不声明不存在的必需依赖。
+  const pending = compatiblePending(sessions, () => {
+    const service = (ctx.reflect ? ctx.reflect.get("uiSession") : ctx.uiSession) as { pendingInteractions: PendingStore } | undefined;
+    return service?.pendingInteractions;
+  });
   ctx.slots.inject("settings.section", () =>
     ctx.slots.register(
       {
@@ -214,7 +223,7 @@ export function apply(ctx: ClientContext): void {
         label: () => translator(ctx.locale.getSnapshot().active)("宠物"),
         order: 12,
       },
-      () => <Page sessions={ctx.sessions} locale={ctx.locale} />,
+      () => <Page sessions={sessions} locale={ctx.locale} />,
     ),
   );
   ctx.slots.inject("shell.overlay", () =>
@@ -222,8 +231,8 @@ export function apply(ctx: ClientContext): void {
       { name: "shell.overlay", id: "michengai-codex-pet", order: 100 },
       () => (
         <Overlay
-          sessions={ctx.sessions}
-          pending={ctx.uiSession.pendingInteractions}
+          sessions={sessions}
+          pending={pending}
           locale={ctx.locale}
         />
       ),

@@ -3,26 +3,25 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { testHost } from './test-host.mjs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { randomUUID } from 'node:crypto';
 import { retryStartup, finishReport } from './e2e-runtime.mjs';
 import { startModelFixture } from './e2e-model-fixture.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const require = createRequire(import.meta.url);
-const dshManifestPath = require.resolve('@deepseek-ai/dsh/package.json');
-const dsh = JSON.parse(await readFile(dshManifestPath, 'utf8'));
 const pkg = JSON.parse(await readFile(join(repo, 'package.json'), 'utf8'));
-assert.equal(dsh.version, pkg.devDependencies['@deepseek-ai/dsh']);
+const npmCli = process.env.npm_execpath;
+if (!npmCli) throw new Error('请通过 npm run test:e2e 执行。');
+const dshManifestPath = await testHost(repo, pkg, npmCli);
+const dsh = JSON.parse(await readFile(dshManifestPath, 'utf8'));
 const locale = process.env.DSH_PET_E2E_LOCALE || 'zh-CN';
 assert.ok(['zh-CN', 'en-US'].includes(locale), '测试语言仅支持 zh-CN 或 en-US');
 const cli = join(dirname(dshManifestPath), dsh.bin.dsh);
-const npmCli = process.env.npm_execpath;
-if (!npmCli) throw new Error('请通过 npm run test:e2e 执行。');
-await mkdir(join(repo, '.preview'), { recursive: true });
-const output = await mkdtemp(join(repo, '.preview', 'e2e-latest-'));
+const preview = resolve(process.env.DSH_PET_E2E_ROOT || join(repo, '.preview'));
+await mkdir(preview, { recursive: true });
+const output = await mkdtemp(join(preview, 'e2e-latest-'));
 const env = { ...process.env, DSH_HOME: join(output, 'home') };
 // 隔离环境不继承模型凭据，避免测试误用用户的付费服务。
 for (const key of Object.keys(env)) if (/(_KEY|_TOKEN|_SECRET|PASSWORD|CREDENTIAL)/i.test(key)) delete env[key];
@@ -127,7 +126,7 @@ try {
   await writeFile(patch, JSON.stringify([
     { id: 'llm-deepseek', config: { baseURL: model.url, apiKeyEnv: 'DSH_PET_E2E_KEY', thinking: 'disabled', models: [{ id: 'deepseek-chat', name: '本地回归测试模型' }] } },
     { id: 'session-title-llm', disabled: true },
-    { insert: [{ id: 'pet-e2e-diagnostics', name: diagnostics }] },
+    { insert: [{ id: 'pet-e2e-diagnostics', name: pathToFileURL(diagnostics).href }] },
   ]));
   const url = await startHost(patch);
   browser = await chromium.launch({ headless: true });
@@ -275,7 +274,7 @@ if (outcome.error || outcome.cleanupErrors.length) {
 }
 for (const observation of observations) console.warn(`上游行为记录：${observation}`);
 // 回收失败单独报告，不覆盖本轮测试结果或删除未标记的历史证据。
-const prune = spawn(process.platform === 'win32' ? 'powershell.exe' : 'pwsh', ['-NoProfile', '-File', join(repo, 'scripts', 'prune-e2e.ps1')], { cwd: repo, env, windowsHide: true, stdio: 'inherit' });
+const prune = spawn(process.platform === 'win32' ? 'powershell.exe' : 'pwsh', ['-NoProfile', '-File', join(repo, 'scripts', 'prune-e2e.ps1'), '-PreviewRoot', preview], { cwd: repo, env, windowsHide: true, stdio: 'inherit' });
 const pruneError = await new Promise(done => { prune.once('error', error => done(String(error))); prune.once('close', code => done(code === 0 ? null : `退出码 ${code}`)); });
 if (pruneError) {
   outcome.retentionError = pruneError;
