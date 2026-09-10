@@ -100,6 +100,8 @@ Open **Settings → Pets** (`宠物` in the current UI), or open settings from t
 
 The pet is a notification and action surface. Start new conversations and write follow-up messages in the main DSH interface.
 
+Known upstream limitation: cancelling before the model returns an HTTP response in DSH `0.1.5-rc.1` can report a non-JSON-serializable `turn/end` error, which the pet displays as a failure notification. Cancellation after streaming has started passed end-to-end validation.
+
 ### Create a custom pet
 
 1. Open pet settings, click **Create** (`创建`), and describe the companion.
@@ -126,8 +128,6 @@ Custom pets are stored in `.dsh/codex-pet/pets` under your user directory by def
 
 ## Development checks
 
-Known upstream limitation: cancelling before the model returns an HTTP response in DSH `0.1.5-rc.1` can report a non-JSON-serializable `turn/end` error, which the pet displays as a failure notification. Cancellation after streaming has started passed end-to-end validation.
-
 Development dependencies and the lockfile pin DSH `0.1.5-rc.1`. Use `npm ci` to reproduce the environment; `npm run check` also checks the plugin against official service types.
 
 ```powershell
@@ -142,6 +142,10 @@ npm run test:e2e
 ```
 
 End-to-end tests also require pnpm on PATH (CI uses `11.25.0`). They install the local package through the official CLI and boot the full DSH Web app to test pet settings, persistence, session creation, question responses, completion and failure notifications, and cancellation. Only the external model HTTP service is replaced with a local fixture; no paid model or image generation is used. Tests use a separate `DSH_HOME` and keep logs and screenshots in the ignored `.preview/e2e-latest-*` directory without changing your everyday profile.
+
+The official type check verifies structural compatibility, not service lifecycle behavior. E2E runs as a separate CI job with a 25-minute budget; it is temporarily excluded from the publishing workflow pending repeatability evidence on Ubuntu. Windows Profile link errors (`EBUSY`) retry startup at most twice; other failures remain failures. Logs and screenshots are retained for diagnosis.
+
+Set `DSH_PET_E2E_LOCALE` to `zh-CN` (default) or `en-US` to choose the browser language; CI tests both.
 
 ## License
 

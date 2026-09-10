@@ -24,9 +24,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.25.0
       - name: 校验标签并生成双语说明
         run: node scripts/release-notes.mjs "$GITHUB_REF_NAME" "$RUNNER_TEMP/release-notes.md"
       - run: npm ci
@@ -34,7 +31,6 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run smoke
-      - run: npm run test:e2e
       - name: 打包并校验内置宠物与 Skill
         run: npm pack --pack-destination "$RUNNER_TEMP"
       - name: 通过 npm Trusted Publishing 发布

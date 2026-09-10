@@ -143,6 +143,10 @@ npm run test:e2e
 
 端到端测试另需 PATH 中有 pnpm（CI 使用 `11.25.0`）。它通过官方 CLI 安装本地发行包、启动完整 DSH Web，验证宠物设置、持久化、创建会话、提问回传、完成与失败通知和停止任务。只有外部模型 HTTP 服务使用本地夹具，不调用付费模型或生成图片。测试使用独立 `DSH_HOME`，日志和截图保存在忽略的 `.preview/e2e-latest-*` 下，不改动日常 Profile。
 
+官方类型检查验证结构兼容性，不替代服务生命周期验证。E2E 拆为独立 CI job，限时 25 分钟；在取得 Ubuntu 重复运行证据前，暂不作为发布流程门禁。Windows Profile 链接错误（`EBUSY`）最多重试启动两次，其他错误直接失败。日志和截图保留用于排查。
+
+可设置 `DSH_PET_E2E_LOCALE` 为 `zh-CN`（默认）或 `en-US` 选择浏览器语言，CI 分别验证两种语言。
+
 ## 许可证
 
 原创插件代码采用 [Apache License 2.0](LICENSE)。随包宠物图集来源于 OpenAI Codex，不属于本项目授予的 Apache-2.0 许可范围，详见 [NOTICE](NOTICE)。

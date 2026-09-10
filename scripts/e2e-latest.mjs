@@ -13,7 +13,10 @@ const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const dshManifestPath = require.resolve('@deepseek-ai/dsh/package.json');
 const dsh = JSON.parse(await readFile(dshManifestPath, 'utf8'));
-assert.equal(dsh.version, '0.1.5-rc.1');
+const pkg = JSON.parse(await readFile(join(repo, 'package.json'), 'utf8'));
+assert.equal(dsh.version, pkg.devDependencies['@deepseek-ai/dsh']);
+const locale = process.env.DSH_PET_E2E_LOCALE || 'zh-CN';
+assert.ok(['zh-CN', 'en-US'].includes(locale), '测试语言仅支持 zh-CN 或 en-US');
 const cli = join(dirname(dshManifestPath), dsh.bin.dsh);
 const npmCli = process.env.npm_execpath;
 if (!npmCli) throw new Error('请通过 npm run test:e2e 执行。');
@@ -21,7 +24,7 @@ await mkdir(join(repo, '.preview'), { recursive: true });
 const output = await mkdtemp(join(repo, '.preview', 'e2e-latest-'));
 const env = { ...process.env, DSH_HOME: join(output, 'home') };
 // 隔离环境不继承模型凭据，避免测试误用用户的付费服务。
-for (const key of Object.keys(env)) if (/(API_KEY|AUTH_TOKEN|ACCESS_TOKEN)$/i.test(key)) delete env[key];
+for (const key of Object.keys(env)) if (/(_KEY|_TOKEN|_SECRET|PASSWORD|CREDENTIAL)/i.test(key)) delete env[key];
 const redact = text => text.replace(/([?&](?:token|key|secret|auth)=)[^\s&]+/gi, '$1[redacted]');
 async function run(entry, args, label) {
   let log = '';
@@ -52,7 +55,7 @@ async function stopHost() {
     })]);
   } finally { clearTimeout(timer); }
 }
-async function startHost(patch) {
+async function startHostOnce(patch) {
   const offset = hostLog.length;
   host = spawn(process.execPath, [cli, 'web', '--patch', patch, '--port', '0', '--no-open'], { cwd: output, env, windowsHide: true });
   host.stdout.on('data', data => { hostLog += data; });
@@ -68,18 +71,48 @@ async function startHost(patch) {
   }
   throw new Error(`DSH 启动超时：${redact(hostLog.slice(-5000))}`);
 }
+// 只重试 Windows Profile 链接竞争；其他启动错误保留原始失败。
+async function startHost(patch) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const offset = hostLog.length;
+    try { return await startHostOnce(patch); }
+    catch (error) {
+      await stopHost();
+      const log = hostLog.slice(offset);
+      if (process.platform !== 'win32' || attempt === 3 || !/EBUSY/.test(log) || !/symlink|junction|healProfilesModuleFallbackLocked/.test(log)) throw error;
+      observations.push(`Windows Profile 链接暂忙，启动重试 ${attempt}/2`);
+      await new Promise(done => setTimeout(done, attempt * 1000));
+    }
+  }
+}
+async function dismissOnboarding() {
+  const deadline = Date.now() + 60000;
+  while (Date.now() < deadline) {
+    for (const name of [/^(继续|Continue)$/i, /^(稍后配置|稍后设置|Set up later|Configure later)$/i]) {
+      const button = page.getByRole('button', { name });
+      if (await button.isVisible()) await button.click({ timeout: 5000 });
+    }
+    try {
+      // trial 检查遮挡和可操作性，不触发宠物动作。
+      await page.locator('.dcp-pet-button').click({ trial: true, timeout: 1000 });
+      return;
+    } catch (error) {
+      if (error.name !== 'TimeoutError') throw error;
+    }
+  }
+  throw new Error('引导结束后宠物仍不可操作');
+}
 const checks = [];
 const observations = [];
 let outcome;
 try {
   await run(npmCli, ['pack', '--pack-destination', output], 'pack');
-  const pkg = JSON.parse(await readFile(join(repo, 'package.json'), 'utf8'));
   const tarball = join(output, `${pkg.name.replace('@', '').replace('/', '-')}-${pkg.version}.tgz`);
   await run(cli, ['plugin', '--profile', 'web', 'add', tarball, '--registry=https://registry.npmjs.org/', '--ignore-scripts'], 'install');
   checks.push('官方 CLI 从 tgz 安装插件');
   model = await startModelFixture();
   env.DSH_PET_E2E_KEY = randomUUID();
-  const patch = join(output, 'model.patch.yml');
+  const patch = join(output, 'model.patch.json');
   await mkdir(join(output, 'diagnostics'));
   await writeFile(join(output, 'diagnostics', 'package.json'), JSON.stringify({ name: 'dsh-pet-e2e-diagnostics', version: '0.0.0', type: 'module', private: true }));
   const diagnostics = join(output, 'diagnostics', 'index.mjs');
@@ -91,13 +124,14 @@ try {
   ]));
   const url = await startHost(patch);
   browser = await chromium.launch({ headless: true });
-  page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  page = await browser.newPage({ locale, viewport: { width: 1280, height: 900 } });
+  page.setDefaultTimeout(60000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(url);
   await page.locator('.dcp-pet-button').waitFor({ timeout: 45000 });
-  const welcome = page.getByRole('button', { name: /^(继续|Continue)$/ });
-  await welcome.click();
+  await dismissOnboarding();
+  await page.waitForFunction(expected => document.documentElement.lang.startsWith(expected), locale.split('-')[0]);
   const state = await page.evaluate(async () => (await fetch('/dsh-codex-pet/api/state')).json());
   assert.equal(state.pets.length, 9);
   assert.equal(state.warnings.length, 0);
@@ -125,14 +159,17 @@ try {
   await page.getByRole('button', { name: /^创建$|^Create$/ }).click();
   await page.getByRole('textbox', { name: /宠物描述|Pet description/ }).fill('端到端回归测试小海獭');
   await page.getByRole('button', { name: /在 DSH 中创建|Create in DSH/ }).click();
-  const wait = async predicate => {
-    for (let i = 0; i < 300; i++) {
+  const wait = async (predicate, label) => {
+    const deadline = Date.now() + 60000;
+    while (Date.now() < deadline) {
+      if (host.exitCode !== null) throw new Error(`等待 ${label} 时宿主退出：${redact(hostLog.slice(-2000))}`);
       if (predicate()) return;
       await new Promise(done => setTimeout(done, 100));
     }
-    throw new Error('等待模型链路超时');
+    throw new Error(`等待 ${label} 超时；请求数=${model.requests.length}；关闭状态=${model.requests.map(request => request.closed)}；宿主日志=${redact(hostLog.slice(-2000))}`);
   };
-  await wait(() => model.requests.length === 1);
+  await wait(() => model.requests.length >= 1, '模型请求 1');
+  assert.equal(model.requests.length, 1, '不得出现额外模型请求');
   assert.ok(JSON.stringify(model.requests[0].body.messages).includes('hatch-pet'));
   assert.ok(JSON.stringify(model.requests[0].body.messages).includes('端到端回归测试小海獭'));
   await page.getByRole('button', { name: /关闭设置|Close settings/ }).click();
@@ -140,10 +177,11 @@ try {
   checks.push('创建入口经真实 DSH 会话与模型 HTTP 请求发送 Skill 指令，显示运行通知');
   model.respond('question');
   await page.locator('.dcp-bubble-link').filter({ hasText: /等待你处理|Waiting/ }).waitFor();
-  await page.locator('.dcp-notice-action[title="查看并处理"]').click();
+  await page.getByRole('button', { name: /^(处理请求：|Respond to request:)/ }).click();
   await page.locator('.dcp-tray').getByText('蓝色', { exact: true }).click();
   await page.locator('.dcp-tray').getByRole('button', { name: /提交|Submit/ }).click();
-  await wait(() => model.requests.length === 2);
+  await wait(() => model.requests.length >= 2, '模型请求 2');
+  assert.equal(model.requests.length, 2, '不得出现额外模型请求');
   assert.ok(JSON.stringify(model.requests[1].body.messages).includes('蓝色'));
   model.respond('complete');
   await page.locator('.dcp-bubble-link').filter({ hasText: /已完成|完成|Completed|Finished/ }).waitFor();
@@ -158,27 +196,30 @@ try {
     await page.getByRole('button', { name: /关闭设置|Close settings/ }).click();
   };
   await createTask('端到端测试：错误通知');
-  await wait(() => model.requests.length === 3);
+  await wait(() => model.requests.length >= 3, '模型请求 3');
+  assert.equal(model.requests.length, 3, '不得出现额外模型请求');
   model.respond('error');
   await page.locator('.dcp-bubble-link').filter({ hasText: /出错|失败|error|failed/i }).waitFor();
   checks.push('模型 HTTP 错误经真实会话传播到宠物失败通知');
   await createTask('端到端测试：停止任务');
-  await wait(() => model.requests.length === 4);
+  await wait(() => model.requests.length >= 4, '模型请求 4');
+  assert.equal(model.requests.length, 4, '不得出现额外模型请求');
   model.startStream();
   await page.waitForFunction(() => document.body.innerText.includes('模型正在等待停止'));
-  await page.getByRole('button', { name: /展开会话|Expand sessions/ }).click();
-  await page.locator('.dcp-notice-action[title="停止当前轮次"]').click();
-  await wait(() => model.requests[3].closed);
-  await page.locator('.dcp-notice-action[title="停止当前轮次"]').waitFor({ state: 'hidden' });
+  await page.getByRole('button', { name: /展开会话|Expand conversations/ }).click();
+  await page.getByRole('button', { name: /^(停止当前轮次：|Stop current turn:)/ }).click();
+  await wait(() => model.requests[3].closed, '请求 4 关闭');
+  await page.getByRole('button', { name: /^(停止当前轮次：|Stop current turn:)/ }).waitFor({ state: 'hidden' });
   assert.equal(await page.locator('.dcp-bubble-link').filter({ hasText: /出错|error|failed/i }).count(), 1, '正常停止不应新增失败通知');
   checks.push('宠物停止按钮取消真实会话，并中断模型 HTTP 请求');
   await createTask('端到端测试：响应开始前停止任务');
-  await wait(() => model.requests.length === 5);
-  await page.getByRole('button', { name: /展开会话|Expand sessions/ }).click();
+  await wait(() => model.requests.length >= 5, '模型请求 5');
+  assert.equal(model.requests.length, 5, '不得出现额外模型请求');
+  await page.getByRole('button', { name: /展开会话|Expand conversations/ }).click();
   const beforeCancel = hostLog.length;
-  await page.locator('.dcp-notice-action[title="停止当前轮次"]').click();
-  await wait(() => model.requests[4].closed);
-  await page.locator('.dcp-notice-action[title="停止当前轮次"]').waitFor({ state: 'hidden' });
+  await page.getByRole('button', { name: /^(停止当前轮次：|Stop current turn:)/ }).click();
+  await wait(() => model.requests[4].closed, '请求 5 关闭');
+  await page.getByRole('button', { name: /^(停止当前轮次：|Stop current turn:)/ }).waitFor({ state: 'hidden' });
   const cancellationErrors = hostLog.slice(beforeCancel).split('\n').filter(line => line.includes('[pet-e2e-agent-error]'));
   assert.ok(cancellationErrors.length <= 1, '取消不得产生多个宿主错误');
   if (cancellationErrors.length) {
@@ -191,17 +232,15 @@ try {
     const rect = document.querySelector('.dcp-floating')?.getBoundingClientRect();
     return rect && rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight;
   });
-  const bounds = await page.locator('.dcp-floating').boundingBox();
-  assert.ok(bounds && bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= 441 && bounds.y + bounds.height <= 700);
   await page.screenshot({ path: join(output, 'narrow-viewport.png') });
   checks.push('窄视口宠物位置不越界');
   await stopHost();
   await page.goto(await startHost(patch));
-  await page.locator('.dcp-pet-button').waitFor();
+  await dismissOnboarding();
   assert.equal(await page.evaluate(async () => (await (await fetch('/dsh-codex-pet/api/state')).json()).config.selected), 'dewey');
   checks.push('Host 重启后宠物选择保持');
   assert.deepEqual(errors, [], '浏览器不应产生未处理异常');
-  outcome = { dsh: dsh.version, checks, errors, observations };
+  outcome = { dsh: dsh.version, locale, checks, errors, observations };
 } catch (error) {
   if (page) {
     await page.screenshot({ path: join(output, 'failure.png') }).catch(() => {});

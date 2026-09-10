@@ -19,14 +19,44 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.25.0
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run check
       - run: npm test
       - run: npm run smoke
-      - run: npm run test:e2e
       - name: 校验完整发布包
         run: npm pack --pack-destination "$RUNNER_TEMP"
+
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        locale: [zh-CN, en-US]
+    env:
+      DSH_PET_E2E_LOCALE: ${{ matrix.locale }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: 保留端到端诊断证据
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-evidence-${{ matrix.locale }}
+          include-hidden-files: true
+          retention-days: 7
+          path: |
+            .preview/e2e-latest-*/*.log
+            .preview/e2e-latest-*/result.json
+            .preview/e2e-latest-*/*.png
+            .preview/e2e-latest-*/failure.txt
