@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { randomUUID } from 'node:crypto';
+import { retryStartup, finishReport } from './e2e-runtime.mjs';
 import { startModelFixture } from './e2e-model-fixture.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,14 +56,14 @@ async function stopHost() {
     })]);
   } finally { clearTimeout(timer); }
 }
-async function startHostOnce(patch) {
+async function startHostOnce(patch, deadline) {
   const offset = hostLog.length;
   host = spawn(process.execPath, [cli, 'web', '--patch', patch, '--port', '0', '--no-open'], { cwd: output, env, windowsHide: true });
   host.stdout.on('data', data => { hostLog += data; });
   host.stderr.on('data', data => { hostLog += data; });
   let startupError;
   host.once('error', error => { startupError = error; });
-  for (let i = 0; i < 600; i++) {
+  while (performance.now() < deadline) {
     if (startupError) throw startupError;
     if (host.exitCode !== null) throw new Error(`DSH 启动退出：${redact(hostLog.slice(-5000))}`);
     const url = hostLog.slice(offset).match(/dsh web: (http:\/\/[^\s]+)/)?.[1];
@@ -73,17 +74,21 @@ async function startHostOnce(patch) {
 }
 // 只重试 Windows Profile 链接竞争；其他启动错误保留原始失败。
 async function startHost(patch) {
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    const offset = hostLog.length;
-    try { return await startHostOnce(patch); }
-    catch (error) {
-      await stopHost();
-      const log = hostLog.slice(offset);
-      if (process.platform !== 'win32' || attempt === 3 || !/EBUSY/.test(log) || !/symlink|junction|healProfilesModuleFallbackLocked/.test(log)) throw error;
-      observations.push(`Windows Profile 链接暂忙，启动重试 ${attempt}/2`);
-      await new Promise(done => setTimeout(done, attempt * 1000));
-    }
-  }
+  let log = '';
+  return retryStartup({
+    start: async deadline => {
+      const offset = hostLog.length;
+      log = '';
+      try { return await startHostOnce(patch, deadline); }
+      catch (error) {
+        await stopHost();
+        log = hostLog.slice(offset);
+        throw error;
+      }
+    },
+    retryable: () => process.platform === 'win32' && /EBUSY/.test(log) && /symlink|junction|healProfilesModuleFallbackLocked/.test(log),
+    onRetry: attempt => observations.push(`Windows Profile 链接暂忙，等待 5 秒后重试 ${attempt}（总启动预算 120 秒）`),
+  });
 }
 async function dismissOnboarding() {
   const deadline = Date.now() + 60000;
@@ -104,7 +109,9 @@ async function dismissOnboarding() {
 }
 const checks = [];
 const observations = [];
-let outcome;
+const errors = [];
+const outcome = { dsh: dsh.version, locale, checks, errors, observations, cleanupErrors: [] };
+await writeFile(join(output, 'retention.json'), JSON.stringify({ owner: 'dsh-codex-pet-e2e-v1', state: 'running' }));
 try {
   await run(npmCli, ['pack', '--pack-destination', output], 'pack');
   const tarball = join(output, `${pkg.name.replace('@', '').replace('/', '-')}-${pkg.version}.tgz`);
@@ -126,7 +133,6 @@ try {
   browser = await chromium.launch({ headless: true });
   page = await browser.newPage({ locale, viewport: { width: 1280, height: 900 } });
   page.setDefaultTimeout(60000);
-  const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(url);
   await page.locator('.dcp-pet-button').waitFor({ timeout: 45000 });
@@ -240,27 +246,39 @@ try {
   assert.equal(await page.evaluate(async () => (await (await fetch('/dsh-codex-pet/api/state')).json()).config.selected), 'dewey');
   checks.push('Host 重启后宠物选择保持');
   assert.deepEqual(errors, [], '浏览器不应产生未处理异常');
-  outcome = { dsh: dsh.version, locale, checks, errors, observations };
 } catch (error) {
+  outcome.error = redact(String(error));
   if (page) {
-    await page.screenshot({ path: join(output, 'failure.png') }).catch(() => {});
-    await writeFile(join(output, 'failure.txt'), await page.locator('body').innerText().catch(() => '页面不可读'));
+    await finishReport(outcome, [
+      () => page.screenshot({ path: join(output, 'failure.png') }),
+      async () => writeFile(join(output, 'failure.txt'), await page.locator('body').innerText()),
+    ]);
   }
-  await writeFile(join(output, 'result.json'), JSON.stringify({ dsh: dsh.version, checks, observations, error: String(error) }, null, 2));
-  console.error(`端到端失败，证据：${output}`);
-  throw error;
 } finally {
-  await browser?.close();
-  try { await stopHost(); }
-  catch (error) {
-    await writeFile(join(output, 'result.json'), JSON.stringify({ dsh: dsh.version, checks, error: `清理失败：${error}` }, null, 2));
-    throw error;
-  }
-  finally {
-    await writeFile(join(output, 'host.log'), redact(hostLog));
-    await model?.close();
+  await finishReport(outcome, [
+    async () => browser?.close(),
+    stopHost,
+    async () => model?.close(),
+    () => writeFile(join(output, 'host.log'), redact(hostLog)),
+  ]);
+  await writeFile(join(output, 'result.json'), JSON.stringify(outcome, null, 2));
+  // 清理出错的运行不参与回收，防止残留进程仍在使用 Profile。
+  if (!outcome.cleanupErrors.length) {
+    await writeFile(join(output, 'retention.json'), JSON.stringify({ owner: 'dsh-codex-pet-e2e-v1', state: 'finished', finishedAt: new Date().toISOString() }));
   }
 }
-await writeFile(join(output, 'result.json'), JSON.stringify(outcome, null, 2));
-console.log(`端到端通过：${checks.join('；')}。隔离进程已停止。证据：${output}`);
+if (outcome.error || outcome.cleanupErrors.length) {
+  console.error(`端到端失败，证据：${output}。${outcome.error || ''} ${outcome.cleanupErrors.join('; ')}`);
+  process.exitCode = 1;
+} else {
+  console.log(`端到端通过：${checks.join('；')}。隔离进程已停止。证据：${output}`);
+}
 for (const observation of observations) console.warn(`上游行为记录：${observation}`);
+// 回收失败单独报告，不覆盖本轮测试结果或删除未标记的历史证据。
+const prune = spawn(process.platform === 'win32' ? 'powershell.exe' : 'pwsh', ['-NoProfile', '-File', join(repo, 'scripts', 'prune-e2e.ps1')], { cwd: repo, env, windowsHide: true, stdio: 'inherit' });
+const pruneError = await new Promise(done => { prune.once('error', error => done(String(error))); prune.once('close', code => done(code === 0 ? null : `退出码 ${code}`)); });
+if (pruneError) {
+  outcome.retentionError = pruneError;
+  await writeFile(join(output, 'result.json'), JSON.stringify(outcome, null, 2));
+  console.warn(`证据回收失败：${pruneError}`);
+}

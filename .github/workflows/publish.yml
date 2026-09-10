@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
+      actions: read
       contents: write
       id-token: write
     steps:
@@ -24,6 +25,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: 校验标签提交的 main 双语 CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/verify-release-ci.mjs
       - name: 校验标签并生成双语说明
         run: node scripts/release-notes.mjs "$GITHUB_REF_NAME" "$RUNNER_TEMP/release-notes.md"
       - run: npm ci

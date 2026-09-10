@@ -28,6 +28,7 @@ jobs:
         run: npm pack --pack-destination "$RUNNER_TEMP"
 
   e2e:
+    name: e2e (${{ matrix.locale }})
     strategy:
       fail-fast: false
       matrix:

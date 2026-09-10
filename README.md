@@ -72,7 +72,7 @@ Add plugins as needed to your existing DeepSeek Harness environment.
 
 ## Installation
 
-DeepSeek Harness **`0.1.5-rc.1`** is supported; older versions are outside the current support range. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
+DeepSeek Harness **`0.1.5-rc.2`** is supported; older versions are outside the current support range. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -100,7 +100,7 @@ Open **Settings → Pets** (`宠物` in the current UI), or open settings from t
 
 The pet is a notification and action surface. Start new conversations and write follow-up messages in the main DSH interface.
 
-Known upstream limitation: cancelling before the model returns an HTTP response in DSH `0.1.5-rc.1` can report a non-JSON-serializable `turn/end` error, which the pet displays as a failure notification. Cancellation after streaming has started passed end-to-end validation.
+Known upstream limitation: cancelling before the model returns an HTTP response in DSH `0.1.5-rc.2` can report a non-JSON-serializable `turn/end` error, which the pet displays as a failure notification. Cancellation after streaming has started passed end-to-end validation.
 
 ### Create a custom pet
 
@@ -128,7 +128,7 @@ Custom pets are stored in `.dsh/codex-pet/pets` under your user directory by def
 
 ## Development checks
 
-Development dependencies and the lockfile pin DSH `0.1.5-rc.1`. Use `npm ci` to reproduce the environment; `npm run check` also checks the plugin against official service types.
+Development dependencies and the lockfile pin DSH `0.1.5-rc.2`. Use `npm ci` to reproduce the environment; `npm run check` also checks the plugin against official service types.
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -143,7 +143,7 @@ npm run test:e2e
 
 End-to-end tests also require pnpm on PATH (CI uses `11.25.0`). They install the local package through the official CLI and boot the full DSH Web app to test pet settings, persistence, session creation, question responses, completion and failure notifications, and cancellation. Only the external model HTTP service is replaced with a local fixture; no paid model or image generation is used. Tests use a separate `DSH_HOME` and keep logs and screenshots in the ignored `.preview/e2e-latest-*` directory without changing your everyday profile.
 
-The official type check verifies structural compatibility, not service lifecycle behavior. E2E runs as a separate CI job with a 25-minute budget; it is temporarily excluded from the publishing workflow pending repeatability evidence on Ubuntu. Windows Profile link errors (`EBUSY`) retry startup at most twice; other failures remain failures. Logs and screenshots are retained for diagnosis.
+The official type check verifies structural compatibility, not service lifecycle behavior. E2E runs as a separate CI job with a 25-minute budget; publishing requires a successful main push CI run for the exact tagged commit, including both language jobs. Wait for CI before tagging; missing, running, skipped, or failed checks block publishing. Windows Profile link errors (`EBUSY`) retry after 5 seconds within a shared 120-second startup budget; shutdown may require up to 10 additional seconds. This mitigates transient failures without claiming Windows stability. Other failures remain failures. Reports retain the locale, original failure, retry observations, and separate cleanup errors. PowerShell (`powershell.exe` on Windows, `pwsh` elsewhere) retains the latest five completed, marked runs. Unmarked historical evidence, unfinished runs, and directories containing `.keep` are preserved; pruning never follows directory links. Add `.keep` to release acceptance evidence before subsequent runs.
 
 Set `DSH_PET_E2E_LOCALE` to `zh-CN` (default) or `en-US` to choose the browser language; CI tests both.
 

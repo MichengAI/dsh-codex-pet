@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.1.3] - 2026-09-10
+## [0.1.3] - 2026-09-11
 
-- Support DSH Web `0.1.5-rc.1` and correct client service injection so the plugin loads with the updated host. Older DSH versions are outside the supported range.
+- Support DSH Web `0.1.5-rc.2` and correct client service injection so the plugin loads with the updated host. Older DSH versions are outside the supported range.
 - Known upstream limitation: stopping before the model returns an HTTP response may produce a `turn/end` serialization error and a failure notification; stopping after streaming starts is supported.
 
 ## [0.1.2] - 2026-09-09
