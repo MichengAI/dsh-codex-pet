@@ -100,7 +100,7 @@ dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://
 
 宠物承担通知和待处理操作。新建会话、输入后续消息仍在 DSH 主界面完成。
 
-已知上游边界：DSH `0.1.5-rc.2` 在模型尚未返回 HTTP 响应时停止任务，可能因 `turn/end` 数据不可 JSON 序列化而上报错误，宠物会显示失败通知。已开始流式响应时的停止操作已通过端到端验证。
+已知问题：在 DSH `0.1.5-rc.2` 中，若模型尚未开始响应就停止任务，宠物可能显示失败通知。
 
 ### 创建自定义宠物
 
@@ -126,26 +126,9 @@ dsh plugin --profile web remove @michengai/dsh-codex-pet
 
 自定义宠物默认保存在用户目录的 `.dsh/codex-pet/pets` 下，可从宠物设置打开。设置了 `DSH_HOME` 时使用该目录下的 `codex-pet/pets`。卸载插件会保留这些文件与配置。
 
-## 开发验证
+## 参与开发
 
-开发依赖和锁文件固定 DSH `0.1.5-rc.2`。使用 `npm ci` 复现，`npm run check` 同时检查插件与官方服务类型的兼容性。
-
-```powershell
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$OutputEncoding = [System.Text.Encoding]::UTF8
-npm ci
-npx playwright install chromium
-npm run check
-npm test
-npm run smoke
-npm run test:e2e
-```
-
-端到端测试另需 PATH 中有 pnpm（CI 使用 `11.25.0`）。它通过官方 CLI 安装本地发行包、启动完整 DSH Web，验证宠物设置、持久化、创建会话、提问回传、完成与失败通知和停止任务。只有外部模型 HTTP 服务使用本地夹具，不调用付费模型或生成图片。测试使用独立 `DSH_HOME`，日志和截图保存在忽略的 `.preview/e2e-latest-*` 下，不改动日常 Profile。
-
-官方类型检查验证结构兼容性，不替代服务生命周期验证。E2E 拆为独立 CI job，限时 25 分钟；发布前必须验证标签提交对应的 main push CI 成功，且全部 5 个宿主版本的中英文 job 均通过；先等待 CI，再打标签，缺失、运行中、跳过或失败的检查都会阻止发布。Windows Profile 链接错误（`EBUSY`）在共享的 120 秒启动预算内每次等待 5 秒后重试，关闭进程最多另需 10 秒；这只缓解瞬时竞争，不代表 Windows 已稳定，其他错误直接失败。报告同时保留语言、原始失败、重试记录及独立清理错误。通过 PowerShell（Windows 使用 `powershell.exe`，其他平台使用 `pwsh`）保留最近 5 次已标记并结束的运行；未标记的历史证据、未结束运行及含 `.keep` 文件的目录不回收，清理不跟随目录链接。发布验收证据应在后续运行前添加 `.keep`。
-
-可设置 `DSH_PET_E2E_LOCALE` 为 `zh-CN`（默认）或 `en-US` 选择浏览器语言，CI 对全部 5 个版本分别验证两种语言。设置 `DSH_PET_E2E_VERSION` 可选择旧版宿主，其完整官方依赖图在隔离目录内精确安装，开发依赖继续保持 rc.2。可通过 `DSH_PET_E2E_ROOT` 指向另一个名为 `.preview` 的独立目录，将测试宿主和证据放到其他磁盘。
+本地开发、测试与发布流程见 [开发与验证指南](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md)。
 
 ## 许可证
 
