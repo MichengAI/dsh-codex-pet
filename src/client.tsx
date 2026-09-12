@@ -15,6 +15,7 @@ import {
 import type { TrayCommand } from "./notification-tray.tsx";
 import { createPetSession, type CreationSessions } from "./creation.ts";
 import { observePetSettingsIcon } from "./settings-icon.ts";
+import { GlobalOverlay } from "./global-overlay.tsx";
 interface ClientContext {
   locale: PetLocaleStore;
   sessions: Sessions & CreationSessions;
@@ -153,6 +154,7 @@ function Overlay({
         className="dcp dcp-dialog"
         aria-label={t("宠物设置")}
         style={{
+          pointerEvents: "auto",
           width: "min(800px, calc(100vw - 32px))",
           maxHeight: "85vh",
           overflow: "auto",
@@ -230,11 +232,13 @@ export function apply(ctx: ClientContext): void {
     ctx.slots.register(
       { name: "shell.overlay", id: "michengai-codex-pet", order: 100 },
       () => (
-        <Overlay
-          sessions={sessions}
-          pending={pending}
-          locale={ctx.locale}
-        />
+        <GlobalOverlay>
+          <Overlay
+            sessions={sessions}
+            pending={pending}
+            locale={ctx.locale}
+          />
+        </GlobalOverlay>
       ),
     ),
   );

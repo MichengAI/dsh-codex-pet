@@ -24,8 +24,8 @@ if (!smokeRoot)
     });
     const prelude = await build({
       stdin: {
-        contents: `import * as React from 'react'; import * as jsx from 'react/jsx-runtime'; import {createRoot} from 'react-dom/client';
-      window.__ModuleLoader__={load({factory}){window.petPlugin=factory(id=>id==='react'?React:id==='react/jsx-runtime'?jsx:{createRoot});}};
+        contents: `import * as React from 'react'; import * as jsx from 'react/jsx-runtime'; import * as ReactDOM from 'react-dom'; import {createRoot} from 'react-dom/client';
+      window.__ModuleLoader__={load({factory}){window.petPlugin=factory(id=>id==='react'?React:id==='react/jsx-runtime'?jsx:id==='react-dom'?ReactDOM:{createRoot});}};
       window.renderPet=Component=>createRoot(document.getElementById('root')).render(React.createElement(Component));`,
         resolveDir: process.cwd(),
       },

@@ -19,6 +19,10 @@ npm run test:e2e
 
 ## 端到端测试
 
+Pet 的 Web 浮层通过 React Portal 挂载到 `body > [data-dsh-pet-overlay]`，空白区域点击穿透。配合 Codex UI 设置页显示时，需要同时使用已对该容器放行隔离和焦点限制的 Codex UI；仅更新 Pet 无法绕过旧版设置页的背景隔离。
+
+同级目录存在 `dsh-codex-ui` 源码时，在 Pet 仓库运行 `node scripts\verify-global-overlay.mjs`，可验证实际 Portal 和设置页隔离逻辑的显示、点击、焦点循环、空白穿透、重复切换和卸载清理。该浏览器夹具不替代完整 DSH Profile 验收。
+
 端到端测试另需 PATH 中有 pnpm（CI 使用 `11.25.0`）。它通过官方 CLI 安装本地发行包、启动完整 DSH Web，验证宠物设置、持久化、创建会话、提问回传、完成与失败通知和停止任务。只有外部模型 HTTP 服务使用本地夹具，不调用付费模型或生成图片。测试使用独立 `DSH_HOME`，日志和截图保存在忽略的 `.preview/e2e-latest-*` 下，不改动日常 Profile。
 
 ## CI 与发布要求

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.5] - 2026-09-12
+
+- Keep the pet in a global Web overlay across pages while preserving interaction and letting clicks pass through empty areas.
+- Showing the pet on Codex UI settings pages requires Codex UI 1.1.3 or later. The pet still works independently without Codex UI.
+
 ## [0.1.4] - 2026-09-11
 
 - Restore compatibility with DSH `0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, and `0.1.5-rc.1` while retaining `0.1.5-rc.2`. Adapt legacy session requests so pet notifications can answer questions and approvals on older hosts.
