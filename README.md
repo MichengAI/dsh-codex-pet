@@ -56,19 +56,21 @@ Keep working in DSH while the pet and task notifications remain in the corner of
 
 ## DSH product ecosystem
 
-Add plugins as needed to your existing DeepSeek Harness environment.
+For a desktop workbench, download [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop/releases). Existing [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) installations can add plugins as needed by following each project's README. Below are 11 first-party plugins; consult the corresponding desktop release notes and bundled catalog for what that version includes.
 
 | Plugin | What you can do |
 | --- | --- |
-| [Codex UI](https://github.com/MichengAI/dsh-codex-ui) | Organize projects and conversations and navigate tasks |
-| [IM Connect](https://github.com/MichengAI/dsh-im-connect) | Send tasks and receive replies through messaging platforms |
-| [Automation](https://github.com/MichengAI/dsh-automation) | Schedule tasks and review their runs |
+| [Codex UI](https://github.com/MichengAI/dsh-codex-ui) | Organize projects and conversations, search tasks, and navigate chat turns |
+| [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) | Choose and summon specialists for your task |
 | [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) | Find, enable, create, and import local skills |
-| [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) | Search, restore, and manage archived conversations |
-| [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) | Choose specialists for a task |
-| [BTW](https://github.com/MichengAI/dsh-btw) | Ask side questions in the current context |
-| [Simplify](https://github.com/MichengAI/dsh-simplify) | Improve code within your Git changes |
-| [Codex Pet](https://github.com/MichengAI/dsh-codex-pet) | Keep a companion nearby and handle task notifications |
+| [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) | Search, restore, or clean up archived conversations |
+| [IM Connect](https://github.com/MichengAI/dsh-im-connect) | Send tasks and receive replies through messaging platforms |
+| [Automation](https://github.com/MichengAI/dsh-automation) | Schedule tasks and review each run |
+| [BTW](https://github.com/MichengAI/dsh-btw) | Ask side questions without interrupting the main task |
+| [Simplify](https://github.com/MichengAI/dsh-simplify) | Use `/simplify` to improve code within your Git changes |
+| [PUA](https://github.com/MichengAI/dsh-pua) | Guide the Agent to try new approaches after failures, investigate causes, and verify results before completion |
+| [Code Review](https://github.com/MichengAI/dsh-code-review) | Use `/review` to request an independent Agent code review and receive the report in the current conversation |
+| [Codex Pet](https://github.com/MichengAI/dsh-codex-pet) | View conversation notifications and respond to tool approvals and questions through a desktop pet |
 
 ## Installation
 
