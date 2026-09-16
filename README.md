@@ -74,7 +74,7 @@ For a desktop workbench, download [DSH Codex Desktop](https://github.com/Micheng
 
 ## Installation
 
-Supported DeepSeek Harness versions: **`0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, `0.1.5-rc.1`, and `0.1.5-rc.2`**. New compatibility is added without dropping these older releases. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
+Supported DeepSeek Harness versions: **`0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, `0.1.5-rc.1`, `0.1.5-rc.2`, and `0.1.6-alpha.1`**. New compatibility is added without dropping these older releases. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

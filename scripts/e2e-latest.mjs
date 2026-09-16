@@ -124,7 +124,14 @@ try {
   const diagnostics = join(output, 'diagnostics', 'index.mjs');
   await writeFile(diagnostics, `function detail(error) { return { message: String(error), cause: error?.cause ? detail(error.cause) : undefined }; } export function apply(ctx) { ctx.on('agent/error', ({ agent, error }) => console.log('[pet-e2e-agent-error]', JSON.stringify({ id: agent.id, error: detail(error) }))); }`);
   await writeFile(patch, JSON.stringify([
-    { id: 'llm-deepseek', config: { baseURL: model.url, apiKeyEnv: 'DSH_PET_E2E_KEY', thinking: 'disabled', models: [{ id: 'deepseek-chat', name: '本地回归测试模型' }] } },
+    { id: 'llm-deepseek', config: {
+      baseURL: model.url,
+      apiKeyEnv: 'DSH_PET_E2E_KEY',
+      thinking: 'disabled',
+      models: [{ id: 'deepseek-chat', name: '本地回归测试模型' }],
+      // 0.1.6 默认 Messages；夹具仍走 chat/completions，旧宿主没有该字段。
+      ...(/^0\.1\.6(?:-|$)/.test(dsh.version) ? { protocol: 'chat-completions' } : {}),
+    } },
     { id: 'session-title-llm', disabled: true },
     { insert: [{ id: 'pet-e2e-diagnostics', name: pathToFileURL(diagnostics).href }] },
   ]));

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.6] - 2026-09-16
+
+- Add compatibility with DSH `0.1.6-alpha.1` without dropping the existing supported hosts. Pin development types and the default e2e host to this release.
+
 ## [0.1.5] - 2026-09-12
 
 - Keep the pet in a global Web overlay across pages while preserving interaction and letting clicks pass through empty areas.

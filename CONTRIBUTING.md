@@ -4,7 +4,7 @@
 
 ## 本地验证
 
-开发依赖和锁文件固定 DSH `0.1.5-rc.2`。使用 `npm ci` 复现，`npm run check` 同时检查插件与官方服务类型的兼容性。
+开发依赖和锁文件固定 DSH `0.1.6-alpha.1`。使用 `npm ci` 复现，`npm run check` 同时检查插件与官方服务类型的兼容性。
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -27,7 +27,7 @@ Pet 的 Web 浮层通过 React Portal 挂载到 `body > [data-dsh-pet-overlay]`�
 
 ## CI 与发布要求
 
-官方类型检查验证结构兼容性，不替代服务生命周期验证。E2E 拆为独立 CI job，限时 25 分钟；发布前必须验证标签提交对应的 main push CI 成功，且全部 5 个宿主版本的中英文 job 均通过；先等待 CI，再打标签，缺失、运行中、跳过或失败的检查都会阻止发布。
+官方类型检查验证结构兼容性，不替代服务生命周期验证。E2E 拆为独立 CI job，限时 25 分钟；发布前必须验证标签提交对应的 main push CI 成功，且全部 6 个宿主版本的中英文 job 均通过；先等待 CI，再打标签，缺失、运行中、跳过或失败的检查都会阻止发布。
 
 ## Windows 重试与证据保留
 
@@ -35,4 +35,4 @@ Windows Profile 链接错误（`EBUSY`）在共享的 120 秒启动预算内每�
 
 ## 测试环境配置
 
-可设置 `DSH_PET_E2E_LOCALE` 为 `zh-CN`（默认）或 `en-US` 选择浏览器语言，CI 对全部 5 个版本分别验证两种语言。设置 `DSH_PET_E2E_VERSION` 可选择旧版宿主，其完整官方依赖图在隔离目录内精确安装，开发依赖继续保持 rc.2。可通过 `DSH_PET_E2E_ROOT` 指向另一个名为 `.preview` 的独立目录，将测试宿主和证据放到其他磁盘。
+可设置 `DSH_PET_E2E_LOCALE` 为 `zh-CN`（默认）或 `en-US` 选择浏览器语言，CI 对全部 6 个版本分别验证两种语言。设置 `DSH_PET_E2E_VERSION` 可选择旧版宿主，其完整官方依赖图在隔离目录内精确安装，开发依赖继续保持最新版。可通过 `DSH_PET_E2E_ROOT` 指向另一个名为 `.preview` 的独立目录，将测试宿主和证据放到其他磁盘。
