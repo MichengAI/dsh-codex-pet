@@ -1,19 +1,50 @@
-/** 将旧版公开 Chat 时间线转换为通知需要的事件增量，保留真实结束原因。 */
-import type { Sessions, EventWindow, SessionSnapshot } from './activity.ts';
+/** 把新旧宿主的导航、状态和旧版 Chat 时间线接到插件内部的统一会话面。 */
+import type { Sessions, EventWindow, SessionSnapshot, Store, SessionStatusRow } from './activity.ts';
 import type { CreationSessions } from './creation.ts';
+
 type Boundary = { seq: number } & EventWindow['change']['entries'][number]['event'];
 type TimelineSnapshot = SessionSnapshot & { openState?: string; chat?: { timeline: { turns: ReadonlyMap<number, { start?: Boundary; end?: Boundary }> } } };
+type HostSessions = Omit<Sessions, 'open' | 'status'> & Partial<Pick<Sessions, 'open' | 'status' | 'using' | 'create' | 'retain'>> & Partial<Pick<CreationSessions, 'create'>>;
 
-export function compatibleSessions(sessions: Sessions & CreationSessions): Sessions & CreationSessions {
-  type Binding = NonNullable<ReturnType<Sessions['binding']>> & NonNullable<ReturnType<CreationSessions['binding']>>;
+export type SessionNavigate = (id: string) => unknown;
+
+export function compatibleSessions(
+  sessions: HostSessions,
+  navigate?: SessionNavigate,
+  status?: Store<ReadonlyMap<string, SessionStatusRow>>,
+): Sessions {
+  type Binding = NonNullable<ReturnType<Sessions['binding']>>;
   const cache = new WeakMap<object, Binding>();
+  const refs = new Map<string, NonNullable<ReturnType<NonNullable<Sessions['retain']>>>>();
+  const sweep = () => {
+    const ids = new Set(sessions.list?.getSnapshot?.()?.ids ?? []);
+    for (const [id, ref] of refs) if (!ids.has(id)) {
+      try { ref.release(); } catch { /* 会话已不在目录 */ }
+      refs.delete(id);
+    }
+  };
+  sessions.list?.subscribe?.(sweep);
   return {
     list: sessions.list,
-    open: id => sessions.open(id),
-    create: options => sessions.create(options),
+    status: status ?? sessions.status,
+    using: sessions.using?.bind(sessions),
+    open: id => navigate ? navigate(id) : sessions.open?.(id),
+    create: options => {
+      if (!sessions.create) throw new Error('创建会话尚不可用，请重试');
+      return sessions.create(options);
+    },
     binding(id) {
-      const binding = sessions.binding(id) as Binding | undefined;
-      if (!binding || binding.eventSource) return binding;
+      sweep();
+      let binding = sessions.binding(id);
+      if (!binding && sessions.retain) {
+        let ref = refs.get(id);
+        if (!ref) {
+          try { ref = sessions.retain(id, { source: 'controllerOperation' }); refs.set(id, ref); }
+          catch { return undefined; }
+        }
+        binding = ref.binding;
+      }
+      if (!binding || binding.eventSource) return binding as Binding | undefined;
       const cached = cache.get(binding);
       if (cached) return cached;
       let lastSeq = -1, initialized = false;

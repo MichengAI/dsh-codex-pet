@@ -1,6 +1,6 @@
 /** 多会话通知与真实交互适配；不打开后台会话、不替用户作决定。 */
 import { IDLE, selectActivity, type Activity } from './model.ts';
-import type { Sessions, Store } from './activity.ts';
+import { selectedSessionId, type Sessions, type Store } from './activity.ts';
 export interface Question { id: string; question: string; detail?: string; options?: { label: string; description?: string }[]; multiSelect?: boolean }
 export interface Answers { answers: { id: string; selected: string[]; custom?: string }[] }
 export interface Pending {
@@ -14,7 +14,7 @@ export interface Notice extends Activity {
 }
 export interface NotificationState { items: Notice[]; activity: Activity; hidden: number }
 export type NoticeCommand = { type: 'open'; id: string; token: string } | { type: 'dismiss'; id: string; token: string } | { type: 'approve' | 'reject' | 'answer'; id: string; token: string; requestKey: string; answers?: Answers } | { type: 'stop'; id: string; token: string } | { type: 'restore' };
-type RecordState = { round: number; running: boolean; completion: boolean; error: string | null; revision: number; updatedAt: number; lastPose: string; requestKey?: string; awaitingStart?: boolean; finished?: string; snapshotError?: string | null };
+type RecordState = { round: number; running: boolean; completion: boolean; error: string | null; revision: number; updatedAt: number; lastPose: string; requestKey?: string; awaitingStart?: boolean; finished?: string; snapshotError?: string | null; suppressStopCompletion?: boolean };
 const priority: Record<string, number> = { waiting: 0, failed: 1, review: 2, running: 3 };
 const lifetime: Record<string, number> = { failed: 3600000, waiting: 86400000, review: 604800000 };
 export function validateAnswers(questions: readonly Question[], value: Answers | undefined): Answers {
@@ -44,7 +44,8 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
     if (publishing) return;
     publishing = true;
     try {
-      const list = sessions.list.getSnapshot(), requests = pending.getSnapshot();
+      const list = sessions.list.getSnapshot(), requests = pending.getSnapshot(), statuses = sessions.status?.getSnapshot();
+      const current = selectedSessionId(list);
       // 子代理由宿主路由管理，不能作为独立通知绑定或操作。
       const ids = new Set(list.ids.filter(id => list.byId[id] && list.byId[id].origin !== 'subagent'));
       for (const id of records.keys()) if (!ids.has(id)) { records.delete(id); dismissed.delete(id); }
@@ -52,33 +53,38 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
       const items: Notice[] = []; let hidden = 0;
       for (const id of ids) {
         const row = list.byId[id]; if (!row) continue;
+        const status = statuses?.get(id);
         const binding = sessions.binding(id);
         let record = records.get(id);
-        if (!record) { record = { round: 0, running: row.running, completion: !!row.completed, error: null, revision: binding?.eventSource.getSnapshot().revision ?? -1, updatedAt: row.updatedAt ?? now(), lastPose: '' }; records.set(id, record); }
+        if (!record) { record = { round: 0, running: row.running, completion: !!status?.completionUnread || !!row.completed, error: null, revision: binding?.eventSource?.getSnapshot().revision ?? -1, updatedAt: row.updatedAt ?? now(), lastPose: '' }; records.set(id, record); }
         const previous = bindings.get(id);
         if (binding && (previous?.binding.session !== binding.session || previous.binding.eventSource !== binding.eventSource)) {
           previous?.off();
-          record.revision = binding.eventSource.getSnapshot().revision;
-          const offSession = binding.session.subscribe(publish), offEvents = binding.eventSource.subscribe(publish);
-          bindings.set(id, { binding, off: () => { offSession(); offEvents(); } });
+          record.revision = binding.eventSource?.getSnapshot().revision ?? record.revision;
+          const offSession = binding.session.subscribe(publish), offEvents = binding.eventSource?.subscribe(publish);
+          bindings.set(id, { binding, off: () => { offSession(); offEvents?.(); } });
         }
         const snapshot = binding?.session.getSnapshot();
         // 当前详细快照为准；后台 running 使用持续更新的列表，避免冷快照覆盖它。
-        const running = id === list.current ? snapshot?.running ?? row.running : row.running;
-        if (running && !record.running) { record.round++; record.awaitingStart = true; record.finished = undefined; record.completion = false; record.error = null; record.updatedAt = now(); }
-        const events = binding?.eventSource.getSnapshot();
+        const running = status?.running ?? (id === current ? snapshot?.running ?? row.running : row.running);
+        if (running && !record.running) { record.round++; record.awaitingStart = true; record.finished = undefined; record.completion = false; record.error = null; record.suppressStopCompletion = false; record.updatedAt = now(); }
+        const events = binding?.eventSource?.getSnapshot();
         if (events && record.revision !== events.revision) {
           record.revision = events.revision;
           if (events.change.kind === 'append') for (const entry of events.change.entries) {
             if (entry.type !== 'event') continue;
             if (entry.event.type === 'turn/start') { if (!record.awaitingStart) record.round++; record.awaitingStart = false; record.finished = undefined; record.completion = false; record.error = null; }
             if (entry.event.type === 'turn/end') { record.finished = entry.event.data?.reason?.kind; record.completion = record.finished === 'completed'; record.updatedAt = now(); }
-          }
+          } else if (events.change.kind === 'replace') record.suppressStopCompletion = true;
         }
+        const stopped = !running && record.running;
         record.running = running;
-        if (snapshot?.lastAgentError && snapshot.lastAgentError !== record.snapshotError) record.error = snapshot.lastAgentError;
-        record.snapshotError = snapshot?.lastAgentError;
-        if (row.completed && !running && (!record.finished || record.finished === 'completed')) record.completion = true;
+        const agentError = snapshot?.lastAgentError ?? snapshot?.promptError?.error?.message ?? null;
+        if (agentError && agentError !== record.snapshotError) record.error = agentError;
+        record.snapshotError = agentError;
+        // alpha.2 主视图完成往往不设 completionUnread；没有 turn/end 时用运行下落补完成，历史 replace 不补。
+        if (stopped && !record.suppressStopCompletion && !record.finished && !record.error) { record.completion = true; record.updatedAt = now(); }
+        if ((status?.completionUnread || row.completed) && !running && (!record.finished || record.finished === 'completed')) record.completion = true;
         const request = requests.get(id);
         const activity = selectActivity([{ id, title: row.title ?? row.displayTitle, running, waiting: !!request, error: running ? null : record.error, completed: !running && record.completion }]);
         if (activity.pose === 'idle') continue;
@@ -95,7 +101,7 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
       if (signature !== lastPublished) { lastPublished = signature; notify(state); }
     } finally { publishing = false; }
   };
-  const offList = sessions.list.subscribe(publish), offPending = pending.subscribe(publish);
+  const offList = sessions.list.subscribe(publish), offPending = pending.subscribe(publish), offStatus = sessions.status?.subscribe(publish);
   publish(); const timer = setInterval(publish, 1000);
   return {
     getSnapshot: () => state,
@@ -105,7 +111,13 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
       const item = state.items.find(item => item.id === command.id && item.token === command.token);
       if (!item) throw new Error('这条通知已更新，请使用最新通知');
       if (command.type === 'dismiss') { dismissed.set(item.id, item.token); publish(); return; }
-      if (command.type === 'open') { sessions.open(item.id); if (item.pose === 'review') dismissed.set(item.id, item.token); publish(); return; }
+      if (command.type === 'open') {
+        if (!sessions.open) throw new Error('宿主未提供打开会话能力');
+        sessions.open(item.id);
+        if (item.pose === 'review') dismissed.set(item.id, item.token);
+        publish();
+        return;
+      }
       if (command.type === 'stop') {
         if (item.pose !== 'running') throw new Error('任务状态已变化');
         const session = sessions.binding(item.id)?.session;
@@ -126,6 +138,6 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
       busy.add(item.id);
       try { await request.answer(answer); answered.add(request.key!); } finally { busy.delete(item.id); publish(); }
     },
-    dispose() { offList(); offPending(); clearInterval(timer); for (const value of bindings.values()) value.off(); bindings.clear(); },
+    dispose() { offList(); offPending(); offStatus?.(); clearInterval(timer); for (const value of bindings.values()) value.off(); bindings.clear(); },
   };
 }

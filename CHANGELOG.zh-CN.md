@@ -1,5 +1,10 @@
 # 更新日志
 
+## [0.1.7] - 2026-09-18
+
+- 新增 DSH `0.1.6-alpha.2` 兼容，不移除已支持的旧宿主。新宿主优先走 `uiWorkspace.openSession` 和 `uiSession.sessionStatus`；旧宿主回退 `sessions.open`、`pendingInteractions` 和会话快照里的旧请求。开发类型检查和默认端到端宿主固定到该版本。
+- 软件包描述改为与 GitHub 仓库一致的中英文双语。
+
 ## [0.1.6] - 2026-09-16
 
 - 新增 DSH `0.1.6-alpha.1` 兼容，不移除已支持的旧宿主。开发类型检查和默认端到端宿主固定到该版本。

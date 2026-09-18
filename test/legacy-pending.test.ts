@@ -11,6 +11,7 @@ test('旧版请求保留身份和响应协议，拒绝过期或被宿主拒绝�
   const question = { kind: 'question', key: 'question:q1', sessionId: 's1', payload: { questions: [{ id: 'q1', question: '颜色？' }] },
     async respond(value: unknown) { responses.push(value); return { accepted, reason: '已结束' }; } };
   let waits: any[] = [question];
+  const source = { getSnapshot: () => ({ running: true, lastAgentError: null, pending: waits }), subscribe(fn: () => void) { listeners.add(fn); return () => listeners.delete(fn); } };
   const sessions = {
     list: { getSnapshot: () => ({ ids: ['s1', 'child'], byId: { s1: { id: 's1' }, child: { id: 'child', origin: 'subagent' } } }), subscribe(fn: () => void) { listListeners.add(fn); return () => listListeners.delete(fn); } },
     binding(id: string) {
@@ -18,7 +19,6 @@ test('旧版请求保留身份和响应协议，拒绝过期或被宿主拒绝�
       return { session: source };
     },
   };
-  const source = { getSnapshot: () => ({ running: true, lastAgentError: null, pending: waits }), subscribe(fn: () => void) { listeners.add(fn); return () => listeners.delete(fn); } };
   const store = legacyPending(sessions as unknown as Sessions);
   const off = store.subscribe(() => {});
   const request = store.getSnapshot().get('s1')!;

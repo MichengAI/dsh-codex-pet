@@ -23,3 +23,22 @@ test('创建请求使用 DSH 会话和独立目录，拒绝时不报成功', asy
   assert.equal(opened, 'pet-task'); assert.match(prompt, /海獭/); assert.match(prompt, /plugin\/skills/);
   accepted=false; await assert.rejects(createPetSession(sessions, '猫', 'dsh/pets', 'skill'), /模型未配置/);
 });
+test('创建后尚未绑定时代 retain 再 prompt，完成后打开会话', async () => {
+  let opened = '', prompt = '', retained = false;
+  const session = { async prompt(parts: { text: string }[]) { prompt = parts[0]!.text; return { ok: true }; } };
+  const sessions = {
+    async create() { return 'pet-task'; },
+    binding() { return retained ? { session } : undefined; },
+    async using(id: string, options: { source: string }, operation: (reference: { ready: Promise<unknown>; binding: { session: typeof session } }) => unknown) {
+      assert.equal(id, 'pet-task');
+      assert.equal(options.source, 'controllerOperation');
+      retained = true;
+      await operation({ ready: Promise.resolve(), binding: { session } });
+    },
+    open(id: string) { opened = id; },
+  };
+  await createPetSession(sessions, '海獭', 'dsh/pets', 'plugin/skills/hatch-pet/SKILL.md');
+  assert.equal(retained, true);
+  assert.equal(opened, 'pet-task');
+  assert.match(prompt, /海獭/);
+});

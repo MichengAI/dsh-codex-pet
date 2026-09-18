@@ -9,7 +9,7 @@ class State<T> implements Store<T> {
   set(value: T) { this.value = value; for (const listener of [...this.listeners]) listener(); }
 }
 function setup() {
-  const list = new State<SessionList>({ current: 'a', ids: ['a', 'b'], byId: { a: { id: 'a', title: '甲', running: true }, b: { id: 'b', title: '乙', running: true } } });
+  const list = new State<SessionList>({ ids: ['a', 'b'], byId: { a: { id: 'a', title: '甲', running: true }, b: { id: 'b', title: '乙', running: true } } });
   const pending = new State<ReadonlyMap<string, Pending>>(new Map());
   const bindings = Object.fromEntries(['a', 'b'].map(id => [id, { session: new State<SessionSnapshot>({ running: true, lastAgentError: null }), eventSource: new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } }) }]));
   let state!: NotificationState; let opened = ''; let now = 100;
@@ -24,16 +24,18 @@ test('保留多个会话，切换不丢完成通知，关闭不停止任务，�
     await x.engine.command({ type: 'dismiss', id: a.id, token: a.token });
     assert.deepEqual(x.state.items.map(i => i.id), ['b']); assert.equal(x.bindings.a.session.value.running, true);
     x.bindings.b.eventSource.set({ revision: 1, change: { kind: 'append', entries: [{ type: 'event', event: { type: 'turn/end', data: { reason: { kind: 'completed' } } } }] } });
-    x.list.set({ ...x.list.value, current: 'b', byId: { ...x.list.value.byId, b: { id: 'b', running: false, completed: true } } });
+    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, b: { id: 'b', running: false } } });
     x.bindings.b.session.set({ running: false, lastAgentError: null });
     assert.equal(x.state.items[0].pose, 'review');
-    x.list.set({ ...x.list.value, current: 'a' }); x.tick(13000);
+    x.tick(13000);
     assert.equal(x.state.items[0].pose, 'review');
+    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, a: { id: 'a', title: '甲', running: false } } });
     x.bindings.a.session.set({ running: false, lastAgentError: null });
+    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, a: { id: 'a', title: '甲', running: true } } });
     x.bindings.a.session.set({ running: true, lastAgentError: null });
     assert.ok(x.state.items.some(i => i.id === 'a'));
     await assert.rejects(x.engine.command({ type: 'dismiss', id: a.id, token: a.token }), /更新/);
-    x.list.set({ current: 'a', ids: ['a'], byId: { a: x.list.value.byId.a } });
+    x.list.set({ ids: ['a'], byId: { a: x.list.value.byId.a } });
     assert.equal(x.bindings.b.session.listeners.size, 0);
   } finally { x.engine.dispose(); assert.equal(x.list.listeners.size, 0); assert.equal(x.bindings.a.session.listeners.size, 0); }
 });
@@ -69,12 +71,14 @@ test('连续排队轮次重新提醒，历史加载不触发完成，取消不�
     x.bindings.a.eventSource.set({ revision: 1, change: { kind: 'append', entries: [{ type: 'event', event: { type: 'turn/start' } }] } });
     assert.ok(x.state.items.some(i => i.id === 'a'));
     x.bindings.a.eventSource.set({ revision: 2, change: { kind: 'replace', entries: [{ type: 'event', event: { type: 'turn/end', data: { reason: { kind: 'completed' } } } }] } });
+    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, a: { id: 'a', title: '甲', running: false } } });
     x.bindings.a.session.set({ running: false, lastAgentError: null });
     assert.ok(!x.state.items.some(i => i.id === 'a'));
+    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, a: { id: 'a', title: '甲', running: true } } });
     x.bindings.a.session.set({ running: true, lastAgentError: null });
     x.bindings.a.eventSource.set({ revision: 3, change: { kind: 'append', entries: [{ type: 'event', event: { type: 'turn/end', data: { reason: { kind: 'aborted' } } } }] } });
     x.bindings.a.session.set({ running: false, lastAgentError: null });
-    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, a: { id: 'a', running: false, completed: true } } });
+    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, a: { id: 'a', running: false } } });
     assert.ok(!x.state.items.some(i => i.id === 'a'));
   } finally { x.engine.dispose(); }
 });
@@ -111,4 +115,74 @@ test('子代理不产生通知、不绑定或操作；后补来源标记时清�
   const engine = createNotifications({ list, binding() { throw new Error('不应绑定子代理'); }, open() { throw new Error('不应打开子代理'); } }, new State(new Map()), () => {});
   try { assert.equal(engine.getSnapshot().items.length, 0); assert.equal(engine.getSnapshot().activity.pose, 'idle'); }
   finally { engine.dispose(); }
+});
+
+test('没有事件源时列表从运行落到停止视为完成', () => {
+  const list = new State<SessionList>({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: true } } });
+  let state!: NotificationState;
+  const engine = createNotifications({
+    list,
+    binding: () => undefined,
+    open() {},
+  }, new State(new Map()), value => { state = value; });
+  try {
+    assert.equal(state.items[0]?.pose, 'running');
+    list.set({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: false } } });
+    assert.equal(state.items[0]?.pose, 'review');
+  } finally { engine.dispose(); }
+});
+
+test('没有绑定也按列表 running 和 status completionUnread 提醒，打开不抛错', async () => {
+  const list = new State<SessionList>({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: true } } });
+  const pending = new State<ReadonlyMap<string, Pending>>(new Map());
+  const status = new State(new Map<string, { running?: boolean; completionUnread?: boolean }>());
+  let opened = '';
+  let state!: NotificationState;
+  const engine = createNotifications({
+    list,
+    binding: () => undefined,
+    open(id) { opened = id; },
+    status,
+  }, pending, value => { state = value; });
+  try {
+    assert.equal(state.items[0]?.pose, 'running');
+    list.set({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: false } } });
+    status.set(new Map([['a', { running: false, completionUnread: true }]]));
+    assert.equal(state.items[0]?.pose, 'review');
+    await engine.command({ type: 'open', id: 'a', token: state.items[0]!.token });
+    assert.equal(opened, 'a');
+  } finally { engine.dispose(); }
+});
+
+test('旧宿主 list.completed 可提醒完成，list.current 仍可读当前快照', () => {
+  const list = new State<SessionList>({ current: 'a', ids: ['a'], byId: { a: { id: 'a', title: '甲', running: false, completed: true } } });
+  const session = new State<SessionSnapshot>({ running: false, lastAgentError: null });
+  const events = new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } });
+  let state!: NotificationState;
+  const engine = createNotifications({
+    list,
+    binding: () => ({ session, eventSource: events }),
+    open() {},
+  }, new State(new Map()), value => { state = value; });
+  try {
+    assert.equal(state.items[0]?.pose, 'review');
+    session.set({ running: false, lastAgentError: 'boom' });
+    assert.equal(state.items[0]?.pose, 'failed');
+  } finally { engine.dispose(); }
+});
+
+test('没有 list.current 时用 retainedBy.mainView 读取当前会话快照', () => {
+  const list = new State<SessionList>({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: true, retainedBy: { mainView: 1 } } } });
+  const session = new State<SessionSnapshot>({ running: false, lastAgentError: 'boom' });
+  const events = new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } });
+  let state!: NotificationState;
+  const engine = createNotifications({
+    list,
+    binding: () => ({ session, eventSource: events }),
+    open() {},
+  }, new State(new Map()), value => { state = value; });
+  try {
+    assert.equal(state.items[0]?.pose, 'failed');
+    assert.equal(state.items[0]?.sessionId, 'a');
+  } finally { engine.dispose(); }
 });

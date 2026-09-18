@@ -1,4 +1,5 @@
 import { compatibleSessions } from "./session-compat.ts";
+import { pendingFromSessionStatus } from "./pending-status.ts";
 import { compatiblePending } from "./legacy-pending.ts";
 import { createCompanionProvider } from "./companion-api.ts";
 import { translator } from "./ui-locales.ts";
@@ -7,7 +8,10 @@ import type { PetLocaleStore } from "./pet-locales.ts";
 import React, { useEffect, useState, useRef } from "react";
 import { Companion, Settings, usePetController } from "./ui.tsx";
 import { IDLE, type Activity } from "./model.ts";
-import { type Sessions, type PendingStore } from "./activity.ts";
+import { type Sessions, type PendingStore, type Store, type SessionStatusRow } from "./activity.ts";
+import type { ISessions, SessionTarget } from "@deepseek-ai/dsh-api-session-controller/client";
+import type { UiWorkspace } from "@deepseek-ai/dsh-client-ui-workspace/client";
+import type { UiSession } from "@deepseek-ai/dsh-client-ui-session/client";
 import {
   createNotifications,
   type NotificationState,
@@ -18,8 +22,9 @@ import { observePetSettingsIcon } from "./settings-icon.ts";
 import { GlobalOverlay } from "./global-overlay.tsx";
 interface ClientContext {
   locale: PetLocaleStore;
-  sessions: Sessions & CreationSessions;
-  uiSession?: { pendingInteractions: PendingStore };
+  sessions: ISessions;
+  uiSession?: UiSession | { pendingInteractions?: PendingStore };
+  uiWorkspace?: Pick<UiWorkspace, "openSession">;
   reflect?: { get(name: string): unknown };
   slots: {
     inject(name: string, register: () => () => void): void;
@@ -53,7 +58,7 @@ function Overlay({
   pending,
   locale,
 }: {
-  sessions: Sessions & CreationSessions;
+  sessions: Sessions;
   pending: PendingStore;
   locale: PetLocaleStore;
 }) {
@@ -143,8 +148,7 @@ function Overlay({
           activity={state.activity}
           tray={{ state, command }}
           open={() => {
-            if (state.activity.sessionId)
-              sessions.open(state.activity.sessionId);
+            if (state.activity.sessionId) sessions.open?.(state.activity.sessionId);
           }}
           settings={openSettings}
         />
@@ -174,7 +178,7 @@ function Overlay({
             const library = controller.library;
             if (!library) throw new Error("宠物库尚未加载");
             await createPetSession(
-              sessions,
+              sessions as CreationSessions,
               description,
               library.customPath,
               library.skillPath,
@@ -189,7 +193,7 @@ function Page({
   sessions,
   locale,
 }: {
-  sessions: CreationSessions;
+  sessions: Sessions;
   locale: PetLocaleStore;
 }) {
   const controller = usePetController(locale);
@@ -201,7 +205,7 @@ function Page({
         const library = controller.library;
         if (!library) throw new Error("宠物库尚未加载");
         await createPetSession(
-          sessions,
+          sessions as CreationSessions,
           description,
           library.customPath,
           library.skillPath,
@@ -210,12 +214,50 @@ function Page({
     />
   );
 }
+function probe<T>(ctx: ClientContext, name: "uiSession" | "uiWorkspace"): T | undefined {
+  // Cordis 未注入的服务不能直接读 ctx.uiWorkspace，否则插件无法激活。
+  if (ctx.reflect) {
+    try { return ctx.reflect.get(name) as T | undefined; } catch { return undefined; }
+  }
+  return ctx[name] as T | undefined;
+}
+function liveSessionStatus(ctx: ClientContext): Store<ReadonlyMap<string, SessionStatusRow>> {
+  const resolve = () => {
+    const live = probe<UiSession | { pendingInteractions?: PendingStore }>(ctx, "uiSession");
+    return live && "sessionStatus" in live ? live.sessionStatus : undefined;
+  };
+  return {
+    getSnapshot() { return resolve()?.getSnapshot() ?? new Map(); },
+    subscribe(listener) {
+      let source = resolve();
+      let off = source?.subscribe(listener);
+      const timer = setInterval(() => {
+        const next = resolve();
+        if (next === source) return;
+        off?.();
+        source = next;
+        off = next?.subscribe(listener);
+        listener();
+      }, 250);
+      return () => { clearInterval(timer); off?.(); };
+    },
+  };
+}
 export function apply(ctx: ClientContext): void {
-  const sessions = compatibleSessions(ctx.sessions);
+  const sessions = compatibleSessions(
+    ctx.sessions as unknown as Sessions,
+    id => {
+      const uiWorkspace = probe<Pick<UiWorkspace, "openSession">>(ctx, "uiWorkspace");
+      if (uiWorkspace) return uiWorkspace.openSession(id as SessionTarget);
+      return (ctx.sessions as unknown as Sessions).open?.(id);
+    },
+    liveSessionStatus(ctx),
+  );
   // Cordis 的 reflect.get 允许探测旧版不存在的服务，不声明不存在的必需依赖。
   const pending = compatiblePending(sessions, () => {
-    const service = (ctx.reflect ? ctx.reflect.get("uiSession") : ctx.uiSession) as { pendingInteractions: PendingStore } | undefined;
-    return service?.pendingInteractions;
+    const live = probe<UiSession | { pendingInteractions?: PendingStore }>(ctx, "uiSession");
+    if (live && "sessionStatus" in live && live.sessionStatus) return pendingFromSessionStatus(live.sessionStatus);
+    return live && "pendingInteractions" in live ? live.pendingInteractions : undefined;
   });
   ctx.slots.inject("settings.section", () =>
     ctx.slots.register(

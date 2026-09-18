@@ -44,13 +44,13 @@ if (!smokeRoot)
       const store=value=>({value,listeners:new Set(),getSnapshot(){return this.value},subscribe(fn){this.listeners.add(fn);return()=>this.listeners.delete(fn)},set(v){this.value=v;for(const fn of [...this.listeners])fn()}});
       window.live=store({running:false,lastAgentError:null});
       window.events=store({revision:0,change:{kind:'replace',entries:[]}});
-      window.pending=store(new Map());
-      window.petList=store({current:'smoke',ids:['smoke','background'],byId:{smoke:{id:'smoke',title:'受控测试任务',running:false},background:{id:'background',title:'后台会话',running:true}}});
+      window.sessionStatus=store(new Map());
+      window.petList=store({ids:['smoke','background'],byId:{smoke:{id:'smoke',title:'受控测试任务',running:false,retainedBy:{mainView:1}},background:{id:'background',title:'后台会话',running:true}}});
       window.background={session:store({running:true,lastAgentError:null}),eventSource:store({revision:0,change:{kind:'replace',entries:[]}})};
       live.prompt=async parts=>{window.petSent=parts[0].text;return {ok:true}};
       const binding={session:live,eventSource:events};
       window.petLocale=store({active:'zh'});
-      petPlugin.apply({locale:petLocale,sessions:{list:petList,binding:id=>id==='background'?background:binding,async create(){petList.set({...petList.value,ids:[...petList.value.ids,'new-task'],byId:{...petList.value.byId,'new-task':{id:'new-task',title:'新会话',running:false}}});return 'new-task'},open(id){window.openedPetSession=id}},uiSession:{pendingInteractions:pending},slots:{inject(name,fn){fn()},register(options,Component){if(options.name==='settings.section')window.petSection=options;if(options.name==='shell.overlay')renderPet(Component);return()=>{}}}});
+      petPlugin.apply({locale:petLocale,sessions:{list:petList,binding:id=>id==='background'?background:binding,async create(){petList.set({...petList.value,ids:[...petList.value.ids,'new-task'],byId:{...petList.value.byId,'new-task':{id:'new-task',title:'新会话',running:false}}});return 'new-task'}},uiWorkspace:{openSession(id){window.openedPetSession=id}},uiSession:{sessionStatus:sessionStatus},slots:{inject(name,fn){fn()},register(options,Component){if(options.name==='settings.section')window.petSection=options;if(options.name==='shell.overlay')renderPet(Component);return()=>{}}}});
     `);
     const waitFor = (condition) =>
       page.evaluate(
@@ -64,7 +64,7 @@ if (!smokeRoot)
       `document.querySelector('.dcp-bubble-link')?.textContent.includes('正在工作')`,
     );
     await page.evaluate(
-      `pending.set(new Map([['smoke',{kind:'approval',key:'approval-1',sessionId:'smoke',toolName:'终端',reason:'测试审批',answer:async value=>{window.petDecision=value;pending.set(new Map())}}]]))`,
+      `sessionStatus.set(new Map([['smoke',{pendingInteraction:{kind:'approval',key:'approval-1',sessionId:'smoke',toolName:'终端',reason:'测试审批',answer:async value=>{window.petDecision=value;sessionStatus.set(new Map())}}}]]))`,
     );
     await waitFor(
       `document.querySelector('.dcp-bubble-link')?.textContent.includes('等待你处理')`,
@@ -88,13 +88,13 @@ if (!smokeRoot)
       2,
     );
     await page.evaluate(
-      `pending.set(new Map());events.set({revision:1,change:{kind:'append',entries:[{type:'event',event:{type:'turn/end',data:{reason:{kind:'completed'}}}}]}});live.set({running:false,lastAgentError:null})`,
+      `sessionStatus.set(new Map());events.set({revision:1,change:{kind:'append',entries:[{type:'event',event:{type:'turn/end',data:{reason:{kind:'completed'}}}}]}});live.set({running:false,lastAgentError:null})`,
     );
     await waitFor(
       `document.querySelector('.dcp-bubble-link')?.textContent.includes('已完成')`,
     );
     await page.evaluate(
-      `pending.set(new Map([['smoke',{kind:'plan-review',key:'plan-2',sessionId:'smoke',questions:[{id:'plan',question:'是否实施计划？',detail:'先检查，再修改。',options:[{label:'实施计划'},{label:'先修改'}]}],answer:async value=>{window.petAnswer=value;pending.set(new Map())}}]]))`,
+      `sessionStatus.set(new Map([['smoke',{pendingInteraction:{kind:'plan-review',key:'plan-2',sessionId:'smoke',questions:[{id:'plan',question:'是否实施计划？',detail:'先检查，再修改。',options:[{label:'实施计划'},{label:'先修改'}]}],answer:async value=>{window.petAnswer=value;sessionStatus.set(new Map())}}}]]))`,
     );
     await waitFor(
       `document.querySelector('.dcp-bubble-link')?.textContent.includes('等待你处理')`,

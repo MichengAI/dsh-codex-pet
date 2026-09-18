@@ -1,4 +1,4 @@
-/** 在独立目录固定旧版官方宿主，开发依赖继续使用最新版。 */
+/** 在独立目录固定目标官方宿主，开发依赖继续使用最新版。 */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
