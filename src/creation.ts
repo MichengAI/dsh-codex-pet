@@ -29,6 +29,7 @@ export async function createPetSession(sessions: CreationSessions, description: 
   const binding = sessions.binding(id);
   if (binding?.session.prompt) {
     await send(binding.session);
+    tryOpen(sessions, id);
     return;
   }
   if (sessions.using) {

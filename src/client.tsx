@@ -247,9 +247,10 @@ export function apply(ctx: ClientContext): void {
   const sessions = compatibleSessions(
     ctx.sessions as unknown as Sessions,
     id => {
+      const open = (ctx.sessions as unknown as Sessions).open;
+      if (open) return open.call(ctx.sessions, id);
       const uiWorkspace = probe<Pick<UiWorkspace, "openSession">>(ctx, "uiWorkspace");
       if (uiWorkspace) return uiWorkspace.openSession(id as SessionTarget);
-      return (ctx.sessions as unknown as Sessions).open?.(id);
     },
     liveSessionStatus(ctx),
   );

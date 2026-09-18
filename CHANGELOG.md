@@ -2,7 +2,7 @@
 
 ## [0.1.7] - 2026-09-18
 
-- Add compatibility with DSH `0.1.6-alpha.2` without dropping the existing supported hosts. Prefer `uiWorkspace.openSession` and `uiSession.sessionStatus` on the new host; fall back to `sessions.open`, `pendingInteractions`, and legacy session snapshots on older hosts. Pin development types and the default e2e host to this release.
+- Add compatibility with DSH `0.1.6-alpha.2` without dropping the existing supported hosts. Keep `sessions.open`, `pendingInteractions`, and legacy session snapshots on older hosts; use `uiWorkspace.openSession` and `uiSession.sessionStatus` only when those APIs are gone. Pin development types and the default e2e host to this release.
 - Use a bilingual package description matching the GitHub repository.
 
 ## [0.1.6] - 2026-09-16
