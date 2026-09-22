@@ -129,7 +129,7 @@ try {
       apiKeyEnv: 'DSH_PET_E2E_KEY',
       thinking: 'disabled',
       models: [{ id: 'deepseek-chat', name: '本地回归测试模型' }],
-      // 0.1.6 默认 Messages；夹具仍走 chat/completions，旧宿主没有该字段。
+      // 0.1.6 默认 Messages，夹具仍走 chat/completions。0.1.7 起移除 protocol，请求改走 /v1/messages。
       ...(/^0\.1\.6(?:-|$)/.test(dsh.version) ? { protocol: 'chat-completions' } : {}),
     } },
     { id: 'session-title-llm', disabled: true },

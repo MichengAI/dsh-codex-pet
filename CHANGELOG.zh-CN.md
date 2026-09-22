@@ -1,5 +1,9 @@
 # 更新日志
 
+## [0.1.8] - 2026-09-22
+
+- 新增 DSH `0.1.7-alpha.1` 兼容，不移除已支持的旧宿主。开发类型检查和默认端到端宿主固定到该版本。该宿主的模型夹具改为应答 Messages API。
+
 ## [0.1.7] - 2026-09-18
 
 - 新增 DSH `0.1.6-alpha.2` 兼容，不移除已支持的旧宿主。旧宿主继续使用 `sessions.open`、`pendingInteractions` 和会话快照里的旧请求；仅在这些接口消失后改走 `uiWorkspace.openSession` 和 `uiSession.sessionStatus`。开发类型检查和默认端到端宿主固定到该版本。

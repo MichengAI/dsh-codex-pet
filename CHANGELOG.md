@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.8] - 2026-09-22
+
+- Add compatibility with DSH `0.1.7-alpha.1` without dropping the existing supported hosts. Pin development types and the default end-to-end host to this release. The model fixture answers the Messages API on this host.
+
 ## [0.1.7] - 2026-09-18
 
 - Add compatibility with DSH `0.1.6-alpha.2` without dropping the existing supported hosts. Keep `sessions.open`, `pendingInteractions`, and legacy session snapshots on older hosts; use `uiWorkspace.openSession` and `uiSession.sessionStatus` only when those APIs are gone. Pin development types and the default e2e host to this release.

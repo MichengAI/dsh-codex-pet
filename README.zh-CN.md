@@ -74,7 +74,7 @@
 
 ## 安装
 
-支持的 DeepSeek Harness 版本：**`0.1.0-rc.8`、`0.1.1-rc.2`、`0.1.2-rc.1`、`0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.6-alpha.1`、`0.1.6-alpha.2`**。新增兼容不移除这些旧版。需要可用的 `dsh` 命令。以下示例使用 `web` profile，请按实际环境替换。
+支持的 DeepSeek Harness 版本：**`0.1.0-rc.8`、`0.1.1-rc.2`、`0.1.2-rc.1`、`0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.6-alpha.1`、`0.1.6-alpha.2`、`0.1.7-alpha.1`**。新增兼容不移除这些旧版。需要可用的 `dsh` 命令。以下示例使用 `web` profile，请按实际环境替换。
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
