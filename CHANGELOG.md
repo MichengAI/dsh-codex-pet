@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.9] - 2026-09-24
+
+- Pin development dependencies and the default end-to-end host to DSH `0.1.7-rc.1`, and Cordis to `4.0.4`. Drop `0.1.6-alpha.1`, `0.1.6-alpha.2`, and `0.1.7-alpha.1` from the compatibility list; keep the existing RC hosts.
+
 ## [0.1.8] - 2026-09-22
 
 - Add compatibility with DSH `0.1.7-alpha.1` without dropping the existing supported hosts. Pin development types and the default end-to-end host to this release. The model fixture answers the Messages API on this host.

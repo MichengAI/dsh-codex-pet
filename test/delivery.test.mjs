@@ -9,8 +9,12 @@ import { verifyCi } from '../scripts/verify-release-ci.mjs';
 test('新增宿主兼容不得移除已承诺版本，开发基线保持最新版', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const supported = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'].split(' || ');
-  for (const version of ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1']) assert.ok(supported.includes(version), `不得移除 ${version}`);
-  assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.1.7-alpha.1');
+  for (const version of ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.7-rc.1']) assert.ok(supported.includes(version), `不得移除 ${version}`);
+  for (const version of supported) assert.equal(version.includes('-alpha'), false, `不得保留 alpha：${version}`);
+  assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.1.7-rc.1');
+  for (const [name, version] of Object.entries(pkg.devDependencies)) {
+    if (name.startsWith('@deepseek-ai/dsh')) assert.equal(version, '0.1.7-rc.1', name);
+  }
 });
 
 test('启动预算包含尝试耗时，只重试已识别的错误，保留最终原因', async () => {
