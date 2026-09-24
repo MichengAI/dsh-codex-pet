@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 
 export function isolatedHostInstallArgs(npmCli, root, publishedAt) {
-  return [npmCli, 'install', '--prefix', root, '--registry=https://registry.npmjs.org/', '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund', `--before=${publishedAt}`];
+  return [npmCli, 'install', '--prefix', root, '--registry=https://registry.npmjs.org/', '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund', `--before=${publishedAt}`, '--min-release-age-exclude=@deepseek-ai/dsh*'];
 }
 
 export function versionPublishedBy(versionTime, cutoff) {

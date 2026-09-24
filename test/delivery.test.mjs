@@ -22,6 +22,7 @@ test('隔离宿主只解析目标版本发布时已存在的依赖', () => {
   const publishedAt = '2026-08-19T15:41:29.655Z';
   const args = isolatedHostInstallArgs('npm-cli.js', 'D:/host', publishedAt);
   assert.ok(args.includes(`--before=${publishedAt}`), args.join(' '));
+  assert.ok(args.includes('--min-release-age-exclude=@deepseek-ai/dsh*'), args.join(' '));
   assert.equal(versionPublishedBy('2026-08-19T15:41:29.655Z', publishedAt), true);
   assert.equal(versionPublishedBy('2026-09-22T15:39:05.442Z', publishedAt), false);
 });
