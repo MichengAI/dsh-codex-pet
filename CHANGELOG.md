@@ -3,6 +3,7 @@
 ## [0.1.9] - 2026-09-24
 
 - Pin development dependencies and the default end-to-end host to DSH `0.1.7-rc.1`, and Cordis to `4.0.4`. Drop `0.1.6-alpha.1`, `0.1.6-alpha.2`, and `0.1.7-alpha.1` from the compatibility list; keep the existing RC hosts.
+- Isolated end-to-end hosts now resolve dependencies as of that host's publish time, so a later Cordis release cannot remove the HMR service those hosts require.
 
 ## [0.1.8] - 2026-09-22
 

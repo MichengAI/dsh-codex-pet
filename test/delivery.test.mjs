@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { retryStartup, finishReport } from '../scripts/e2e-runtime.mjs';
 import { verifyCi } from '../scripts/verify-release-ci.mjs';
+import { isolatedHostInstallArgs, versionPublishedBy } from '../scripts/test-host.mjs';
 
 test('新增宿主兼容不得移除已承诺版本，开发基线保持最新版', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
@@ -15,6 +16,14 @@ test('新增宿主兼容不得移除已承诺版本，开发基线保持最新�
   for (const [name, version] of Object.entries(pkg.devDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh')) assert.equal(version, '0.1.7-rc.1', name);
   }
+});
+
+test('隔离宿主只解析目标版本发布时已存在的依赖', () => {
+  const publishedAt = '2026-08-19T15:41:29.655Z';
+  const args = isolatedHostInstallArgs('npm-cli.js', 'D:/host', publishedAt);
+  assert.ok(args.includes(`--before=${publishedAt}`), args.join(' '));
+  assert.equal(versionPublishedBy('2026-08-19T15:41:29.655Z', publishedAt), true);
+  assert.equal(versionPublishedBy('2026-09-22T15:39:05.442Z', publishedAt), false);
 });
 
 test('启动预算包含尝试耗时，只重试已识别的错误，保留最终原因', async () => {
