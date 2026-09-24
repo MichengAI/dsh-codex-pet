@@ -4,7 +4,7 @@
 
 ## 本地验证
 
-开发依赖和锁文件固定 DSH `0.1.7-rc.1`。使用 `npm ci` 复现，`npm run check` 同时检查插件与官方服务类型的兼容性。
+开发依赖和锁文件固定 DSH `0.1.7-rc.2`。使用 `npm ci` 复现，`npm run check` 同时检查插件与官方服务类型的兼容性。
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

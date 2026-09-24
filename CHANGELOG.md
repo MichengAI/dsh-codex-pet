@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.10] - 2026-09-25
+
+- Add compatibility with DSH `0.1.7-rc.2` without dropping the existing supported hosts. Pin development types and the default end-to-end host to this release.
+- This release is additive for the plugin: the services it uses keep their contracts, and the two slots it registers are new keys, so no host-version branch or legacy path was needed.
+- The isolated end-to-end host now checks the external Cordis HMR package only when the target version's dependency graph still declares it, and locates it through the lock file. DSH `0.1.7` and later ship HMR with the host, so the old assertion failed the isolated installation outright.
+
 ## [0.1.9] - 2026-09-24
 
 - Pin development dependencies and the default end-to-end host to DSH `0.1.7-rc.1`, and Cordis to `4.0.4`. Drop `0.1.6-alpha.1`, `0.1.6-alpha.2`, and `0.1.7-alpha.1` from the compatibility list; keep the existing RC hosts.

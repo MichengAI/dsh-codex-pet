@@ -22,6 +22,8 @@ export async function testHost(repo, pkg, npmCli) {
   const overrides = {};
   const peers = {};
   let pending = ['@deepseek-ai/dsh'];
+  // 0.1.7 起宿主自带 HMR，只有依赖图仍声明外置包的版本才需要校验它没超出时间窗。
+  let externalHmr = false;
   while (pending.length) {
     const batch = pending.splice(0, 12).filter(name => !overrides[name]);
     for (const name of batch) overrides[name] = version;
@@ -33,6 +35,7 @@ export async function testHost(repo, pkg, npmCli) {
         if (!peerName.startsWith('@deepseek-ai/dsh') && !manifest.peerDependenciesMeta?.[peerName]?.optional) peers[peerName] = range;
       }
       for (const dependency of Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies, ...manifest.peerDependencies })) {
+        if (dependency === '@deepseek-ai/cordis-plugin-hmr') externalHmr = true;
         if (dependency.startsWith('@deepseek-ai/dsh') && !overrides[dependency] && !pending.includes(dependency)) pending.push(dependency);
       }
     }));
@@ -52,10 +55,15 @@ export async function testHost(repo, pkg, npmCli) {
   for (const [path, entry] of Object.entries(installed.packages)) {
     if (/node_modules\/@deepseek-ai\/dsh[^/]*$/.test(path) && entry.version !== version) throw new Error(`宿主混装：${path}@${entry.version}`);
   }
-  const hmr = JSON.parse(await readFile(join(root, 'node_modules/@deepseek-ai/cordis-plugin-hmr/package.json'), 'utf8'));
-  const hmrIndex = await fetch('https://registry.npmjs.org/@deepseek-ai/cordis-plugin-hmr', { signal: AbortSignal.timeout(30000) });
-  if (!hmrIndex.ok) throw new Error(`读取 HMR 发布时间失败：${hmrIndex.status}`);
-  const hmrTime = (await hmrIndex.json()).time?.[hmr.version];
-  if (!versionPublishedBy(hmrTime, publishedAt)) throw new Error(`隔离宿主装入了宿主发布后的 HMR：${hmr.version}（${hmrTime || '未知时间'}），截止 ${publishedAt}`);
+  if (externalHmr) {
+    // HMR 包可能被提升到顶层，也可能嵌在某个依赖下，按锁文件定位而不是写死路径。
+    const hmrPath = Object.keys(installed.packages).find(path => path.endsWith('node_modules/@deepseek-ai/cordis-plugin-hmr'));
+    if (!hmrPath) throw new Error(`隔离宿主 ${version} 缺少外置 Cordis HMR 包`);
+    const hmr = JSON.parse(await readFile(join(root, hmrPath, 'package.json'), 'utf8'));
+    const hmrIndex = await fetch('https://registry.npmjs.org/@deepseek-ai/cordis-plugin-hmr', { signal: AbortSignal.timeout(30000) });
+    if (!hmrIndex.ok) throw new Error(`读取 HMR 发布时间失败：${hmrIndex.status}`);
+    const hmrTime = (await hmrIndex.json()).time?.[hmr.version];
+    if (!versionPublishedBy(hmrTime, publishedAt)) throw new Error(`隔离宿主装入了宿主发布后的 HMR：${hmr.version}（${hmrTime || '未知时间'}），截止 ${publishedAt}`);
+  } else console.log(`隔离宿主 ${version}：依赖图不含外置 HMR 包，跳过 HMR 时间窗校验`);
   return createRequire(join(root, 'package.json')).resolve('@deepseek-ai/dsh/package.json');
 }
