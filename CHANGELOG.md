@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.11] - 2026-09-28
+
+- Add compatibility with DSH `0.2.0-rc.1` without dropping the existing supported hosts. Pin development types and the default end-to-end host to this release. Cordis stays `4.0.4`.
+- The services and slots this plugin uses keep their contracts. No host-version branch was added.
+
 ## [0.1.10] - 2026-09-25
 
 - Add compatibility with DSH `0.1.7-rc.2` without dropping the existing supported hosts. Pin development types and the default end-to-end host to this release.
