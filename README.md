@@ -130,7 +130,7 @@ Custom pets are stored in `.dsh/codex-pet/pets` under your user directory by def
 
 ## Contributing
 
-See the [development and validation guide (Chinese)](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md) for local development, testing, and release procedures.
+See the [development and validation guide (Chinese)](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md) for local development, testing, and release procedures. GitHub and npm both include a ready-to-run `lib`; after changing source, run `npm run build` before committing.
 
 ## License
 

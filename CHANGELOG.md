@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Installing from GitHub now includes the compiled runtime, so no manual build is required.
+
 ## [0.1.12] - 2026-09-30
 
 - Add compatibility with DSH `0.2.0-rc.2` without dropping the existing supported hosts. Pin development types and the default end-to-end host to this release. Cordis stays `4.0.4`.

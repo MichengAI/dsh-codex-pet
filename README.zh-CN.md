@@ -130,7 +130,7 @@ dsh plugin --profile web remove @michengai/dsh-codex-pet
 
 ## 参与开发
 
-本地开发、测试与发布流程见 [开发与验证指南](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md)。
+本地开发、测试与发布流程见 [开发与验证指南](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md)。GitHub 与 npm 都包含可直接运行的 `lib`；修改源码后，提交前运行 `npm run build`。
 
 ## 许可证
 
