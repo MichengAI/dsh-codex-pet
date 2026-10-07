@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import {
   registerPluginUpdater,
   isNewerVersion,
@@ -136,26 +136,30 @@ test("版本比较不降级，支持预发布并拒绝无效版本", () => {
 });
 
 test("官方 Desktop 在线更新指向 desktop profile，且不通知父进程", async () => {
+  const profileDir = resolve("/dsh-profile/desktop");
+  const pnpm = resolve("/dsh-runtime/pnpm.mjs");
+  const exe = resolve("/dsh-tools/DeepSeek Harness.exe");
   const runtime = resolveUpdateRuntime(
     { get: () => undefined },
     {
       argv: [
         "node",
-        "D:/app/node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js",
-        "D:/runtime",
-        "D:/profile/desktop",
-        "D:/runtime/primary",
-        "D:/runtime/pnpm.mjs",
-        "D:/runtime/bin",
+        resolve("/dsh-app/node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js"),
+        resolve("/dsh-runtime"),
+        profileDir,
+        resolve("/dsh-runtime/primary"),
+        pnpm,
+        resolve("/dsh-runtime/bin"),
       ],
       env: {},
-      cwd: "D:/elsewhere",
-      homeDir: "C:/Users/YUJIYU",
-      exists: (path) => path === "D:/runtime/pnpm.mjs",
-      execPath: "D:/Tools/DeepSeek Harness/DeepSeek Harness.exe",
+      cwd: resolve("/dsh-elsewhere"),
+      homeDir: resolve("/dsh-home"),
+      exists: (path) => path === pnpm,
+      execPath: exe,
     },
   );
   assert.equal(runtime.profileName, "desktop");
+  assert.equal(runtime.profileDir, profileDir);
   assert.equal(runtime.canAutoUpdate, true);
   assert.equal(shouldNotifyParent(runtime, () => {}), false);
   const ui = await readFile(
