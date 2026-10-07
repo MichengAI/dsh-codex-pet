@@ -54,6 +54,7 @@ async function body(req: IncomingMessage): Promise<Record<string, unknown>> {
 }
 export async function createHost(
     options: { root?: string; dataRoot?: string; skillRoot?: string } = {},
+    host?: { get?: (name: string) => unknown },
 ) {
     const root = options.root ?? packageRoot;
     const library = new PetLibrary(
@@ -78,6 +79,7 @@ export async function createHost(
                     };
                 },
             },
+            get: (name) => host?.get?.(name),
         },
         {
             endpoint: `${BASE}/api/update`,
@@ -233,7 +235,7 @@ export function apply(ctx: HostContext): void {
         let disposed = false,
             remove: (() => void) | undefined,
             host: Awaited<ReturnType<typeof createHost>> | undefined;
-        void createHost()
+        void createHost({}, ctx)
             .then((value) => {
                 host = value;
                 if (disposed) {

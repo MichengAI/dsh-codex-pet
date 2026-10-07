@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [0.1.14] - 2026-10-07
+
+- Official Desktop can update this plugin in place. It no longer targets the web profile by mistake.
+- A new version is marked with a warning color. Version numbers keep their normal color.
+- After updating, fully quit and reopen DSH Desktop.
+
 ## [0.1.13] - 2026-10-06
 
 - The installed-plugin list shows “Codex Pet” and a localized description instead of the package name. Titles and descriptions come from `meta.title` and `meta.description` in `locale/zh.json` and `locale/en.json`.

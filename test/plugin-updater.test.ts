@@ -6,6 +6,8 @@ import { join } from "node:path";
 import {
   registerPluginUpdater,
   isNewerVersion,
+  resolveUpdateRuntime,
+  shouldNotifyParent,
   type HostRequest,
   type HostResponse,
 } from "../src/plugin-updater.ts";
@@ -131,4 +133,35 @@ test("版本比较不降级，支持预发布并拒绝无效版本", () => {
   assert.equal(isNewerVersion("1.0.0-rc.2", "1.0.0-rc.10"), true);
   assert.equal(isNewerVersion("1.0.0-rc.10", "1.0.0"), true);
   assert.equal(isNewerVersion("1.0.0", "invalid"), false);
+});
+
+test("官方 Desktop 在线更新指向 desktop profile，且不通知父进程", async () => {
+  const runtime = resolveUpdateRuntime(
+    { get: () => undefined },
+    {
+      argv: [
+        "node",
+        "D:/app/node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js",
+        "D:/runtime",
+        "D:/profile/desktop",
+        "D:/runtime/primary",
+        "D:/runtime/pnpm.mjs",
+        "D:/runtime/bin",
+      ],
+      env: {},
+      cwd: "D:/elsewhere",
+      homeDir: "C:/Users/YUJIYU",
+      exists: (path) => path === "D:/runtime/pnpm.mjs",
+      execPath: "D:/Tools/DeepSeek Harness/DeepSeek Harness.exe",
+    },
+  );
+  assert.equal(runtime.profileName, "desktop");
+  assert.equal(runtime.canAutoUpdate, true);
+  assert.equal(shouldNotifyParent(runtime, () => {}), false);
+  const ui = await readFile(
+    new URL("../src/shared-plugin-update-ui.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(ui, /#e8b15a/);
+  assert.match(ui, /manualHintDesktop/);
 });

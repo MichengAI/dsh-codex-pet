@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename, dirname, isAbsolute, resolve } from "node:path";
+import { basename, delimiter, dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PLUGIN_UPDATE_HEADER = "x-michengai-plugin-update";
@@ -29,6 +29,7 @@ type WebServer = {
 export type UpdateContext = {
   webServer: WebServer;
   logger: { warn(message: string): void };
+  get?(name: string): unknown;
 };
 
 export type PluginUpdaterOptions = {
@@ -37,10 +38,26 @@ export type PluginUpdaterOptions = {
   readonly manifestUrl: URL;
 };
 
+type PackageManagerLaunch = {
+  command: string;
+  args: readonly string[];
+  env?: NodeJS.ProcessEnv;
+};
+type PluginManagerInstall = {
+  installBundle(spec: string): Promise<{
+    application?: string;
+    error?: { message?: string };
+    packageResult?: { output?: string };
+  }>;
+};
 type Runtime = {
   profileName: string;
   profileDir: string;
   cliEntry?: string;
+  packageManager?: PackageManagerLaunch;
+  pluginManager?: PluginManagerInstall;
+  officialDesktop: boolean;
+  canAutoUpdate: boolean;
 };
 type VersionPayload = {
   packageName: string;
@@ -74,9 +91,17 @@ export function isTrustedUpdateRequest(request: HostRequest): boolean {
   if (!isLoopbackAddress(request.socket?.remoteAddress)) return false;
   const site = header(request, "sec-fetch-site");
   if (site !== undefined && site !== "same-origin") return false;
-  const origin = header(request, "origin");
   const host = header(request, "host");
-  if (origin === undefined || host === undefined) return false;
+  if (host === undefined || host === "") return false;
+  const origin = header(request, "origin");
+  // 官方 Desktop 从 dsh-app://app 转发时会去掉 origin。只接受本机 Host，浏览器带来的跨源 origin 仍然拒绝。
+  if (origin === undefined || origin === "") {
+    try {
+      return isLoopbackAddress(new URL(`http://${host}`).hostname);
+    } catch {
+      return false;
+    }
+  }
   try {
     const url = new URL(origin);
     return (
@@ -132,16 +157,20 @@ export function isDshCliEntry(
   );
 }
 
-function cliEntry(): string | undefined {
-  const value = process.argv[1];
+function cliEntry(
+  argv: readonly string[] = process.argv,
+  cwd = process.cwd(),
+  exists: (path: string) => boolean = existsSync,
+): string | undefined {
+  const value = argv[1];
   if (value === undefined || value === "") return undefined;
   const entry = value.startsWith("file:")
     ? fileURLToPath(value)
-    : resolve(process.cwd(), value);
-  if (!existsSync(entry)) return undefined;
+    : resolve(cwd, value);
+  if (!exists(entry)) return undefined;
   for (let directory = dirname(entry); ; ) {
     const manifestPath = resolve(directory, "package.json");
-    if (existsSync(manifestPath)) {
+    if (exists(manifestPath)) {
       try {
         if (
           isDshCliEntry(
@@ -161,23 +190,158 @@ function cliEntry(): string | undefined {
   }
 }
 
-function runtime(): Runtime {
-  const profileDir = resolve(
-    process.env.DSH_PROFILE_DIR ??
-      resolve(homedir(), ".dsh", "profiles", "web"),
+function optionalService(
+  ctx: { get?: (name: string) => unknown },
+  name: string,
+): unknown {
+  try {
+    return typeof ctx.get === "function" ? ctx.get(name) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+function isOfficialDesktopHostEntry(entry: string | undefined): boolean {
+  return (
+    entry !== undefined &&
+    entry !== "" &&
+    entry.replaceAll("\\", "/").includes("/dsh-desktop-host/")
   );
-  const selected = profileNameFromArgv(process.argv);
-  const profileName = validProfileName(selected)
-    ? selected
-    : validProfileName(basename(profileDir))
-      ? basename(profileDir)
-      : "web";
-  const entry = cliEntry();
+}
+function stringEnvironment(value: unknown): NodeJS.ProcessEnv | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, item] of Object.entries(value))
+    if (typeof item === "string") env[key] = item;
+  return Object.keys(env).length === 0 ? undefined : env;
+}
+function packageManagerFrom(value: unknown): PackageManagerLaunch | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const item = value as { command?: unknown; args?: unknown; env?: unknown };
+  if (typeof item.command !== "string" || item.command === "") return undefined;
+  if (!Array.isArray(item.args) || !item.args.every((arg) => typeof arg === "string"))
+    return undefined;
+  const env = stringEnvironment(item.env);
+  return {
+    command: item.command,
+    args: item.args,
+    ...(env === undefined ? {} : { env }),
+  };
+}
+function packageManagerFromArgv(
+  argv: readonly string[],
+  exists: (path: string) => boolean,
+  execPath: string,
+  pathEnv: string | undefined,
+): PackageManagerLaunch | undefined {
+  if (!isOfficialDesktopHostEntry(argv[1])) return undefined;
+  const pnpm = argv[5];
+  if (typeof pnpm !== "string" || !isAbsolute(pnpm) || !exists(pnpm))
+    return undefined;
+  const bin = argv[6];
+  const path =
+    typeof bin === "string" && bin !== ""
+      ? `${bin}${delimiter}${pathEnv ?? ""}`
+      : pathEnv;
+  return {
+    command: execPath,
+    args: ["--expose-internals", pnpm],
+    env: {
+      ELECTRON_RUN_AS_NODE: "1",
+      ...(typeof path === "string" && path !== "" ? { PATH: path } : {}),
+    },
+  };
+}
+function pluginManagerFrom(value: unknown): PluginManagerInstall | undefined {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    typeof (value as { installBundle?: unknown }).installBundle !== "function"
+  )
+    return undefined;
+  return value as PluginManagerInstall;
+}
+
+export function resolveUpdateRuntime(
+  ctx: { get?: (name: string) => unknown },
+  options: {
+    argv?: readonly string[];
+    env?: NodeJS.ProcessEnv;
+    cwd?: string;
+    homeDir?: string;
+    exists?: (path: string) => boolean;
+    execPath?: string;
+  } = {},
+): Runtime {
+  const argv = options.argv ?? process.argv;
+  const env = options.env ?? process.env;
+  const cwd = options.cwd ?? process.cwd();
+  const home = options.homeDir ?? homedir();
+  const exists = options.exists ?? existsSync;
+  const execPath = options.execPath ?? process.execPath;
+  const launched = optionalService(ctx, "profileContext") as
+    | { name?: unknown; dir?: unknown; packageManager?: unknown }
+    | undefined;
+  const official =
+    isOfficialDesktopHostEntry(argv[1]) || launched?.name === "desktop";
+  const launchedDir =
+    typeof launched?.dir === "string" && isAbsolute(launched.dir)
+      ? resolve(launched.dir)
+      : undefined;
+  const projectDir =
+    official && typeof argv[3] === "string" && isAbsolute(argv[3])
+      ? resolve(argv[3])
+      : undefined;
+  const cwdProfile =
+    official && exists(resolve(cwd, "package.json")) ? resolve(cwd) : undefined;
+  const profileDir =
+    launchedDir ??
+    projectDir ??
+    cwdProfile ??
+    resolve(env.DSH_PROFILE_DIR ?? resolve(home, ".dsh", "profiles", "web"));
+  const selected = profileNameFromArgv(argv);
+  const profileName = validProfileName(launched?.name)
+    ? launched.name
+    : official
+      ? "desktop"
+      : validProfileName(selected)
+        ? selected
+        : validProfileName(basename(profileDir))
+          ? basename(profileDir)
+          : "web";
+  const packageManager = official
+    ? (packageManagerFrom(launched?.packageManager) ??
+      packageManagerFromArgv(argv, exists, execPath, env.PATH))
+    : undefined;
+  const pluginManager =
+    official && packageManager === undefined
+      ? pluginManagerFrom(optionalService(ctx, "pluginManager"))
+      : undefined;
+  const entry = official ? undefined : cliEntry(argv, cwd, exists);
   return {
     profileName,
     profileDir,
+    officialDesktop: official,
+    canAutoUpdate:
+      packageManager !== undefined ||
+      pluginManager !== undefined ||
+      entry !== undefined,
+    ...(packageManager === undefined ? {} : { packageManager }),
+    ...(pluginManager === undefined ? {} : { pluginManager }),
     ...(entry === undefined ? {} : { cliEntry: entry }),
   };
+}
+export function shouldNotifyParent(
+  target: Runtime,
+  send: unknown = process.send,
+): boolean {
+  return (
+    target.officialDesktop !== true &&
+    target.packageManager === undefined &&
+    typeof send === "function"
+  );
+}
+function runtime(ctx: UpdateContext): Runtime {
+  return resolveUpdateRuntime(ctx);
 }
 
 type Semver = {
@@ -292,7 +456,7 @@ async function status(
     latestCheckFailed: latest === undefined,
     updateAvailable: latest != null && isNewerVersion(current, latest),
     profileName: target.profileName,
-    canAutoUpdate: target.cliEntry !== undefined,
+    canAutoUpdate: target.canAutoUpdate,
   };
 }
 
@@ -301,6 +465,61 @@ async function install(
   packageSpec: string,
   track: (done: Promise<unknown>) => void,
 ): Promise<void> {
+  if (target.packageManager !== undefined) {
+    const manager = target.packageManager;
+    const child = spawn(
+      manager.command,
+      [
+        ...manager.args,
+        "add",
+        "--config.minimumReleaseAge=0",
+        packageSpec,
+        "--registry=https://registry.npmjs.org/",
+      ],
+      {
+        cwd: target.profileDir,
+        windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env, ...manager.env, NO_COLOR: "1" },
+      },
+    );
+    let detail = "";
+    child.stdout.on("data", (chunk) => {
+      detail = (detail + String(chunk)).slice(-4000);
+    });
+    child.stderr.on("data", (chunk) => {
+      detail = (detail + String(chunk)).slice(-4000);
+    });
+    const done = new Promise<void>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("close", (code) =>
+        code === 0
+          ? resolve()
+          : reject(
+              new UpdateFailure(
+                "UPDATE_FAILED",
+                detail.trim() || `更新进程退出码 ${code}`,
+              ),
+            ),
+      );
+    });
+    track(done);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        done,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            child.kill();
+            reject(new UpdateFailure("UPDATE_TIMEOUT"));
+          }, 10 * 60_000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+    return;
+  }
   if (!target.cliEntry) throw new UpdateFailure("AUTO_UPDATE_UNAVAILABLE");
   const child = spawn(
     process.execPath,
@@ -381,7 +600,7 @@ export function registerPluginUpdater(
     path: options.endpoint,
     handler: async (request, response) => {
       try {
-        const target = runtime();
+        const target = runtime(ctx);
         if (request.method === "GET" || request.method === "HEAD") {
           const payload = await status(options, target);
           response.writeHead(200, {
@@ -437,6 +656,7 @@ export function registerPluginUpdater(
             updatedVersion: before.latestVersion,
             restartRequired: true,
             autoReload: false,
+            ...(target.officialDesktop ? { restartDesktop: true } : {}),
           });
         } finally {
           if (pendingInstall)
