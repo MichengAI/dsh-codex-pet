@@ -19,7 +19,7 @@ npm run test:e2e
 
 ## 端到端测试
 
-Pet 的 Web 浮层通过 React Portal 挂载到 `body > [data-dsh-pet-overlay]`，空白区域点击穿透。配合 Codex UI 设置页显示时，需要同时使用已对该容器放行隔离和焦点限制的 Codex UI；仅更新 Pet 无法绕过旧版设置页的背景隔离。
+Pet 的 Web 浮层通过 React Portal 挂载到 `body > [data-dsh-pet-overlay]`，容器为零尺寸，空白区域点击穿透。不要把容器改回铺满窗口：官方 macOS 会把 `body` 下除 `#root` 以外的整窗节点当成禁拖区。配合 Codex UI 设置页显示时，需要同时使用已对该容器放行隔离和焦点限制的 Codex UI；仅更新 Pet 无法绕过旧版设置页的背景隔离。
 
 同级目录存在 `dsh-codex-ui` 源码时，在 Pet 仓库运行 `node scripts\verify-global-overlay.mjs`，可验证实际 Portal 和设置页隔离逻辑的显示、点击、焦点循环、空白穿透、重复切换和卸载清理。该浏览器夹具不替代完整 DSH Profile 验收。
 

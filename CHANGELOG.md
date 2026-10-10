@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## [0.1.16] - 2026-10-10
+
+- On official macOS Desktop, enabling the plugin no longer blocks window dragging or double-click zoom. The in-page pet and settings pages are unchanged.
+
 ## [0.1.15] - 2026-10-07
 
 - Official Desktop can update this plugin in place. It no longer targets the web profile by mistake.
