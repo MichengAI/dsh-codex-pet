@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.1.17 - 2026-10-12
+
+- Support DSH `0.2.1-alpha.2` while retaining all existing supported versions.
+
 ## [0.1.16] - 2026-10-10
 
 - On official macOS Desktop, enabling the plugin no longer blocks window dragging or double-click zoom. The in-page pet and settings pages are unchanged.
