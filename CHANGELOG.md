@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## [0.1.18] - 2026-10-14
+
+- Adjust settings navigation section order to ensure stable placement and avoid conflicts with other plugins.
+
 ## [0.1.17] - 2026-10-12
 
 - Support DSH `0.2.1-alpha.2` while retaining all existing supported versions.
