@@ -266,7 +266,7 @@ export function apply(ctx: ClientContext): void {
         name: "settings.section",
         id: "codex-pet",
         label: () => translator(ctx.locale.getSnapshot().active)("宠物"),
-        order: 12,
+        order: 50,
       },
       () => <Page sessions={sessions} locale={ctx.locale} />,
     ),
