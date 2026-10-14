@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## [0.1.19] - 2026-10-14
+
+- Support DSH `0.2.1-alpha.3` while retaining all existing supported versions. Pin development types and the default end-to-end host to this release. Cordis moves to `4.0.5-alpha.2` to match the host.
+
 ## [0.1.18] - 2026-10-14
 
 - Adjust settings navigation section order to ensure stable placement and avoid conflicts with other plugins.
