@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1] - 2026-10-17
+
+- Add compatibility with DSH `0.2.1-rc.2` without dropping `0.2.0-rc.1`, `0.2.0-rc.2`, or `0.2.1-rc.1`. Pin development types and the default end-to-end host to `0.2.1-rc.2`. Cordis stays `4.0.5`.
+- This host still provides the session APIs the pet uses, so no new host branch was added. Hosts before `0.2.0` and the `0.2.1` alphas are still rejected by the version gate, and the plugin will not run. Pet settings are not deleted.
+
 ## [1.0.0] - 2026-10-17
 
 - Supported hosts are now DeepSeek Harness `0.2.0-rc.1`, `0.2.0-rc.2`, and `0.2.1-rc.1`. Development types and the default end-to-end host are pinned to `0.2.1-rc.1`. Cordis is `4.0.5`.
