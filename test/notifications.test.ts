@@ -154,24 +154,7 @@ test('没有绑定也按列表 running 和 status completionUnread 提醒，打�
   } finally { engine.dispose(); }
 });
 
-test('旧宿主 list.completed 可提醒完成，list.current 仍可读当前快照', () => {
-  const list = new State<SessionList>({ current: 'a', ids: ['a'], byId: { a: { id: 'a', title: '甲', running: false, completed: true } } });
-  const session = new State<SessionSnapshot>({ running: false, lastAgentError: null });
-  const events = new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } });
-  let state!: NotificationState;
-  const engine = createNotifications({
-    list,
-    binding: () => ({ session, eventSource: events }),
-    open() {},
-  }, new State(new Map()), value => { state = value; });
-  try {
-    assert.equal(state.items[0]?.pose, 'review');
-    session.set({ running: false, lastAgentError: 'boom' });
-    assert.equal(state.items[0]?.pose, 'failed');
-  } finally { engine.dispose(); }
-});
-
-test('没有 list.current 时用 retainedBy.mainView 读取当前会话快照', () => {
+test('retainedBy.mainView 读取当前会话快照', () => {
   const list = new State<SessionList>({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: true, retainedBy: { mainView: 1 } } } });
   const session = new State<SessionSnapshot>({ running: false, lastAgentError: 'boom' });
   const events = new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } });

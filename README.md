@@ -18,7 +18,7 @@
 
 </div>
 
-> DSH Codex Pet is a community-maintained pet plugin for DeepSeek Harness (DSH), not an official OpenAI or DeepSeek AI product.
+> DSH Codex Pet is a community-maintained pet plugin for DeepSeek Harness (DSH), not an official OpenAI or DeepSeek AI product. From 1.0.0 it supports only DSH `0.2.0-rc.1`, `0.2.0-rc.2`, and `0.2.1-rc.1`. Earlier hosts and the `0.2.1` alphas are rejected by the version gate, so the plugin will not run; local pet settings and custom pets are not deleted.
 
 ## Features
 
@@ -74,7 +74,7 @@ For a desktop workbench, download [DSH Codex Desktop](https://github.com/Micheng
 
 ## Installation
 
-Supported DeepSeek Harness versions: **`0.1.2-rc.1`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.3`, `0.1.7-rc.1`, `0.1.7-rc.2`, `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-alpha.2`, and `0.2.1-alpha.3`**. Legacy alpha hosts (0.1.6/0.1.7) are no longer supported. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
+Supported DeepSeek Harness versions: **`0.2.0-rc.1`, `0.2.0-rc.2`, and `0.2.1-rc.1`**. Hosts before `0.2.0` (including the previously supported `0.1.2-rc.1`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.3`, `0.1.7-rc.1`, and `0.1.7-rc.2`) and `0.2.1-alpha.1` through `0.2.1-alpha.5` are rejected by the version gate, and the plugin will not run. If you still use one of those hosts, install `@michengai/dsh-codex-pet@0.1.19` instead of `@latest`. The version gate only refuses to load the plugin. It does not delete pet selection, position, or custom pets under `DSH_HOME/codex-pet`. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -101,8 +101,6 @@ Open **Settings → Pets** (`宠物` in the current UI), or open settings from t
 | Hide or restore the pet | Use the right-click menu or pet settings. |
 
 The pet is a notification and action surface. Start new conversations and write follow-up messages in the main DSH interface.
-
-Known issue: in DSH `0.1.5-rc.2`, stopping a task before the model starts responding may cause the pet to show a failure notification.
 
 ### Create a custom pet
 

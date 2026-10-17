@@ -7,17 +7,15 @@ import { retryStartup, finishReport } from '../scripts/e2e-runtime.mjs';
 import { verifyCi } from '../scripts/verify-release-ci.mjs';
 import { isolatedHostInstallArgs, versionPublishedBy } from '../scripts/test-host.mjs';
 
-test('新增宿主兼容不得移除已承诺版本，开发基线保持最新版', () => {
+test('支持版本矩阵只保留 0.2.0 以后的 RC，开发基线固定最新 RC', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const supported = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'].split(' || ');
-  for (const version of ['0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.5-rc.3', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-alpha.2', '0.2.1-alpha.3']) assert.ok(supported.includes(version), `不得移除 ${version}`);
-  const allowedAlpha = new Set(['0.2.1-alpha.2', '0.2.1-alpha.3']);
-  for (const version of supported) {
-    if (!allowedAlpha.has(version)) assert.equal(version.includes('-alpha'), false, `不得保留 alpha：${version}`);
-  }
-  assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.2.1-alpha.3');
+  assert.deepEqual(supported, ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1']);
+  assert.equal(pkg.version, '1.0.0');
+  assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.2.1-rc.1');
+  assert.equal(pkg.devDependencies['@deepseek-ai/cordis'], '4.0.5');
   for (const [name, version] of Object.entries(pkg.devDependencies)) {
-    if (name.startsWith('@deepseek-ai/dsh')) assert.equal(version, '0.2.1-alpha.3', name);
+    if (name.startsWith('@deepseek-ai/dsh')) assert.equal(version, '0.2.1-rc.1', name);
   }
 });
 

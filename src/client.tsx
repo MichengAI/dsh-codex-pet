@@ -1,6 +1,5 @@
 import { compatibleSessions } from "./session-compat.ts";
 import { pendingFromSessionStatus } from "./pending-status.ts";
-import { compatiblePending } from "./legacy-pending.ts";
 import { createCompanionProvider } from "./companion-api.ts";
 import { translator } from "./ui-locales.ts";
 import type { PetLocaleStore } from "./pet-locales.ts";
@@ -23,7 +22,7 @@ import { GlobalOverlay } from "./global-overlay.tsx";
 interface ClientContext {
   locale: PetLocaleStore;
   sessions: ISessions;
-  uiSession?: UiSession | { pendingInteractions?: PendingStore };
+  uiSession?: UiSession;
   uiWorkspace?: Pick<UiWorkspace, "openSession">;
   reflect?: { get(name: string): unknown };
   slots: {
@@ -223,8 +222,8 @@ function probe<T>(ctx: ClientContext, name: "uiSession" | "uiWorkspace"): T | un
 }
 function liveSessionStatus(ctx: ClientContext): Store<ReadonlyMap<string, SessionStatusRow>> {
   const resolve = () => {
-    const live = probe<UiSession | { pendingInteractions?: PendingStore }>(ctx, "uiSession");
-    return live && "sessionStatus" in live ? live.sessionStatus : undefined;
+    const live = probe<UiSession>(ctx, "uiSession");
+    return live?.sessionStatus;
   };
   return {
     getSnapshot() { return resolve()?.getSnapshot() ?? new Map(); },
@@ -244,22 +243,17 @@ function liveSessionStatus(ctx: ClientContext): Store<ReadonlyMap<string, Sessio
   };
 }
 export function apply(ctx: ClientContext): void {
+  const status = liveSessionStatus(ctx);
   const sessions = compatibleSessions(
     ctx.sessions as unknown as Sessions,
     id => {
-      const open = (ctx.sessions as unknown as Sessions).open;
-      if (open) return open.call(ctx.sessions, id);
       const uiWorkspace = probe<Pick<UiWorkspace, "openSession">>(ctx, "uiWorkspace");
       if (uiWorkspace) return uiWorkspace.openSession(id as SessionTarget);
     },
-    liveSessionStatus(ctx),
+    status,
   );
-  // Cordis 的 reflect.get 允许探测旧版不存在的服务，不声明不存在的必需依赖。
-  const pending = compatiblePending(sessions, () => {
-    const live = probe<UiSession | { pendingInteractions?: PendingStore }>(ctx, "uiSession");
-    if (live && "sessionStatus" in live && live.sessionStatus) return pendingFromSessionStatus(live.sessionStatus);
-    return live && "pendingInteractions" in live ? live.pendingInteractions : undefined;
-  });
+  // 服务可能晚于插件激活；reflect.get 未注入时不能直接读，否则插件无法激活。
+  const pending = pendingFromSessionStatus(status);
   ctx.slots.inject("settings.section", () =>
     ctx.slots.register(
       {

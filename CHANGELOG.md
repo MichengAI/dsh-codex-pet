@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## [1.0.0] - 2026-10-17
+
+- Supported hosts are now DeepSeek Harness `0.2.0-rc.1`, `0.2.0-rc.2`, and `0.2.1-rc.1`. Development types and the default end-to-end host are pinned to `0.2.1-rc.1`. Cordis is `4.0.5`.
+- Hosts before `0.2.0` are rejected by the version gate, and the plugin will not run. That includes the previously supported `0.1.2-rc.1`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.3`, `0.1.7-rc.1`, and `0.1.7-rc.2`. If you still use one of those hosts, install `@michengai/dsh-codex-pet@0.1.19` instead of `@latest`.
+- `0.2.1-alpha.1` through `0.2.1-alpha.5` are also rejected by the version gate, and the plugin will not run. The intermediate alpha hosts are no longer supported.
+- The version gate only refuses to load the plugin. Pet selection, position, and custom pets remain under `DSH_HOME/codex-pet` (default `~/.dsh/codex-pet`) and are not deleted.
 
 ## [0.1.19] - 2026-10-14
 

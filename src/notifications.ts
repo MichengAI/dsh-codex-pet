@@ -56,7 +56,7 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         const status = statuses?.get(id);
         const binding = sessions.binding(id);
         let record = records.get(id);
-        if (!record) { record = { round: 0, running: row.running, completion: !!status?.completionUnread || !!row.completed, error: null, revision: binding?.eventSource?.getSnapshot().revision ?? -1, updatedAt: row.updatedAt ?? now(), lastPose: '' }; records.set(id, record); }
+        if (!record) { record = { round: 0, running: row.running, completion: !!status?.completionUnread, error: null, revision: binding?.eventSource?.getSnapshot().revision ?? -1, updatedAt: row.updatedAt ?? now(), lastPose: '' }; records.set(id, record); }
         const previous = bindings.get(id);
         if (binding && (previous?.binding.session !== binding.session || previous.binding.eventSource !== binding.eventSource)) {
           previous?.off();
@@ -82,9 +82,9 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         const agentError = snapshot?.lastAgentError ?? snapshot?.promptError?.error?.message ?? null;
         if (agentError && agentError !== record.snapshotError) record.error = agentError;
         record.snapshotError = agentError;
-        // alpha.2 主视图完成往往不设 completionUnread；没有 turn/end 时用运行下落补完成，历史 replace 不补。
+        // 主视图完成往往不设 completionUnread；没有 turn/end 时用运行下落补完成，历史 replace 不补。
         if (stopped && !record.suppressStopCompletion && !record.finished && !record.error) { record.completion = true; record.updatedAt = now(); }
-        if ((status?.completionUnread || row.completed) && !running && (!record.finished || record.finished === 'completed')) record.completion = true;
+        if (status?.completionUnread && !running && (!record.finished || record.finished === 'completed')) record.completion = true;
         const request = requests.get(id);
         const activity = selectActivity([{ id, title: row.title ?? row.displayTitle, running, waiting: !!request, error: running ? null : record.error, completed: !running && record.completion }]);
         if (activity.pose === 'idle') continue;
