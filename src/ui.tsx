@@ -16,7 +16,7 @@ import React, {
   useSyncExternalStore,
   useMemo,
 } from "react";
-import { ReloadIcon, ArrowTopRightIcon } from "@radix-ui/react-icons";
+import { ReloadIcon, ArrowTopRightIcon, PlusIcon } from "@radix-ui/react-icons";
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
 import {
   ANIMATIONS,
@@ -196,11 +196,13 @@ export function Settings({
             type="button"
             variant="outline"
             size="sm"
+            className="dcp-icon-button"
+            title={t("创建")}
+            aria-label={t("创建")}
             disabled={!library || busy}
+            icon={<PlusIcon />}
             onClick={() => setShowCreate(true)}
-          >
-            {t("创建")}
-          </Button>
+          />
           <Button
             type="button"
             variant="outline"
