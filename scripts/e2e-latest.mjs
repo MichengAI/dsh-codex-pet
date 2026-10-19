@@ -215,7 +215,7 @@ try {
   assert.equal(unified.gap, '16px', '设置页必须使用宿主纵向间距节奏');
   assert.equal(unified.containerType, 'inline-size', '设置页必须按内容宽度响应');
   assert.equal(unified.cardBackground, unified.layer1, '卡片背景必须使用宿主 bg-layer-1');
-  assert.deepEqual(unified.iconSize, ['28px', '28px'], '图标按钮必须保持宿主 sm 尺寸');
+  assert.deepEqual(unified.iconSize, ['22px', '22px'], '图标按钮必须使用 22px 图标动作尺寸');
   assert.equal(unified.selectHeight, '28px', '行内按钮必须使用宿主 sm 高度');
   assert.equal(unified.selectFont, '12px', '行内按钮必须使用宿主 sm 字号');
   await page.screenshot({ path: join(output, 'native-settings.png') });

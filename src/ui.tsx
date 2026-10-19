@@ -183,7 +183,7 @@ export function Settings({
         <div className="dcp-actions">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
             className="dcp-icon-button"
             title={t("刷新宠物库")}
@@ -269,7 +269,7 @@ export function Settings({
           </div>
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
             className="dcp-folder-button"
             disabled={!library || busy}
