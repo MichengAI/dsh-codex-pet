@@ -25,7 +25,8 @@ if (!smokeRoot)
     const prelude = await build({
       stdin: {
         contents: `import * as React from 'react'; import * as jsx from 'react/jsx-runtime'; import * as ReactDOM from 'react-dom'; import {createRoot} from 'react-dom/client';
-      window.__ModuleLoader__={load({factory}){window.petPlugin=factory(id=>id==='react'?React:id==='react/jsx-runtime'?jsx:id==='react-dom'?ReactDOM:{createRoot});}};
+      const Button=React.forwardRef(function Button({variant,size,icon,children,className,...props},ref){return React.createElement('button',Object.assign({},props,{ref,className}),(icon===undefined||icon===null)?null:React.createElement('span',{className:'dsw-button-icon'},icon),children);});
+      window.__ModuleLoader__={load({factory}){window.petPlugin=factory(id=>id==='react'?React:id==='react/jsx-runtime'?jsx:id==='react-dom'?ReactDOM:id==='@deepseek-ai/dsh-client-ui-primitives'?{Button}:{createRoot});}};
       window.renderPet=Component=>createRoot(document.getElementById('root')).render(React.createElement(Component));`,
         resolveDir: process.cwd(),
       },
@@ -57,7 +58,7 @@ if (!smokeRoot)
         `new Promise((resolve,reject)=>{const deadline=Date.now()+5000;const check=()=>{if(${condition})resolve(true);else if(Date.now()>deadline)reject(new Error('渲染超时'));else setTimeout(check,30)};check()})`,
       );
     await waitFor(
-      `document.querySelector('.dcp-pet-button') && document.querySelector('[data-pet-icon="codex-paw"]')`,
+      `document.querySelector('.dcp-pet-button') && document.querySelector('[data-dcp-nav-icon="pet"]') && document.querySelector('.dcp-settings-nav-icon')`,
     );
     await page.evaluate("live.set({running:true,lastAgentError:null})");
     await waitFor(
