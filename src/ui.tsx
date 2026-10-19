@@ -11,6 +11,7 @@ import {
 import React, {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   useSyncExternalStore,
@@ -151,6 +152,7 @@ export function Settings({
     [description, setDescription] = useState("");
   const [size, setSize] = useState(library?.config.size ?? 120);
   const dialog = useRef<HTMLDialogElement>(null);
+  const createTitleId = useId();
   const [creationError, setCreationError] = useState("");
   useEffect(() => {
     if (library) setSize(library.config.size);
@@ -324,6 +326,7 @@ export function Settings({
       <dialog
         ref={dialog}
         className="dcp-dialog dcp-create-dialog"
+        aria-labelledby={createTitleId}
         onCancel={() => setShowCreate(false)}
         onClose={() => setShowCreate(false)}
       >
@@ -346,7 +349,7 @@ export function Settings({
               .finally(() => setBusy(false));
           }}
         >
-          <h2>{t("创建宠物")}</h2>
+          <h2 id={createTitleId}>{t("创建宠物")}</h2>
           <textarea
             className="dcp-textarea"
             autoFocus

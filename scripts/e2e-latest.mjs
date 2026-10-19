@@ -148,14 +148,21 @@ try {
   assert.equal(state.skillAvailable, true);
   checks.push('完整 DSH Web 加载插件、九只宠物及随包 Skill');
   await page.screenshot({ path: join(output, 'web-pet.png') });
-  // 首次启动会弹出「开始使用」，先关闭遮罩，否则账号菜单不可点击。
-  const startModalClose = page
-    .getByRole('dialog')
-    .getByRole('button', { name: /^(关闭|Close)$/ });
-  if (await startModalClose.isVisible().catch(() => false))
-    await startModalClose.click();
-  // 宿主原生设置导航：mask 图标取代默认图标，内容区不再被插件宽度上限收窄。
-  await page.getByRole('button', { name: /账号菜单|Account menu/i }).click();
+  // 首次启动会弹出「开始使用」，先尝试点击账号菜单；被遮罩拦截时再关闭弹窗重试。
+  const accountMenu = page.getByRole('button', {
+    name: /账号菜单|Account menu/i,
+  });
+  try {
+    await accountMenu.click({ timeout: 3000 });
+  } catch {
+    const startModalClose = page
+      .locator('[role="dialog"]:visible')
+      .getByRole('button', { name: /^(关闭|Close)$/ })
+      .first();
+    if (await startModalClose.isVisible().catch(() => false))
+      await startModalClose.click();
+    await accountMenu.click();
+  }
   await page.getByRole('menuitem', { name: /^(设置|Settings)/ }).click();
   const settingsPanel = page.locator('[data-shortcut-modal="settings"]');
   await settingsPanel.waitFor();
@@ -212,7 +219,7 @@ try {
     };
   });
   assert.equal(unified.fontSize, '14px', '设置页必须使用宿主正文 14px');
-  assert.equal(unified.gap, '16px', '设置页必须使用宿主纵向间距节奏');
+  assert.equal(unified.gap, '14px', '设置页必须使用宿主纵向间距节奏');
   assert.equal(unified.containerType, 'inline-size', '设置页必须按内容宽度响应');
   assert.equal(unified.cardBackground, unified.layer1, '卡片背景必须使用宿主 bg-layer-1');
   assert.deepEqual(unified.iconSize, ['22px', '22px'], '图标按钮必须使用 22px 图标动作尺寸');

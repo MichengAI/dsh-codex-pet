@@ -22,7 +22,7 @@ export const PET_NAV_ROW_SELECTOR =
   '[role="dialog"] nav button, .dcu-settings-link';
 
 const NAV_ICON_STYLE_ID = "dcp-settings-nav-icon-style";
-const NAV_ICON_CSS = `[${PET_NAV_ICON_MARKER}]>svg{display:none!important}.${PET_NAV_ICON_CLASS}{display:inline-block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:${PAW_MASK} center/contain no-repeat;mask:${PAW_MASK} center/contain no-repeat}`;
+const NAV_ICON_CSS = `[${PET_NAV_ICON_MARKER}]>svg{display:none!important}.${PET_NAV_ICON_CLASS}{display:inline-block;flex:none;width:16px;height:16px;color:var(--dcu-sidebar-icon,currentColor);background:currentColor;-webkit-mask:${PAW_MASK} center/contain no-repeat;mask:${PAW_MASK} center/contain no-repeat}`;
 
 /** 注入导航图标的样式；重复安装时复用同一个 style 元素。 */
 function ensureNavIconStyle(): void {
@@ -80,19 +80,28 @@ export function observePetSettingsIcon(): () => void {
   ensureNavIconStyle();
 
   let disposed = false;
-  let scheduled = false;
+  let frame: number | undefined;
+  const hasSettingsSurface = () =>
+    document.querySelector(
+      '.dcu-settings-page, .dcu-settings-link, [data-shortcut-modal="settings"]',
+    ) !== null;
   const sync = () => {
-    scheduled = false;
+    frame = undefined;
     if (disposed) return;
+    // 设置面板未打开且没有残留图标时跳过整页扫描。
+    if (
+      !hasSettingsSurface() &&
+      document.querySelector(`[${PET_NAV_ICON_MARKER}]`) === null
+    )
+      return;
     for (const row of document.querySelectorAll(PET_NAV_ROW_SELECTOR)) {
       applyPetSettingsIcon(row);
     }
   };
-  // 合并同一轮 DOM 变更；React 重新渲染时只处理一次。
+  // 每帧最多处理一次，避免流式输出时每个 DOM 变更都整页查询。
   const schedule = () => {
-    if (scheduled || disposed) return;
-    scheduled = true;
-    queueMicrotask(sync);
+    if (frame !== undefined || disposed) return;
+    frame = window.requestAnimationFrame(sync);
   };
 
   sync();
@@ -105,6 +114,7 @@ export function observePetSettingsIcon(): () => void {
   return () => {
     disposed = true;
     observer.disconnect();
+    if (frame !== undefined) window.cancelAnimationFrame(frame);
     for (const row of document.querySelectorAll(`[${PET_NAV_ICON_MARKER}]`)) {
       restorePetSettingsIcon(row);
     }
