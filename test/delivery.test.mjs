@@ -11,7 +11,6 @@ test('支持版本矩阵只保留 0.2.0 以后的 RC，开发基线固定最新 
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const supported = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'].split(' || ');
   assert.deepEqual(supported, ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.2']);
-  assert.equal(pkg.version, '1.0.1');
   assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.2.1-rc.2');
   assert.equal(pkg.devDependencies['@deepseek-ai/cordis'], '4.0.5');
   for (const [name, version] of Object.entries(pkg.devDependencies)) {

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2] - 2026-10-19
+
+- Settings navigation draws the pet icon with a skin-safe CSS mask. It covers both the native DSH settings dialog and the dsh-codex-ui settings page without rewriting the host SVG.
+- The pet settings page uses the host Button primitive and host typography, spacing, 0.5px borders, layer tokens, and container queries. The create action is a 22px plus icon next to refresh.
+- The settings dialog follows host modal tokens, and the pet description field follows host input metrics.
+- The end-to-end suite covers the nav icon, full-width layout, and host control metrics. The isolated smoke test loads the host primitives and checks the mask icon.
+
 ## [1.0.1] - 2026-10-17
 
 - Add compatibility with DSH `0.2.1-rc.2` without dropping `0.2.0-rc.1`, `0.2.0-rc.2`, or `0.2.1-rc.1`. Pin development types and the default end-to-end host to `0.2.1-rc.2`. Cordis stays `4.0.5`.
