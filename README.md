@@ -104,7 +104,7 @@ The pet is a notification and action surface. Start new conversations and write 
 
 ### Create a custom pet
 
-1. Open pet settings, click **Create** (`创建`), and describe the companion.
+1. Open pet settings, click the **+** icon (`创建`), and describe the companion.
 2. Click **Create in DSH** (`在 DSH 中创建`). The plugin opens a dedicated task and sends the bundled Skill instructions.
 3. Follow that task's progress. Creation uses DSH's configured model and image tools.
 4. Once the pet files are saved, refresh the pet library and select the new companion.
