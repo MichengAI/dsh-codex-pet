@@ -17,6 +17,7 @@ import React, {
   useMemo,
 } from "react";
 import { ReloadIcon, ArrowTopRightIcon } from "@radix-ui/react-icons";
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
 import {
   ANIMATIONS,
   BASE,
@@ -180,24 +181,30 @@ export function Settings({
           </p>
         </div>
         <div className="dcp-actions">
-          <button
-            className="dcp-icon"
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="dcp-icon-button"
             title={t("刷新宠物库")}
             aria-label={t("刷新宠物库")}
             disabled={busy}
+            icon={<ReloadIcon />}
             onClick={() => void act(controller.refresh)}
-          >
-            <ReloadIcon />
-          </button>
-          <button
-            className="dcp-button"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             disabled={!library || busy}
             onClick={() => setShowCreate(true)}
           >
             {t("创建")}
-          </button>
-          <button
-            className="dcp-button"
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             disabled={!library || busy}
             onClick={() =>
               void act(() =>
@@ -206,7 +213,7 @@ export function Settings({
             }
           >
             {library?.config.visible === false ? t("显示宠物") : t("收起宠物")}
-          </button>
+          </Button>
         </div>
       </header>
       {error && (
@@ -229,8 +236,10 @@ export function Settings({
               <div className="dcp-name">{pet.name}</div>
               <div className="dcp-description">{pet.description}</div>
             </div>
-            <button
-              className="dcp-button"
+            <Button
+              type="button"
+              variant={library.config.selected === pet.id ? "ghost" : "outline"}
+              size="sm"
               aria-label={
                 library.config.selected === pet.id
                   ? `${t("已选择")} ${pet.name}`
@@ -243,7 +252,7 @@ export function Settings({
               }
             >
               {library.config.selected === pet.id ? t("已选") : t("选择")}
-            </button>
+            </Button>
           </div>
         ))}
         {library?.pets.length === 0 && (
@@ -258,13 +267,17 @@ export function Settings({
               {library?.customPath ?? t("正在读取目录…")}
             </div>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             className="dcp-folder-button"
             disabled={!library || busy}
+            icon={<ArrowTopRightIcon />}
             onClick={() => void act(controller.folder)}
           >
-            {t("打开文件夹")} <ArrowTopRightIcon />
-          </button>
+            {t("打开文件夹")}
+          </Button>
         </div>
       </div>
       {!!library?.warnings.length && (
@@ -308,7 +321,7 @@ export function Settings({
       )}
       <dialog
         ref={dialog}
-        className="dcp-dialog"
+        className="dcp-dialog dcp-create-dialog"
         onCancel={() => setShowCreate(false)}
         onClose={() => setShowCreate(false)}
       >
@@ -333,6 +346,7 @@ export function Settings({
         >
           <h2>{t("创建宠物")}</h2>
           <textarea
+            className="dcp-textarea"
             autoFocus
             aria-label={t("宠物描述")}
             placeholder={t(
@@ -361,16 +375,18 @@ export function Settings({
             </p>
           )}
           <footer>
-            <button
+            <Button
               type="button"
-              className="dcp-button"
+              variant="ghost"
+              size="sm"
               onClick={() => setShowCreate(false)}
             >
               {t("取消")}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="dcp-button dcp-primary"
+              variant="primary"
+              size="sm"
               disabled={
                 busy ||
                 !description.trim() ||
@@ -379,7 +395,7 @@ export function Settings({
               }
             >
               {t("在 DSH 中创建")}
-            </button>
+            </Button>
           </footer>
         </form>
       </dialog>

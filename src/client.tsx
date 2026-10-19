@@ -5,6 +5,7 @@ import { translator } from "./ui-locales.ts";
 import type { PetLocaleStore } from "./pet-locales.ts";
 /** 只通过 DSH 公共插槽与 Session 快照接入，独立于其他宠物插件。 */
 import React, { useEffect, useState, useRef } from "react";
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
 import { Companion, Settings, usePetController } from "./ui.tsx";
 import { IDLE, type Activity } from "./model.ts";
 import { type Sessions, type PendingStore, type Store, type SessionStatusRow } from "./activity.ts";
@@ -163,13 +164,15 @@ function Overlay({
           overflow: "auto",
         }}
       >
-        <button
+        <Button
           type="button"
-          className="dcp-button"
+          variant="ghost"
+          size="sm"
+          className="dcp-dialog-close"
           onClick={() => settingsDialog.current?.close()}
         >
           {t("关闭设置")}
-        </button>
+        </Button>
         <Settings
           controller={controller}
           locale={locale}
