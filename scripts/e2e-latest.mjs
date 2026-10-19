@@ -148,24 +148,39 @@ try {
   assert.equal(state.skillAvailable, true);
   checks.push('完整 DSH Web 加载插件、九只宠物及随包 Skill');
   await page.screenshot({ path: join(output, 'web-pet.png') });
-  // 首次启动会弹出「开始使用」，先尝试点击账号菜单；被遮罩拦截时再关闭弹窗重试。
-  const accountMenu = page.getByRole('button', {
-    name: /账号菜单|Account menu/i,
-  });
-  try {
-    await accountMenu.click({ timeout: 3000 });
-  } catch {
+  // 首次启动会弹出「开始使用」；先关掉遮罩，再用宿主设置快捷键，
+  // 避免依赖各宿主版本不同的账号菜单文案。
+  for (let attempt = 0; attempt < 20; attempt += 1) {
     const startModalClose = page
       .locator('[role="dialog"]:visible')
       .getByRole('button', { name: /^(关闭|Close)$/ })
       .first();
-    if (await startModalClose.isVisible().catch(() => false))
+    if (await startModalClose.isVisible().catch(() => false)) {
       await startModalClose.click();
-    await accountMenu.click();
+      break;
+    }
+    await page.waitForTimeout(100);
   }
-  await page.getByRole('menuitem', { name: /^(设置|Settings)/ }).click();
   const settingsPanel = page.locator('[data-shortcut-modal="settings"]');
-  await settingsPanel.waitFor();
+  await page.keyboard.press('Control+Alt+,');
+  try {
+    await settingsPanel.waitFor({ timeout: 5000 });
+  } catch {
+    // 旧宿主使用左下角「设置」按钮；新宿主把入口放在账号菜单。
+    const directSettings = page.getByRole('button', {
+      name: /^(设置|Settings)$/,
+    });
+    if (await directSettings.isVisible().catch(() => false)) {
+      await directSettings.click();
+    } else {
+      const accountMenu = page.getByRole('button', {
+        name: /账号菜单|Account menu/i,
+      });
+      await accountMenu.click();
+      await page.getByRole('menuitem', { name: /^(设置|Settings)/ }).click();
+    }
+    await settingsPanel.waitFor();
+  }
   const petSectionRow = settingsPanel.getByRole('button', { name: /^(宠物|Pets)$/ });
   await petSectionRow.waitFor();
   const navIcon = await petSectionRow.evaluate((button) => {
