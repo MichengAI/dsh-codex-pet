@@ -148,6 +148,80 @@ try {
   assert.equal(state.skillAvailable, true);
   checks.push('完整 DSH Web 加载插件、九只宠物及随包 Skill');
   await page.screenshot({ path: join(output, 'web-pet.png') });
+  // 首次启动会弹出「开始使用」，先关闭遮罩，否则账号菜单不可点击。
+  const startModalClose = page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(关闭|Close)$/ });
+  if (await startModalClose.isVisible().catch(() => false))
+    await startModalClose.click();
+  // 宿主原生设置导航：mask 图标取代默认图标，内容区不再被插件宽度上限收窄。
+  await page.getByRole('button', { name: /账号菜单|Account menu/i }).click();
+  await page.getByRole('menuitem', { name: /^(设置|Settings)/ }).click();
+  const settingsPanel = page.locator('[data-shortcut-modal="settings"]');
+  await settingsPanel.waitFor();
+  const petSectionRow = settingsPanel.getByRole('button', { name: /^(宠物|Pets)$/ });
+  await petSectionRow.waitFor();
+  const navIcon = await petSectionRow.evaluate((button) => {
+    const svg = button.querySelector(':scope > svg');
+    const icon = button.querySelector('.dcp-settings-nav-icon');
+    return {
+      marker: button.getAttribute('data-dcp-nav-icon'),
+      icons: button.querySelectorAll('.dcp-settings-nav-icon').length,
+      ariaHidden: icon?.getAttribute('aria-hidden'),
+      size: icon === null ? null : [icon.getBoundingClientRect().width, icon.getBoundingClientRect().height],
+      masked: icon !== null && getComputedStyle(icon).maskImage.startsWith('url("data:image/svg+xml'),
+      svgHidden: svg !== null && getComputedStyle(svg).display === 'none',
+      legacyMarker: svg?.getAttribute('data-pet-icon') ?? null,
+    };
+  });
+  assert.equal(navIcon.marker, 'pet', '宠物设置入口必须带 mask 图标标记');
+  assert.equal(navIcon.icons, 1, '宠物设置入口只允许一个 mask 图标');
+  assert.equal(navIcon.ariaHidden, 'true', '装饰图标必须对辅助技术隐藏');
+  assert.deepEqual(navIcon.size, [16, 16], '导航图标必须保持宿主 16px 尺寸');
+  assert.equal(navIcon.masked, true, '导航图标必须使用皮肤安全的 CSS mask');
+  assert.equal(navIcon.svgHidden, true, '宿主 svg 只能被样式隐藏');
+  assert.equal(navIcon.legacyMarker, null, '不得再改写宿主 svg 内容');
+  await petSectionRow.click();
+  const sectionPage = settingsPanel.locator('.dcp-page');
+  await sectionPage.waitFor();
+  const sectionWidth = await sectionPage.evaluate((element) => ({
+    width: element.getBoundingClientRect().width,
+    maxWidth: getComputedStyle(element).maxWidth,
+  }));
+  assert.equal(sectionWidth.maxWidth, 'none', '设置内容不得再设置固定宽度上限');
+  assert.ok(sectionWidth.width > 0, '设置内容必须铺满宿主内容区');
+  const unified = await sectionPage.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const card = element.querySelector('.dcp-card');
+    const iconButton = element.querySelector('.dcp-icon-button');
+    const select = element.querySelector('.dcp-row button');
+    const probe = document.createElement('div');
+    probe.style.background = 'var(--dsw-alias-bg-layer-1)';
+    document.body.append(probe);
+    const layer1 = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return {
+      fontSize: style.fontSize,
+      gap: style.rowGap,
+      containerType: style.containerType,
+      cardBackground: card === null ? null : getComputedStyle(card).backgroundColor,
+      layer1,
+      iconSize: iconButton === null ? null : [getComputedStyle(iconButton).width, getComputedStyle(iconButton).height],
+      selectHeight: select === null ? null : getComputedStyle(select).height,
+      selectFont: select === null ? null : getComputedStyle(select).fontSize,
+    };
+  });
+  assert.equal(unified.fontSize, '14px', '设置页必须使用宿主正文 14px');
+  assert.equal(unified.gap, '16px', '设置页必须使用宿主纵向间距节奏');
+  assert.equal(unified.containerType, 'inline-size', '设置页必须按内容宽度响应');
+  assert.equal(unified.cardBackground, unified.layer1, '卡片背景必须使用宿主 bg-layer-1');
+  assert.deepEqual(unified.iconSize, ['28px', '28px'], '图标按钮必须保持宿主 sm 尺寸');
+  assert.equal(unified.selectHeight, '28px', '行内按钮必须使用宿主 sm 高度');
+  assert.equal(unified.selectFont, '12px', '行内按钮必须使用宿主 sm 字号');
+  await page.screenshot({ path: join(output, 'native-settings.png') });
+  await page.keyboard.press('Escape');
+  await settingsPanel.waitFor({ state: 'hidden' });
+  checks.push('原生设置入口使用 mask 图标，内容区全宽且控件尺寸与宿主一致');
   await page.locator('.dcp-pet-button').click({ button: 'right' });
   await page.getByRole('menuitem', { name: /设置|Settings/i }).click();
   await page.locator('.dcp-row').first().waitFor();
