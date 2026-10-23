@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  PET_NAV_ICON_CLASS,
   PET_NAV_ICON_MARKER,
   applyPetSettingsIcon,
   isPetNavRow,
@@ -32,8 +31,12 @@ class FakeElement {
     this.attrs[name] = String(value);
   }
 
-  removeAttribute(name: string): void {
+  removeAttribute(name: string) {
     delete this.attrs[name];
+  }
+
+  hasAttribute(name: string): boolean {
+    return Object.hasOwn(this.attrs, name);
   }
 
   appendChild(child: FakeElement): FakeElement {
@@ -110,22 +113,17 @@ function createButton(label: string, svgParent: "direct" | "wrapped" = "direct")
   return { button, element: button as unknown as Element, svg };
 }
 
-test("宠物设置行注入独立 mask 图标，宿主 svg 内容保持不变", () => {
+test("宠物设置行使用纯属性标记，宿主 svg 内容保持不变", () => {
   const { button, element, svg } = createButton("宠物");
   assert.equal(isPetNavRow(element), true);
   assert.equal(applyPetSettingsIcon(element), true);
 
-  assert.equal(button.getAttribute(PET_NAV_ICON_MARKER), "pet");
-  const icon = button.querySelector(`.${PET_NAV_ICON_CLASS}`);
-  assert.ok(icon, "必须插入独立 mask span");
-  assert.equal(icon.getAttribute("aria-hidden"), "true");
-  assert.equal(button.children[0], icon, "mask 图标应排在最前面");
-  assert.equal(button.children[1], svg, "宿主 svg 必须保留在原位");
+  assert.equal(button.getAttribute(PET_NAV_ICON_MARKER), "");
+  assert.equal(button.children.length, 2, "禁止插入额外的 span 节点");
+  assert.equal(button.children[0], svg, "宿主 svg 必须保留在原位");
   assert.equal(svg.children.length, 0, "不得改写宿主 svg 内容");
-  assert.equal(svg.getAttribute("viewBox"), null, "不得改写宿主 svg 属性");
 
-  assert.equal(applyPetSettingsIcon(element), false, "重复应用不得产生额外节点");
-  assert.equal(button.querySelectorAll(`.${PET_NAV_ICON_CLASS}`).length, 1);
+  assert.equal(applyPetSettingsIcon(element), false, "重复应用保持幂等");
 });
 
 test("英文文案同样适配", () => {
@@ -138,22 +136,13 @@ test("其他插件的设置行不注入图标", () => {
   const { button, element } = createButton("技能");
   assert.equal(isPetNavRow(element), false);
   assert.equal(applyPetSettingsIcon(element), false);
-  assert.equal(button.querySelector(`.${PET_NAV_ICON_CLASS}`), null);
 });
 
-test("图标包在容器里时不注入，避免打乱宿主布局", () => {
-  const { button, element } = createButton("宠物", "wrapped");
-  assert.equal(applyPetSettingsIcon(element), false);
-  assert.equal(button.getAttribute(PET_NAV_ICON_MARKER), null);
-  assert.equal(button.querySelector(`.${PET_NAV_ICON_CLASS}`), null);
-});
-
-test("卸载后只移除本插件图标，宿主 svg 保持原样", () => {
+test("卸载后移除 marker 属性，宿主 svg 保持原样", () => {
   const { button, element, svg } = createButton("宠物");
   applyPetSettingsIcon(element);
   assert.equal(restorePetSettingsIcon(element), true);
   assert.equal(button.getAttribute(PET_NAV_ICON_MARKER), null);
-  assert.equal(button.querySelector(`.${PET_NAV_ICON_CLASS}`), null);
   assert.equal(button.querySelector("svg"), svg);
   assert.equal(svg.children.length, 0);
   assert.equal(restorePetSettingsIcon(element), false, "重复卸载必须安全");

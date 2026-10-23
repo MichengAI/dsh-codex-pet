@@ -16,13 +16,30 @@ const PAW_MASK = `url("data:image/svg+xml,${encodeURIComponent(
 )}")`;
 
 export const PET_NAV_ICON_MARKER = "data-dcp-nav-icon";
-export const PET_NAV_ICON_CLASS = "dcp-settings-nav-icon";
 /** 原生 DSH 设置弹窗与 dsh-codex-ui 设置页的导航按钮。 */
 export const PET_NAV_ROW_SELECTOR =
   '[role="dialog"] nav button, .dcu-settings-link';
 
 const NAV_ICON_STYLE_ID = "dcp-settings-nav-icon-style";
-const NAV_ICON_CSS = `[${PET_NAV_ICON_MARKER}]>svg{display:none!important}.${PET_NAV_ICON_CLASS}{display:inline-block;flex:none;width:16px;height:16px;color:var(--dcu-sidebar-icon,currentColor);background:currentColor;-webkit-mask:${PAW_MASK} center/contain no-repeat;mask:${PAW_MASK} center/contain no-repeat}`;
+const NAV_ICON_CSS = [
+  `[${PET_NAV_ICON_MARKER}] > svg { display: none !important; }`,
+  `[${PET_NAV_ICON_MARKER}]::before {`,
+  `  content: '';`,
+  `  flex: none;`,
+  `  width: 16px;`,
+  `  height: 16px;`,
+  `  color: var(--dcu-sidebar-icon, currentColor);`,
+  `  background: currentColor;`,
+  `  -webkit-mask: ${PAW_MASK} center / contain no-repeat;`,
+  `  mask: ${PAW_MASK} center / contain no-repeat;`,
+  `  -webkit-mask-repeat: no-repeat;`,
+  `  mask-repeat: no-repeat;`,
+  `  -webkit-mask-position: center;`,
+  `  mask-position: center;`,
+  `  -webkit-mask-size: 16px 16px;`,
+  `  mask-size: 16px 16px;`,
+  `}`,
+].join("\n");
 
 /** 注入导航图标的样式；重复安装时复用同一个 style 元素。 */
 function ensureNavIconStyle(): void {
@@ -41,36 +58,27 @@ export function isPetNavRow(button: Element): boolean {
 }
 
 /**
- * 给宠物设置行补一个 mask 图标。
- * 不修改宿主 svg，避免与皮肤（orca-link 等）的 svg 内容级识别互相覆盖。
+ * 100% 对齐 dshmarket：用纯属性标记控制 ::before 伪元素渲染图标。
+ * 不修改任何 DOM 节点，避免移动端列表项排版下与文字重叠冲突。
  */
 export function applyPetSettingsIcon(button: Element): boolean {
-  if (!isPetNavRow(button)) return false;
-  // 只认宿主直接渲染在按钮里的图标；包裹型图标插入额外节点会打乱布局
-  if (button.querySelector(":scope > svg") === null) return false;
-  if (
-    button.getAttribute(PET_NAV_ICON_MARKER) === "pet" &&
-    button.querySelector(`.${PET_NAV_ICON_CLASS}`) !== null
-  )
-    return false;
-
-  const doc = button.ownerDocument;
-  if (!doc) return false;
-  button.setAttribute(PET_NAV_ICON_MARKER, "pet");
-
-  const icon = doc.createElement("span");
-  icon.className = PET_NAV_ICON_CLASS;
-  icon.setAttribute("aria-hidden", "true");
-  button.prepend(icon);
-  return true;
+  const isOwn = isPetNavRow(button);
+  if (isOwn) {
+    if (button.getAttribute(PET_NAV_ICON_MARKER) === "") return false;
+    button.setAttribute(PET_NAV_ICON_MARKER, "");
+    return true;
+  }
+  if (button.hasAttribute(PET_NAV_ICON_MARKER)) {
+    button.removeAttribute(PET_NAV_ICON_MARKER);
+    return true;
+  }
+  return false;
 }
 
-/** 移除本插件添加的图标与标记，宿主 svg 内容始终未被动过。 */
+/** 移除本插件添加的标记，宿主 svg 恢复显示。 */
 export function restorePetSettingsIcon(button: Element): boolean {
+  if (!button.hasAttribute(PET_NAV_ICON_MARKER)) return false;
   button.removeAttribute(PET_NAV_ICON_MARKER);
-  const icon = button.querySelector(`.${PET_NAV_ICON_CLASS}`);
-  if (!icon) return false;
-  icon.remove();
   return true;
 }
 
