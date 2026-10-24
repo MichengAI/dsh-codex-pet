@@ -3,18 +3,26 @@ import test from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
+import semver from 'semver';
 import { retryStartup, finishReport } from '../scripts/e2e-runtime.mjs';
 import { verifyCi } from '../scripts/verify-release-ci.mjs';
 import { isolatedHostInstallArgs, versionPublishedBy } from '../scripts/test-host.mjs';
 
-test('支持版本矩阵只保留 0.2.0 以后的 RC，开发基线固定最新 RC', () => {
+test('支持版本矩阵开放 0.2.x 全系列代际范围，开发基线固定最新 RC 0.2.1-rc.3', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  const supported = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'].split(' || ');
-  assert.deepEqual(supported, ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.2', '0.2.1-rc.3']);
-  assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.2.1-rc.2');
+  assert.equal(pkg.engines?.dsh, '>=0.2.0-rc.1 <0.3.0-0');
+  const dshPeer = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'];
+  assert.equal(dshPeer, '>=0.2.0-rc.1 <0.3.0-0');
+  for (const v of ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.2', '0.2.1-rc.3', '0.2.1-rc.4', '0.2.2-alpha.1', '0.2.2-rc.1', '0.2.9']) {
+    assert.ok(semver.satisfies(v, dshPeer, { includePrerelease: true }), `放行 0.2.x 版本 ${v}`);
+  }
+  for (const v of ['0.1.7-rc.2', '0.2.0-alpha.1', '0.3.0-alpha.1', '0.3.0-rc.1', '0.3.0', '1.0.0']) {
+    assert.equal(semver.satisfies(v, dshPeer, { includePrerelease: true }), false, `拦截范围外版本 ${v}`);
+  }
+  assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.2.1-rc.3');
   assert.equal(pkg.devDependencies['@deepseek-ai/cordis'], '4.0.5');
   for (const [name, version] of Object.entries(pkg.devDependencies)) {
-    if (name.startsWith('@deepseek-ai/dsh')) assert.equal(version, '0.2.1-rc.2', name);
+    if (name.startsWith('@deepseek-ai/dsh')) assert.equal(version, '0.2.1-rc.3', name);
   }
 });
 
