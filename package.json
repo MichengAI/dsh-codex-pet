@@ -1,6 +1,6 @@
 {
   "name": "@michengai/dsh-codex-pet",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "Apache-2.0",
   "description": "DSH Codex Pet — 为 DeepSeek Harness 提供宠物陪伴、多任务提醒与交互，以及 Skill 自定义宠物 · A pet companion with multi-task notifications, interactions, and Skill-based custom pets for DeepSeek Harness",
   "type": "module",
@@ -61,8 +61,8 @@
     "assets:import": "tsx scripts/import-codex.ts"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-rc.1 || 0.2.1-rc.2",
-    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-rc.1 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-rc.1 || 0.2.1-rc.2 || 0.2.1-rc.3",
+    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-rc.1 || 0.2.1-rc.2 || 0.2.1-rc.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

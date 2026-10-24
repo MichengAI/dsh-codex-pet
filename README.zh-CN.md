@@ -18,7 +18,7 @@
 
 </div>
 
-> DSH Codex Pet 是社区维护的 DeepSeek Harness（DSH）宠物插件，并非 OpenAI 或 DeepSeek AI 官方产品。1.0.1 起支持 DSH `0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`、`0.2.1-rc.2`。更早的宿主和 `0.2.1` 的 alpha 会被版本门拒绝，插件不会运行；本机宠物配置和自定义宠物不会因此删除。
+> DSH Codex Pet 是社区维护的 DeepSeek Harness（DSH）宠物插件，并非 OpenAI 或 DeepSeek AI 官方产品。1.0.1 起支持 DSH `0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`、`0.2.1-rc.2`、`0.2.1-rc.3`。更早的宿主和 `0.2.1` 的 alpha 会被版本门拒绝，插件不会运行；本机宠物配置和自定义宠物不会因此删除。
 
 ## 功能概览
 
@@ -74,7 +74,7 @@
 
 ## 安装
 
-支持的 DeepSeek Harness 版本：**`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`、`0.2.1-rc.2`**。`0.2.0` 之前的宿主（包括此前支持的 `0.1.2-rc.1`、`0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.5-rc.3`、`0.1.7-rc.1`、`0.1.7-rc.2`）以及 `0.2.1-alpha.1` 至 `0.2.1-alpha.5` 会被版本门拒绝，插件不会运行。仍在使用这些宿主时，请安装 `@michengai/dsh-codex-pet@0.1.19`，不要装 `@latest`。版本门只拒绝加载，不删除 `DSH_HOME/codex-pet` 里的宠物选择、位置和自定义宠物。需要可用的 `dsh` 命令。以下示例使用 `web` profile，请按实际环境替换。
+支持的 DeepSeek Harness 版本：**`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`、`0.2.1-rc.2`、`0.2.1-rc.3`**。`0.2.0` 之前的宿主（包括此前支持的 `0.1.2-rc.1`、`0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.5-rc.3`、`0.1.7-rc.1`、`0.1.7-rc.2`）以及 `0.2.1-alpha.1` 至 `0.2.1-alpha.5` 会被版本门拒绝，插件不会运行。仍在使用这些宿主时，请安装 `@michengai/dsh-codex-pet@0.1.19`，不要装 `@latest`。版本门只拒绝加载，不删除 `DSH_HOME/codex-pet` 里的宠物选择、位置和自定义宠物。需要可用的 `dsh` 命令。以下示例使用 `web` profile，请按实际环境替换。
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8

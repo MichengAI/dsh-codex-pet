@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.3] - 2026-10-24
+
+- Add compatibility with DeepSeek Harness `0.2.1-rc.3` while retaining all existing supported versions.
+
 ## [1.0.2] - 2026-10-19
 
 - Settings navigation draws the pet icon with a skin-safe CSS mask. It covers both the native DSH settings dialog and the dsh-codex-ui settings page without rewriting the host SVG.

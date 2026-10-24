@@ -4,7 +4,7 @@
 
 ## 本地验证
 
-开发依赖和锁文件固定 DSH `0.2.1-rc.2`，Cordis 固定 `4.0.5`。使用 `npm ci` 复现，`npm run check` 同时检查插件与官方服务类型的兼容性。支持的宿主是 `0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`、`0.2.1-rc.2`。
+开发依赖和锁文件固定 DSH `0.2.1-rc.2`，Cordis 固定 `4.0.5`。使用 `npm ci` 复现，`npm run check` 同时检查插件与官方服务类型的兼容性。支持的宿主是 `0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`、`0.2.1-rc.2`、`0.2.1-rc.3`。
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
