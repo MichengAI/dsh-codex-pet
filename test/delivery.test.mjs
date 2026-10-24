@@ -71,9 +71,9 @@ test('启动竞争可恢复，清理错误不会覆盖原始失败与语言', as
 
 test('发布只接受相同 SHA 的 main push 完整双语成功记录', async () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  const versions = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'].split(' || ');
+  const testedHosts = ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.2', '0.2.1-rc.3'];
   const run = { id: 7, head_sha: 'abc', head_branch: 'main', event: 'push', status: 'completed', conclusion: 'success', run_attempt: 2 };
-  const jobs = ['test', ...versions.flatMap(version => ['zh-CN', 'en-US'].map(locale => `e2e (${version}, ${locale})`))].map(name => ({ name, status: 'completed', conclusion: 'success' }));
+  const jobs = ['test', ...testedHosts.flatMap(version => ['zh-CN', 'en-US'].map(locale => `e2e (${version}, ${locale})`))].map(name => ({ name, status: 'completed', conclusion: 'success' }));
   const api = async path => path.includes('/jobs') ? [{ jobs }] : [{ workflow_runs: [run] }];
   assert.equal(await verifyCi(api, 'owner/repo', 'abc'), 7);
   await assert.rejects(verifyCi(api, 'owner/repo', 'other'), /没有/);
@@ -81,7 +81,7 @@ test('发布只接受相同 SHA 的 main push 完整双语成功记录', async (
   await assert.rejects(verifyCi(api, 'owner/repo', 'abc'), /没有/);
   run.event = 'push'; jobs.pop();
   await assert.rejects(verifyCi(api, 'owner/repo', 'abc'), /en-US/);
-  jobs.push({ name: `e2e (${versions.at(-1)}, en-US)`, status: 'completed', conclusion: 'skipped' });
+  jobs.push({ name: `e2e (${testedHosts.at(-1)}, en-US)`, status: 'completed', conclusion: 'skipped' });
   await assert.rejects(verifyCi(api, 'owner/repo', 'abc'), /en-US/);
   await assert.rejects(verifyCi(async () => { throw new Error('API 错误'); }, 'owner/repo', 'abc'), /API 错误/);
 });

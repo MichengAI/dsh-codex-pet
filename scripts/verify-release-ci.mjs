@@ -10,8 +10,8 @@ export async function verifyCi(api, repository, sha) {
   if (!run || run.status !== 'completed' || run.conclusion !== 'success') throw new Error('标签提交没有已完成且成功的 main push CI；请等待通过后重跑发布。');
   const jobs = (await api(`repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`)).flatMap(page => page.jobs);
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  const versions = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'].split(' || ');
-  const required = ['test', ...versions.flatMap(version => ['zh-CN', 'en-US'].map(locale => `e2e (${version}, ${locale})`))];
+  const testedHosts = ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.2', '0.2.1-rc.3'];
+  const required = ['test', ...testedHosts.flatMap(version => ['zh-CN', 'en-US'].map(locale => `e2e (${version}, ${locale})`))];
   for (const name of required) {
     if (!jobs.some(job => job.name === name && job.status === 'completed' && job.conclusion === 'success')) throw new Error(`CI 缺少成功检查：${name}`);
   }

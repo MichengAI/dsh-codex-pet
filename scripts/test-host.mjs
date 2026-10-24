@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+import semver from 'semver';
 
 export function isolatedHostInstallArgs(npmCli, root, publishedAt) {
   return [npmCli, 'install', '--prefix', root, '--registry=https://registry.npmjs.org/', '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund', `--before=${publishedAt}`, '--min-release-age-exclude=@deepseek-ai/dsh*'];
@@ -14,7 +15,8 @@ export function versionPublishedBy(versionTime, cutoff) {
 
 export async function testHost(repo, pkg, npmCli) {
   const version = process.env.DSH_PET_E2E_VERSION || pkg.devDependencies['@deepseek-ai/dsh'];
-  if (!pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'].split(' || ').includes(version)) throw new Error(`不在兼容矩阵内：${version}`);
+  const range = pkg.engines?.dsh || pkg.peerDependencies?.['@deepseek-ai/dsh-host-webserver'];
+  if (!semver.satisfies(version, range, { includePrerelease: true })) throw new Error(`不在兼容矩阵内：${version}`);
   if (version === pkg.devDependencies['@deepseek-ai/dsh']) return createRequire(join(repo, 'package.json')).resolve('@deepseek-ai/dsh/package.json');
   const root = join(resolve(process.env.DSH_PET_E2E_ROOT || join(repo, '.preview')), `dsh-host-${version}`);
   await mkdir(root, { recursive: true });
