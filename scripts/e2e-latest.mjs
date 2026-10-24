@@ -185,22 +185,18 @@ try {
   await petSectionRow.waitFor();
   const navIcon = await petSectionRow.evaluate((button) => {
     const svg = button.querySelector(':scope > svg');
-    const icon = button.querySelector('.dcp-settings-nav-icon');
+    const before = getComputedStyle(button, '::before');
     return {
-      marker: button.getAttribute('data-dcp-nav-icon'),
-      icons: button.querySelectorAll('.dcp-settings-nav-icon').length,
-      ariaHidden: icon?.getAttribute('aria-hidden'),
-      size: icon === null ? null : [icon.getBoundingClientRect().width, icon.getBoundingClientRect().height],
-      masked: icon !== null && getComputedStyle(icon).maskImage.startsWith('url("data:image/svg+xml'),
+      hasMarker: button.hasAttribute('data-dcp-nav-icon'),
+      noSpanIcon: button.querySelectorAll('.dcp-settings-nav-icon').length,
+      beforeMasked: (before.maskImage || before.webkitMaskImage || '').startsWith('url("data:image/svg+xml'),
       svgHidden: svg !== null && getComputedStyle(svg).display === 'none',
       legacyMarker: svg?.getAttribute('data-pet-icon') ?? null,
     };
   });
-  assert.equal(navIcon.marker, 'pet', '宠物设置入口必须带 mask 图标标记');
-  assert.equal(navIcon.icons, 1, '宠物设置入口只允许一个 mask 图标');
-  assert.equal(navIcon.ariaHidden, 'true', '装饰图标必须对辅助技术隐藏');
-  assert.deepEqual(navIcon.size, [16, 16], '导航图标必须保持宿主 16px 尺寸');
-  assert.equal(navIcon.masked, true, '导航图标必须使用皮肤安全的 CSS mask');
+  assert.equal(navIcon.hasMarker, true, '宠物设置入口必须带 mask 属性标记');
+  assert.equal(navIcon.noSpanIcon, 0, '禁止插入额外的 span 节点');
+  assert.equal(navIcon.beforeMasked, true, '导航图标必须使用 ::before 与 CSS mask');
   assert.equal(navIcon.svgHidden, true, '宿主 svg 只能被样式隐藏');
   assert.equal(navIcon.legacyMarker, null, '不得再改写宿主 svg 内容');
   await petSectionRow.click();

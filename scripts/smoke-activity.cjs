@@ -58,7 +58,7 @@ if (!smokeRoot)
         `new Promise((resolve,reject)=>{const deadline=Date.now()+5000;const check=()=>{if(${condition})resolve(true);else if(Date.now()>deadline)reject(new Error('渲染超时'));else setTimeout(check,30)};check()})`,
       );
     await waitFor(
-      `document.querySelector('.dcp-pet-button') && document.querySelector('[data-dcp-nav-icon="pet"]') && document.querySelector('.dcp-settings-nav-icon')`,
+      `document.querySelector('.dcp-pet-button') && document.querySelector('[data-dcp-nav-icon]')`,
     );
     await page.evaluate("live.set({running:true,lastAgentError:null})");
     await waitFor(

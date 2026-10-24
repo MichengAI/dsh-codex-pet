@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.4] - 2026-10-24
+
+- Fix e2e assertions and smoke tests for pseudo-element nav icon.
+
 ## [1.0.3] - 2026-10-24
 
 - Add compatibility with DeepSeek Harness `0.2.1-rc.3` while retaining all existing supported versions.
