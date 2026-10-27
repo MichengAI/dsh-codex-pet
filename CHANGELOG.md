@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.7] - 2026-10-27
+
+- Add custom vector plugin icon: Add transparent vector SVG icon `assets/icon.svg` and register it via `icon` field in `package.json` for better recognition in plugin catalogs.
+- Include icon in distribution package: Add `assets/icon.svg` to the `files` array in `package.json` to ensure npm release tarball includes the icon asset.
+
 ## [1.0.6] - 2026-10-24
 
 - Upgrade host admission policy: Declare `engines.dsh: ">=0.2.0-rc.1 <0.3.0-0"` to support the entire DeepSeek Harness `0.2.x` line (including `0.2.0-rc.1` onwards, future alphas, RCs, and stable releases) without requiring routine plugin version bumps.
