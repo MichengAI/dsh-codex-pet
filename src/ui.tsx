@@ -148,16 +148,23 @@ export function Settings({
   controller,
   create,
   locale,
+  draft,
 }: {
   locale?: PetLocaleStore;
   controller: PetController;
   create?(description: string): Promise<void>;
+  /** 外部保留的创建描述草稿：设置面板关闭会整棵卸载，草稿不能跟着丢。 */
+  draft?: { current: string };
 }) {
   const t = translator(controller.language);
   const { library, error } = controller;
   const [busy, setBusy] = useState(false),
     [showCreate, setShowCreate] = useState(false),
-    [description, setDescription] = useState("");
+    [description, setDescription] = useState(draft?.current ?? "");
+  const changeDescription = (value: string) => {
+    if (draft) draft.current = value;
+    setDescription(value);
+  };
   const [size, setSize] = useState(library?.config.size ?? 120);
   const dialog = useRef<HTMLDialogElement>(null);
   const createTitleId = useId();
@@ -347,7 +354,7 @@ export function Settings({
             void create(description)
               .then(() => {
                 setShowCreate(false);
-                setDescription("");
+                changeDescription("");
               })
               .catch((error) =>
                 setCreationError(
@@ -367,7 +374,7 @@ export function Settings({
             )}
             maxLength={2000}
             value={description}
-            onChange={(event) => setDescription(event.target.value)}
+            onChange={(event) => changeDescription(event.target.value)}
             required
           />
           <p className="dcp-note">

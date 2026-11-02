@@ -14,6 +14,7 @@ import type { UiWorkspace } from "@deepseek-ai/dsh-client-ui-workspace/client";
 import type { UiSession } from "@deepseek-ai/dsh-client-ui-session/client";
 import {
   createNotifications,
+  type DismissedNotice,
   type NotificationState,
 } from "./notifications.ts";
 import type { TrayCommand } from "./notification-tray.tsx";
@@ -83,7 +84,9 @@ function Overlay({
     null,
   );
   // 已关闭的通知记录要跨引擎实例保留：收起再展开时不该重新弹出。
-  const dismissed = useRef(new Map<string, string>());
+  const dismissed = useRef(new Map<string, DismissedNotice>());
+  // 设置面板关闭即卸载，创建宠物时输入的描述要跨开关保留。
+  const createDraft = useRef("");
   // 没有宠物在屏幕上就不跑通知引擎：引擎会 retain（打开）会话列表里的每个会话，
   // 并每秒遍历一次全量会话。宠物未加载或已收起时这笔开销必须为零。
   const petVisible = controller.library?.config.visible === true;
@@ -197,6 +200,7 @@ function Overlay({
               {t("关闭设置")}
             </Button>
             <Settings
+              draft={createDraft}
               controller={controller}
               locale={locale}
               create={async (description) => {

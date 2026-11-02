@@ -172,25 +172,6 @@ export function manualPluginUpdateCommand(
   return `dsh plugin${profile} add ${packageName}@${version} --registry=https://registry.npmjs.org/`;
 }
 
-interface PluginUpdateEscapeEvent {
-  readonly key: string;
-  preventDefault(): void;
-  stopPropagation(): void;
-  stopImmediatePropagation(): void;
-}
-
-export function handlePluginUpdateEscape(
-  event: PluginUpdateEscapeEvent,
-  close: () => void,
-): boolean {
-  if (event.key !== "Escape") return false;
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
-  close();
-  return true;
-}
-
 export function observePluginUpdate(
   options: PluginUpdateUiOptions,
 ): () => void {
@@ -417,16 +398,11 @@ export function observePluginUpdate(
           setButtonLabel(copy, text.copyFailed);
         });
     });
+    // 只需要一个门户挂载点：宿主 Modal 用 createPortal 渲染到 body。
+    // Escape / 焦点陷阱都由宿主 useModalLayer 负责（实测只关最上层），这里不再自行监听按键。
     const host = document.createElement("div");
     host.className = "dcp-update-host";
     document.body.append(host);
-    host.addEventListener(
-      "keydown",
-      (event) => {
-        handlePluginUpdateEscape(event, closeDialog);
-      },
-      true,
-    );
     const root = createRoot(host);
     mount = { host, root };
     root.render(

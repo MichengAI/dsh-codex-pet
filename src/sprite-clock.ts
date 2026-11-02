@@ -45,7 +45,8 @@ export function runSpriteClock(options: SpriteClockOptions): () => void {
     }, durations[frame] ?? 0);
   };
   const resume = (): void => {
-    if (!live || hidden()) return;
+    // 关闭动画（减少动画偏好、注视锁定、静态姿势）时，切回标签页也不能把时钟点活。
+    if (!live || !options.animate || hidden()) return;
     stop();
     advance();
   };

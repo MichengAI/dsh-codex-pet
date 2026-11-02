@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createNotifications, validateAnswers, type Pending, type NotificationState } from '../src/notifications.ts';
+import { createNotifications, validateAnswers, type DismissedNotice, type Pending, type NotificationState } from '../src/notifications.ts';
 import type { Store, SessionList, SessionSnapshot, EventWindow } from '../src/activity.ts';
 class State<T> implements Store<T> {
   listeners = new Set<() => void>(); constructor(public value: T) {}
@@ -8,12 +8,12 @@ class State<T> implements Store<T> {
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   set(value: T) { this.value = value; for (const listener of [...this.listeners]) listener(); }
 }
-function setup(carried?: Map<string, string>) {
+function setup(carried?: Map<string, DismissedNotice>, revision = 0) {
   const list = new State<SessionList>({ ids: ['a', 'b'], byId: { a: { id: 'a', title: '甲', running: true }, b: { id: 'b', title: '乙', running: true } } });
   const pending = new State<ReadonlyMap<string, Pending>>(new Map());
-  const bindings = Object.fromEntries(['a', 'b'].map(id => [id, { session: new State<SessionSnapshot>({ running: true, lastAgentError: null }), eventSource: new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } }) }]));
+  const bindings = Object.fromEntries(['a', 'b'].map(id => [id, { session: new State<SessionSnapshot>({ running: true, lastAgentError: null }), eventSource: new State<EventWindow>({ revision, change: { kind: 'replace', entries: [] } }) }]));
   let state!: NotificationState; let opened = ''; let now = 100;
-  const dismissed = carried ?? new Map<string, string>();
+  const dismissed = carried ?? new Map<string, DismissedNotice>();
   const engine = createNotifications({ list, binding: id => bindings[id], open(id) { opened = id; } }, pending, value => { state = value; }, () => now, dismissed);
   return { engine, list, pending, bindings, dismissed, get state() { return state; }, get opened() { return opened; }, tick(n: number) { now += n; list.set(list.value); } };
 }
@@ -276,5 +276,28 @@ test('每轮 publish 只清理一次会话目录，次数与会话数无关', ()
     assert.equal(sweeps, 3);
   } finally {
     engine.dispose();
+  }
+});
+
+test('隐藏期间同一会话跑完新一轮，旧关闭记录不会把它吞掉', async () => {
+  const first = setup();
+  let dismissed: Map<string, DismissedNotice>;
+  try {
+    const a = first.state.items.find(i => i.id === 'a')!;
+    await first.engine.command({ type: 'dismiss', id: a.id, token: a.token });
+    assert.deepEqual(first.state.items.map(i => i.id), ['b']);
+    dismissed = first.dismissed;
+  } finally {
+    first.engine.dispose();
+  }
+  // 收起宠物期间该会话又跑了一轮：宿主事件 revision 前进。
+  const resumed = setup(dismissed, 1);
+  try {
+    assert.ok(
+      resumed.state.items.some(item => item.id === 'a'),
+      '隐藏期间的新一轮完成必须重新提醒',
+    );
+  } finally {
+    resumed.engine.dispose();
   }
 });

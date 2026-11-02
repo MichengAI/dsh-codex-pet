@@ -152,3 +152,33 @@ test("起始即隐藏时只订阅可见性，不排队", () => {
   clock.tick(100);
   assert.deepEqual(frames, [1]);
 });
+
+test("关闭动画时切回标签页不会把时钟点活", () => {
+  const clock = manualClock();
+  const frames: number[] = [];
+  let hidden = false;
+  let resume = () => {};
+  const stop = runSpriteClock({
+    durations: [10, 20],
+    animate: false,
+    timer: clock.timer,
+    hidden: () => hidden,
+    onVisible: (listener) => {
+      resume = listener;
+      return () => {};
+    },
+    onFrame: (frame) => frames.push(frame),
+  });
+  assert.equal(clock.pending, 0);
+  // reduce-motion / 注视锁定下，一次可见性变化不能重新排程。
+  resume();
+  assert.equal(clock.pending, 0);
+  clock.tick(1000);
+  assert.deepEqual(frames, []);
+  hidden = true;
+  resume();
+  hidden = false;
+  resume();
+  assert.equal(clock.pending, 0, "动画关闭时任何可见性回调都不得排程");
+  stop();
+});

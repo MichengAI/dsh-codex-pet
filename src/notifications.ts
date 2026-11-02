@@ -13,6 +13,9 @@ export interface Notice extends Activity {
   request?: { key: string; kind: string; toolName?: string; reason?: string; questions?: readonly Question[] };
 }
 export interface NotificationState { items: Notice[]; activity: Activity; hidden: number }
+/** 用户关掉的某一次通知：token 可能是跨实例重复的（round 从 0 起算），
+ *  因此带上看关闭时的会话事件 revision，用它区分「同一次完成」与「之后的新一轮」。 */
+export interface DismissedNotice { token: string; revision: number }
 export type NoticeCommand = { type: 'open'; id: string; token: string } | { type: 'dismiss'; id: string; token: string } | { type: 'approve' | 'reject' | 'answer'; id: string; token: string; requestKey: string; answers?: Answers } | { type: 'stop'; id: string; token: string } | { type: 'restore' };
 type RecordState = { round: number; running: boolean; completion: boolean; error: string | null; revision: number; updatedAt: number; lastPose: string; requestKey?: string; awaitingStart?: boolean; finished?: string; snapshotError?: string | null; suppressStopCompletion?: boolean };
 const priority: Record<string, number> = { waiting: 0, failed: 1, review: 2, running: 3 };
@@ -32,7 +35,7 @@ export function validateAnswers(questions: readonly Question[], value: Answers |
   return value;
 }
 /** carried：跨引擎实例保留的「已关闭通知」记录，收起/展开宠物后不会重复弹出。 */
-export function createNotifications(sessions: Sessions, pending: Store<ReadonlyMap<string, Pending>>, notify: (state: NotificationState) => void, now = Date.now, carried: Map<string, string> = new Map()) {
+export function createNotifications(sessions: Sessions, pending: Store<ReadonlyMap<string, Pending>>, notify: (state: NotificationState) => void, now = Date.now, carried: Map<string, DismissedNotice> = new Map()) {
   const records = new Map<string, RecordState>();
   const bindings = new Map<string, { binding: NonNullable<ReturnType<Sessions['binding']>>; off: () => void }>();
   const dismissed = carried;
@@ -118,7 +121,9 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         if ((record.lastPose && record.lastPose !== activity.pose) || record.requestKey !== request?.key) record.updatedAt = now();
         record.lastPose = activity.pose; record.requestKey = request?.key;
         const token = `${record.round}:${request?.key ?? ''}`;
-        if (dismissed.get(id) === token) { hidden++; continue; }
+        // 只有「同一次完成」才保持隐藏：token 相同且会话没有产生新事件，否则用户会漏看隐藏期间的新一轮。
+        const muted = dismissed.get(id);
+        if (muted !== undefined && muted.token === token && muted.revision === record.revision) { hidden++; continue; }
         const ttl = lifetime[activity.pose]; if (ttl && now() - record.updatedAt >= ttl) continue;
         items.push({ ...activity, id, token, updatedAt: record.updatedAt, request: request && typeof request.key === 'string' ? { key: request.key, kind: String(request.kind), toolName: request.toolName, reason: request.reason, questions: request.questions } : undefined });
       }
@@ -137,11 +142,11 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
       if (command.type === 'restore') { dismissed.clear(); publish(); return; }
       const item = state.items.find(item => item.id === command.id && item.token === command.token);
       if (!item) throw new Error('这条通知已更新，请使用最新通知');
-      if (command.type === 'dismiss') { dismissed.set(item.id, item.token); publish(); return; }
+      if (command.type === 'dismiss') { dismissed.set(item.id, { token: item.token, revision: records.get(item.id)?.revision ?? -1 }); publish(); return; }
       if (command.type === 'open') {
         if (!sessions.open) throw new Error('宿主未提供打开会话能力');
         sessions.open(item.id);
-        if (item.pose === 'review') dismissed.set(item.id, item.token);
+        if (item.pose === 'review') dismissed.set(item.id, { token: item.token, revision: records.get(item.id)?.revision ?? -1 });
         publish();
         return;
       }
