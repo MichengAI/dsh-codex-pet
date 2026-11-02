@@ -97,12 +97,15 @@ export function observePetSettingsIcon(): () => void {
     document.querySelector(
       '.dcu-settings-page, .dcu-settings-link, [data-shortcut-modal="settings"]',
     ) !== null;
+  /** 上一拍看到的面板状态：用于识别「面板刚打开」，那一拍要立刻补丁。 */
+  let surfaceOpen = false;
   const sync = () => {
     frame = undefined;
     if (disposed) return;
     lastRun = performance.now();
+    surfaceOpen = hasSettingsSurface();
     // 设置面板未打开且本插件没加过标记时跳过整页扫描（不再额外查询残留标记）。
-    if (!hasSettingsSurface() && markedRows.size === 0) return;
+    if (!surfaceOpen && markedRows.size === 0) return;
     for (const row of document.querySelectorAll(PET_NAV_ROW_SELECTOR)) {
       applyPetSettingsIcon(row);
       if (row.hasAttribute(PET_NAV_ICON_MARKER)) markedRows.add(row);
@@ -113,7 +116,17 @@ export function observePetSettingsIcon(): () => void {
   // 整页查询有固定成本：限制最小间隔并合并到一帧，避免流式输出时每次 DOM 变更都全文档扫描。
   const MIN_INTERVAL = 150;
   const schedule = () => {
-    if (disposed || frame !== undefined || timer !== undefined) return;
+    if (disposed) return;
+    const open = hasSettingsSurface();
+    // 面板刚打开：立刻打补丁，不要排在限流窗口后面（否则图标会晚几十毫秒才出现）。
+    if (open && !surfaceOpen) {
+      if (timer !== undefined) { window.clearTimeout(timer); timer = undefined; }
+      if (frame !== undefined) { window.cancelAnimationFrame(frame); frame = undefined; }
+      sync();
+      return;
+    }
+    if (!open) surfaceOpen = false;
+    if (frame !== undefined || timer !== undefined) return;
     const wait = MIN_INTERVAL - (performance.now() - lastRun);
     if (wait > 0) {
       timer = window.setTimeout(() => {

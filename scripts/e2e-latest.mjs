@@ -183,6 +183,13 @@ try {
   }
   const petSectionRow = settingsPanel.getByRole('button', { name: /^(宠物|Pets)$/ });
   await petSectionRow.waitFor();
+  // 标记由 MutationObserver 异步补齐：等它出现再断言，避免用帧调度的时序去赌。
+  await page
+    .locator(
+      `[role="dialog"] nav button[data-dcp-nav-icon], .dcu-settings-link[data-dcp-nav-icon]`,
+    )
+    .first()
+    .waitFor({ timeout: 5000 });
   const navIcon = await petSectionRow.evaluate((button) => {
     const svg = button.querySelector(':scope > svg');
     const before = getComputedStyle(button, '::before');
