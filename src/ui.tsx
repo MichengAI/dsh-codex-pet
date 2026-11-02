@@ -101,9 +101,8 @@ export function Sprite({
     const node = element.current;
     if (!node) return;
     const animation = ANIMATIONS[pose];
-    let frame = 0,
-      last: number | null = null,
-      id = 0;
+    let frame = 0;
+    let timer = 0;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     const paint = () => {
       const row = pet.version === 2 && look ? look.row : animation.row;
@@ -111,17 +110,21 @@ export function Sprite({
       node.style.backgroundPosition = `${-col * size}px ${(-row * size * 208) / 192}px`;
     };
     paint();
-    const tick = (time: number) => {
-      if (last === null || document.hidden) last = time;
-      if (!document.hidden && time - last >= animation.durations[frame]!) {
-        last = time;
-        frame = (frame + 1) % animation.durations.length;
-        paint();
-      }
-      id = requestAnimationFrame(tick);
+    // 按帧时长定时推进，而不是每帧 rAF 空转：精灵每 110–320ms 才换一格，
+    // 常驻 60fps 轮询会让窗口永远无法进入空闲状态。
+    const advance = () => {
+      // 标签页隐藏时暂停推进，恢复后继续，不排队任何回调。
+      const wait = document.hidden ? 500 : animation.durations[frame]!;
+      timer = window.setTimeout(() => {
+        if (!document.hidden) {
+          frame = (frame + 1) % animation.durations.length;
+          paint();
+        }
+        advance();
+      }, wait);
     };
-    if (animate && !look && !reduced.matches) id = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(id);
+    if (animate && !look && !reduced.matches) advance();
+    return () => window.clearTimeout(timer);
   }, [pet.id, pet.version, size, pose, animate, look]);
   return (
     <div
@@ -455,6 +458,19 @@ export function FloatingPet({
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   }, [place]);
+  // 注视计算的锚点（宠物中心）：只在尺寸/位置/窗口变化时重算。
+  const center = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    const measure = () => {
+      const box = root.current?.getBoundingClientRect();
+      center.current = box
+        ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+        : null;
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [position.left, position.top, config.size, petHeight]);
   const perform = useCallback((pose: Pose) => {
     if (timer.current) clearTimeout(timer.current);
     setLook(null);
@@ -495,18 +511,27 @@ export function FloatingPet({
         setLook(null);
         return;
       }
-      const box = root.current?.getBoundingClientRect();
-      if (box)
-        setLook(
-          lookCell(
-            event.clientX - box.left - config.size / 2,
-            event.clientY - box.top - petHeight / 2,
-          ),
-        );
+      // 中心点只在尺寸/位置/窗口变化时重算，鼠标移动不再触发强制布局。
+      const origin = center.current;
+      if (!origin) return;
+      const cell = lookCell(
+        event.clientX - origin.x,
+        event.clientY - origin.y,
+      );
+      // 同一个注视格直接复用旧对象，React 因此完全不重渲染。
+      setLook((current) =>
+        current === cell ||
+        (current !== null &&
+          cell !== null &&
+          current.row === cell.row &&
+          current.col === cell.col)
+          ? current
+          : cell,
+      );
     };
     window.addEventListener("mousemove", track);
     return () => window.removeEventListener("mousemove", track);
-  }, [activity.pose, action, pet.version, config.size, petHeight]);
+  }, [activity.pose, action, pet.version]);
   useEffect(() => {
     if (!menu) return;
     const close = (event: PointerEvent) => {

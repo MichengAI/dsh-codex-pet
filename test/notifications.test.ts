@@ -154,6 +154,59 @@ test('没有绑定也按列表 running 和 status completionUnread 提醒，打�
   } finally { engine.dispose(); }
 });
 
+test('空闲会话不打开（不调用 binding），只有运行中/等待/当前会话才打开', () => {
+  const list = new State<SessionList>({
+    ids: ['hot', 'cold'],
+    byId: { hot: { id: 'hot', title: '热', running: true }, cold: { id: 'cold', title: '冷', running: false } },
+  });
+  const asked: string[] = [];
+  let state!: NotificationState;
+  const engine = createNotifications({
+    list,
+    binding(id) { asked.push(id); return undefined; },
+    open() {},
+  }, new State(new Map()), value => { state = value; });
+  try {
+    // 关键回归：冷会话一旦被 binding，就会 retain → open，把历史全量拉到客户端。
+    assert.deepEqual(asked, ['hot']);
+    assert.deepEqual(state.items.map(item => item.id), ['hot']);
+  } finally { engine.dispose(); }
+});
+
+test('会话冷却满宽限期后释放绑定；历史通知仍保留且不再重新打开', () => {
+  const list = new State<SessionList>({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: true } } });
+  const status = new State<ReadonlyMap<string, { running?: boolean }>>(new Map([['a', { running: true }]]));
+  const session = new State<SessionSnapshot>({ running: true, lastAgentError: null });
+  const events = new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } });
+  const released: string[] = [];
+  let asked = 0;
+  let now = 1000;
+  let state!: NotificationState;
+  const engine = createNotifications({
+    list,
+    status,
+    binding() { asked += 1; return { session, eventSource: events }; },
+    releaseBinding(id) { released.push(id); },
+    open() {},
+  }, new State(new Map()), value => { state = value; }, () => now);
+  const idle = () => list.set({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: false } } });
+  try {
+    assert.equal(state.items[0]?.pose, 'running');
+    status.set(new Map([['a', { running: false }]]));
+    idle();
+    // 宽限期内不释放：还要靠绑定读到最后一次错误/完成状态。
+    assert.deepEqual(released, []);
+    now += 31_000;
+    idle();
+    assert.deepEqual(released, ['a']);
+    const askedAtRelease = asked;
+    now += 60_000;
+    idle();
+    assert.equal(asked, askedAtRelease, '释放后不得再打开该会话');
+    assert.equal(state.items[0]?.pose, 'review', '冷却后历史完成通知按生命周期保留');
+  } finally { engine.dispose(); }
+});
+
 test('retainedBy.mainView 读取当前会话快照', () => {
   const list = new State<SessionList>({ ids: ['a'], byId: { a: { id: 'a', title: '甲', running: true, retainedBy: { mainView: 1 } } } });
   const session = new State<SessionSnapshot>({ running: false, lastAgentError: 'boom' });

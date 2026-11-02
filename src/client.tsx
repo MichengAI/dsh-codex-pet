@@ -1,4 +1,4 @@
-import { compatibleSessions } from "./session-compat.ts";
+import { compatibleSessions, type CompatibleSessions } from "./session-compat.ts";
 import { pendingFromSessionStatus } from "./pending-status.ts";
 import { createCompanionProvider } from "./companion-api.ts";
 import { translator } from "./ui-locales.ts";
@@ -41,6 +41,12 @@ interface ClientContext {
 }
 export const name = "michengai-codex-pet";
 export const inject = ["slots", "sessions", "locale"];
+/** 没有宠物时的空通知快照；引用稳定，避免收起宠物时反复触发渲染。 */
+const EMPTY_NOTIFICATIONS: NotificationState = {
+  items: [],
+  activity: IDLE,
+  hidden: 0,
+};
 function openSettings(): void {
   const trigger = document.querySelector("[data-dcu-settings-trigger]");
   if (trigger)
@@ -58,7 +64,7 @@ function Overlay({
   pending,
   locale,
 }: {
-  sessions: Sessions;
+  sessions: CompatibleSessions;
   pending: PendingStore;
   locale: PetLocaleStore;
 }) {
@@ -72,22 +78,33 @@ function Overlay({
     window.addEventListener("dcp-open-settings", show);
     return () => window.removeEventListener("dcp-open-settings", show);
   }, []);
-  const [state, setState] = useState<NotificationState>({
-    items: [],
-    activity: IDLE,
-    hidden: 0,
-  });
+  const [state, setState] = useState<NotificationState>(EMPTY_NOTIFICATIONS);
   const notifications = useRef<ReturnType<typeof createNotifications> | null>(
     null,
   );
+  // 没有宠物在屏幕上就不跑通知引擎：引擎会 retain（打开）会话列表里的每个会话，
+  // 并每秒遍历一次全量会话。宠物未加载或已收起时这笔开销必须为零。
+  const petVisible = controller.library?.config.visible === true;
   useEffect(() => {
+    if (!petVisible) {
+      setState((current) =>
+        current.items.length === 0 &&
+        current.activity.pose === "idle" &&
+        current.hidden === 0
+          ? current
+          : EMPTY_NOTIFICATIONS,
+      );
+      return;
+    }
     const engine = createNotifications(sessions, pending, setState);
     notifications.current = engine;
     return () => {
       notifications.current = null;
       engine.dispose();
+      // 收起宠物后立刻释放引擎打开的会话，避免历史与订阅常驻内存。
+      sessions.releaseBindings();
     };
-  }, [sessions, pending]);
+  }, [sessions, pending, petVisible]);
   useEffect(observePetSettingsIcon, []);
   const command = async (value: TrayCommand) => {
     const engine = notifications.current;

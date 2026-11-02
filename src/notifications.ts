@@ -40,21 +40,42 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
   let state: NotificationState = { items: [], activity: IDLE, hidden: 0 }, latestFirst = false;
   let publishing = false;
   let lastPublished = '';
+  /** 会话冷却后仍保留绑定的宽限时间：留出读到最后一次错误/完成状态的机会。 */
+  const HOT_GRACE_MS = 30_000;
+  /** 每个会话最近一次「值得通知」的时间戳，决定是否还需要打开（retain）该会话。 */
+  const hotUntil = new Map<string, number>();
+  const releaseBinding = (id: string) =>
+    (sessions as Sessions & { releaseBinding?(id: string): void }).releaseBinding?.(id);
   const publish = () => {
     if (publishing) return;
     publishing = true;
     try {
       const list = sessions.list.getSnapshot(), requests = pending.getSnapshot(), statuses = sessions.status?.getSnapshot();
       const current = selectedSessionId(list);
+      const stamp = now();
       // 子代理由宿主路由管理，不能作为独立通知绑定或操作。
       const ids = new Set(list.ids.filter(id => list.byId[id] && list.byId[id].origin !== 'subagent'));
-      for (const id of records.keys()) if (!ids.has(id)) { records.delete(id); dismissed.delete(id); }
-      for (const [id, bound] of bindings) if (!ids.has(id)) { bound.off(); bindings.delete(id); records.delete(id); dismissed.delete(id); }
+      for (const id of records.keys()) if (!ids.has(id)) { records.delete(id); dismissed.delete(id); hotUntil.delete(id); }
+      for (const [id, bound] of bindings) if (!ids.has(id)) { bound.off(); bindings.delete(id); records.delete(id); dismissed.delete(id); hotUntil.delete(id); }
       const items: Notice[] = []; let hidden = 0;
       for (const id of ids) {
         const row = list.byId[id]; if (!row) continue;
         const status = statuses?.get(id);
-        const binding = sessions.binding(id);
+        const request = requests.get(id);
+        // 打开会话（retain → open）会把该会话历史全量拉到客户端，代价随会话数线性增长。
+        // 因此只有真可能产生通知的会话才打开：运行中 / 等待处理 / 有新完成 / 当前会话。
+        const active = !!status?.running || !!row.running || !!request || !!status?.pendingInteraction || !!row.pendingInteraction || !!status?.completionUnread || id === current;
+        if (active) hotUntil.set(id, stamp + HOT_GRACE_MS);
+        const hot = active || (hotUntil.get(id) ?? 0) > stamp;
+        if (!hot) {
+          hotUntil.delete(id);
+          const previous = bindings.get(id);
+          if (previous) { previous.off(); bindings.delete(id); }
+          releaseBinding(id);
+          // 冷却且没有任何历史通知的会话（绝大多数）完全不参与本轮计算。
+          if (!records.has(id)) continue;
+        }
+        const binding = hot ? sessions.binding(id) : undefined;
         let record = records.get(id);
         if (!record) { record = { round: 0, running: row.running, completion: !!status?.completionUnread, error: null, revision: binding?.eventSource?.getSnapshot().revision ?? -1, updatedAt: row.updatedAt ?? now(), lastPose: '' }; records.set(id, record); }
         const previous = bindings.get(id);
@@ -79,13 +100,15 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         }
         const stopped = !running && record.running;
         record.running = running;
-        const agentError = snapshot?.lastAgentError ?? snapshot?.promptError?.error?.message ?? null;
-        if (agentError && agentError !== record.snapshotError) record.error = agentError;
-        record.snapshotError = agentError;
+        // 未打开会话时读不到 Agent 错误快照，保留上一次记录到的错误即可。
+        if (snapshot !== undefined) {
+          const agentError = snapshot.lastAgentError ?? snapshot.promptError?.error?.message ?? null;
+          if (agentError && agentError !== record.snapshotError) record.error = agentError;
+          record.snapshotError = agentError;
+        }
         // 主视图完成往往不设 completionUnread；没有 turn/end 时用运行下落补完成，历史 replace 不补。
         if (stopped && !record.suppressStopCompletion && !record.finished && !record.error) { record.completion = true; record.updatedAt = now(); }
         if (status?.completionUnread && !running && (!record.finished || record.finished === 'completed')) record.completion = true;
-        const request = requests.get(id);
         const activity = selectActivity([{ id, title: row.title ?? row.displayTitle, running, waiting: !!request, error: running ? null : record.error, completed: !running && record.completion }]);
         if (activity.pose === 'idle') continue;
         if ((record.lastPose && record.lastPose !== activity.pose) || record.requestKey !== request?.key) record.updatedAt = now();

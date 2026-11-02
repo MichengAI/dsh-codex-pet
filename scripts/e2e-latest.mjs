@@ -341,6 +341,15 @@ try {
   await dismissOnboarding();
   assert.equal(await page.evaluate(async () => (await (await fetch('/dsh-codex-pet/api/state')).json()).config.selected), 'dewey');
   checks.push('Host 重启后宠物选择保持');
+  // 收起宠物后必须彻底停掉通知引擎：浮窗卸载、通知清空，再展开能恢复。
+  await page.locator('.dcp-pet-button').click({ button: 'right' });
+  await page.getByRole('menuitem', { name: /^(收起宠物|Hide pet)$/ }).click();
+  await page.locator('.dcp-pet-button').waitFor({ state: 'detached' });
+  await page.waitForFunction(() => window.dshPet?.getSnapshot()?.notifications?.items.length === 0);
+  checks.push('收起宠物后浮窗卸载、通知清空');
+  await page.evaluate(() => window.dshPet.updateConfig({ visible: true }));
+  await page.locator('.dcp-pet-button').waitFor();
+  checks.push('重新显示宠物后浮窗恢复');
   assert.deepEqual(errors, [], '浏览器不应产生未处理异常');
 } catch (error) {
   outcome.error = redact(String(error));

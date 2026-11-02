@@ -46,6 +46,30 @@ test('binding 缺失时用 retain 补观察引用，离开目录后释放', () =
   assert.deepEqual(released, ['s1']);
 });
 
+test('收起宠物时 releaseBindings 释放全部 retain，再展开会重新 retain', () => {
+  const released: string[] = [];
+  let retains = 0;
+  const session = { getSnapshot: () => ({ running: false, lastAgentError: null }), subscribe: () => () => {} };
+  const eventSource = { getSnapshot: () => ({ revision: 0, change: { kind: 'replace', entries: [] } }), subscribe: () => () => {} };
+  const list = { ids: ['s1', 's2'], byId: { s1: { id: 's1', running: false }, s2: { id: 's2', running: false } } };
+  const sessions = compatibleSessions({
+    list: { getSnapshot: () => list, subscribe: () => () => {} },
+    binding: () => undefined,
+    retain(id: string) {
+      retains += 1;
+      return { binding: { session, eventSource }, ready: Promise.resolve(), release() { released.push(id); } };
+    },
+  } as unknown as Sessions);
+  sessions.binding('s1');
+  sessions.binding('s2');
+  assert.equal(retains, 2);
+  sessions.releaseBindings();
+  assert.deepEqual(released, ['s1', 's2']);
+  // 收起后再展开宠物必须能重新拿到绑定。
+  sessions.binding('s1');
+  assert.equal(retains, 3);
+});
+
 test('当前会话只认 retainedBy.mainView', () => {
   assert.equal(selectedSessionId({
     ids: ['a', 'b'],

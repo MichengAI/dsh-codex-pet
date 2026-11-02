@@ -268,6 +268,14 @@ if (!smokeRoot)
       ),
       "https://github.com/MichengAI/dsh-codex-pet",
     );
+    // 设置皮肤会改写 [data-shortcut-modal="settings"] nav button（32px 全宽胶囊），
+    // 链接容器必须保持非 nav 元素，否则检查更新会换行、三个按钮错位。
+    assert.equal(
+      await page.evaluate(
+        `document.querySelector('.dcp-project-links').tagName`,
+      ),
+      "DIV",
+    );
     // 仅拦截隔离窗口的更新响应，不调用真实安装器。
     await page.evaluate(
       `window.updateMode='unpublished';window.originalPetFetch=window.fetch;window.fetch=async (url,options)=>String(url).endsWith('/api/update')?Response.json({packageName:'@michengai/dsh-codex-pet',currentVersion:'0.1.0',latestVersion:updateMode==='unpublished'?undefined:'0.2.0',notPublished:updateMode==='unpublished',latestCheckFailed:false,updateAvailable:updateMode!=='unpublished',profileName:'smoke',canAutoUpdate:true,...(options?.method==='POST'?{updatedVersion:'0.2.0',autoReload:false}:{})}):originalPetFetch(url,options);document.querySelector('.dcp-project-links button').click()`,

@@ -89,6 +89,10 @@ export function observePetSettingsIcon(): () => void {
 
   let disposed = false;
   let frame: number | undefined;
+  let timer: number | undefined;
+  let lastRun = Number.NEGATIVE_INFINITY;
+  /** 当前带标记的导航行，用来判断是否还需要扫描残留。 */
+  const markedRows = new Set<Element>();
   const hasSettingsSurface = () =>
     document.querySelector(
       '.dcu-settings-page, .dcu-settings-link, [data-shortcut-modal="settings"]',
@@ -96,19 +100,28 @@ export function observePetSettingsIcon(): () => void {
   const sync = () => {
     frame = undefined;
     if (disposed) return;
-    // 设置面板未打开且没有残留图标时跳过整页扫描。
-    if (
-      !hasSettingsSurface() &&
-      document.querySelector(`[${PET_NAV_ICON_MARKER}]`) === null
-    )
-      return;
+    lastRun = performance.now();
+    // 设置面板未打开且本插件没加过标记时跳过整页扫描（不再额外查询残留标记）。
+    if (!hasSettingsSurface() && markedRows.size === 0) return;
     for (const row of document.querySelectorAll(PET_NAV_ROW_SELECTOR)) {
       applyPetSettingsIcon(row);
+      if (row.hasAttribute(PET_NAV_ICON_MARKER)) markedRows.add(row);
+      else markedRows.delete(row);
     }
+    for (const row of markedRows) if (!row.isConnected) markedRows.delete(row);
   };
-  // 每帧最多处理一次，避免流式输出时每个 DOM 变更都整页查询。
+  // 整页查询有固定成本：限制最小间隔并合并到一帧，避免流式输出时每次 DOM 变更都全文档扫描。
+  const MIN_INTERVAL = 150;
   const schedule = () => {
-    if (frame !== undefined || disposed) return;
+    if (disposed || frame !== undefined || timer !== undefined) return;
+    const wait = MIN_INTERVAL - (performance.now() - lastRun);
+    if (wait > 0) {
+      timer = window.setTimeout(() => {
+        timer = undefined;
+        schedule();
+      }, wait);
+      return;
+    }
     frame = window.requestAnimationFrame(sync);
   };
 
@@ -123,6 +136,7 @@ export function observePetSettingsIcon(): () => void {
     disposed = true;
     observer.disconnect();
     if (frame !== undefined) window.cancelAnimationFrame(frame);
+    if (timer !== undefined) window.clearTimeout(timer);
     for (const row of document.querySelectorAll(`[${PET_NAV_ICON_MARKER}]`)) {
       restorePetSettingsIcon(row);
     }
