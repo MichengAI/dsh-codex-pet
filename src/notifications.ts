@@ -19,7 +19,13 @@ export interface NotificationState { items: Notice[]; activity: Activity; hidden
  *  单看 token 跨引擎会复用（round 从 0 起算），单看 mark 又会漏掉同一句话排队的下一轮，
  *  所以两个都留，跨引擎再用 record.fresh 兜住「引擎刚启动、还没观察过任何轮次」的情形。 */
 export interface DismissedNotice { mark: number; token: string }
-export type DismissedMark = DismissedNotice;
+/**
+ * 已知边界（不是缺陷，改不了也不打算改）：
+ * 1. 宿主 lastPromptAt 只认 `source.kind === 'user'` 的消息；插件注入的 prompt（如 simplify 的
+ *    followup）不推进 mark，所以「关掉通知 → 收起宠物 → 该会话被这类注入跑完 → 再展开」会被旧记录压住。
+ *    同一引擎内不受影响：注入会产生 turn/start，round 变化后 token 不同，照常提醒。
+ * 2. 收起期间「队列里自动跑的下一轮」同样没有新消息，也会被压住（与更早的 token-only 方案一致）。
+ */
 export type NoticeCommand = { type: 'open'; id: string; token: string } | { type: 'dismiss'; id: string; token: string } | { type: 'approve' | 'reject' | 'answer'; id: string; token: string; requestKey: string; answers?: Answers } | { type: 'stop'; id: string; token: string } | { type: 'restore' };
 type RecordState = { fresh?: boolean; round: number; running: boolean; completion: boolean; error: string | null; revision: number; updatedAt: number; lastPose: string; requestKey?: string; awaitingStart?: boolean; finished?: string; snapshotError?: string | null; suppressStopCompletion?: boolean };
 const priority: Record<string, number> = { waiting: 0, failed: 1, review: 2, running: 3 };
@@ -39,7 +45,7 @@ export function validateAnswers(questions: readonly Question[], value: Answers |
   return value;
 }
 /** carried：跨引擎实例保留的「已关闭通知」记录，收起/展开宠物后不会重复弹出。 */
-export function createNotifications(sessions: Sessions, pending: Store<ReadonlyMap<string, Pending>>, notify: (state: NotificationState) => void, now = Date.now, carried: Map<string, DismissedMark> = new Map()) {
+export function createNotifications(sessions: Sessions, pending: Store<ReadonlyMap<string, Pending>>, notify: (state: NotificationState) => void, now = Date.now, carried: Map<string, DismissedNotice> = new Map()) {
   const records = new Map<string, RecordState>();
   const bindings = new Map<string, { binding: NonNullable<ReturnType<Sessions['binding']>>; off: () => void }>();
   const dismissed = carried;
