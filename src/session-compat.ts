@@ -15,6 +15,8 @@ export type CompatibleSessions = Sessions & {
   binding(id: string, owner?: RetainOwner): ReturnType<Sessions['binding']>;
   releaseBinding(id: string, owner?: RetainOwner): void;
   releaseBindings(owner?: RetainOwner): void;
+  /** 清理已离开目录的 retain：由调用方按轮次触发一次，而不是每次取绑定都全量扫。 */
+  sweepBindings(): void;
 };
 
 export function compatibleSessions(
@@ -61,12 +63,12 @@ export function compatibleSessions(
     open: navigate,
     releaseBinding,
     releaseBindings,
+    sweepBindings: sweep,
     create: options => {
       if (!sessions.create) throw new Error('创建会话尚不可用，请重试');
       return sessions.create(options);
     },
     binding(id: string, owner: RetainOwner = DEFAULT_OWNER) {
-      sweep();
       let binding = sessions.binding(id);
       if (!binding && sessions.retain) {
         let entry = held.get(id);

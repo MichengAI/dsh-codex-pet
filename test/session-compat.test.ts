@@ -95,6 +95,23 @@ test('通知引擎释放会话不会掐断创建流程持有的同一会话', ()
   assert.deepEqual(released, ['s1']);
 });
 
+test('取绑定不再全量扫描目录，清理交给每轮一次 sweepBindings', () => {
+  let reads = 0;
+  const session = { getSnapshot: () => ({ running: false, lastAgentError: null }), subscribe: () => () => {} };
+  const eventSource = { getSnapshot: () => ({ revision: 0, change: { kind: 'replace', entries: [] } }), subscribe: () => () => {} };
+  const list = { ids: ['s1'], byId: { s1: { id: 's1', running: false } } };
+  const sessions = compatibleSessions({
+    list: { getSnapshot: () => { reads += 1; return list; }, subscribe: () => () => {} },
+    binding: () => undefined,
+    retain() { return { binding: { session, eventSource }, ready: Promise.resolve(), release() {} }; },
+  } as unknown as Sessions);
+  sessions.binding('s1');
+  sessions.binding('s1');
+  assert.equal(reads, 0);
+  sessions.sweepBindings!();
+  assert.equal(reads, 1);
+});
+
 test('当前会话只认 retainedBy.mainView', () => {
   assert.equal(selectedSessionId({
     ids: ['a', 'b'],

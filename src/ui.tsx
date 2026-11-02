@@ -31,6 +31,7 @@ import {
   type Pose,
 } from "./model.ts";
 import { styles } from "./styles.ts";
+import { runSpriteClock } from "./sprite-clock.ts";
 export async function request(path: string, data?: unknown): Promise<Library> {
   const response = await fetch(`${BASE}/api/${path}`, {
     method: data === undefined ? "GET" : "POST",
@@ -102,7 +103,6 @@ export function Sprite({
     if (!node) return;
     const animation = ANIMATIONS[pose];
     let frame = 0;
-    let timer = 0;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     const paint = () => {
       const row = pet.version === 2 && look ? look.row : animation.row;
@@ -111,29 +111,25 @@ export function Sprite({
     };
     paint();
     // 按帧时长定时推进，而不是每帧 rAF 空转：精灵每 110–320ms 才换一格，
-    // 常驻 60fps 轮询会让窗口永远无法进入空闲状态。
-    let live = true;
-    const advance = () => {
-      timer = window.setTimeout(() => {
-        // 标签页隐藏时不推进、也不再排下一拍；恢复可见后由 visibilitychange 接上。
-        if (!live || document.hidden) return;
-        frame = (frame + 1) % animation.durations.length;
+    // 常驻 60fps 轮询会让窗口永远无法进入空闲状态。隐藏标签页时整段停下。
+    const stopClock = runSpriteClock({
+      durations: animation.durations,
+      animate: animate && !look && !reduced.matches,
+      timer: {
+        setTimeout: (callback, delay) => window.setTimeout(callback, delay),
+        clearTimeout: (id) => window.clearTimeout(id),
+      },
+      hidden: () => document.hidden,
+      onVisible: (resume) => {
+        document.addEventListener("visibilitychange", resume);
+        return () => document.removeEventListener("visibilitychange", resume);
+      },
+      onFrame: (next) => {
+        frame = next;
         paint();
-        advance();
-      }, animation.durations[frame]!);
-    };
-    const resume = () => {
-      if (!live || document.hidden) return;
-      window.clearTimeout(timer);
-      advance();
-    };
-    document.addEventListener("visibilitychange", resume);
-    if (animate && !look && !reduced.matches) advance();
-    return () => {
-      live = false;
-      window.clearTimeout(timer);
-      document.removeEventListener("visibilitychange", resume);
-    };
+      },
+    });
+    return stopClock;
   }, [pet.id, pet.version, size, pose, animate, look]);
   return (
     <div

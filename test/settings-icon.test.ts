@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   PET_NAV_ICON_MARKER,
+  PET_NAV_ROW_SELECTOR,
   applyPetSettingsIcon,
   isPetNavRow,
+  observePetSettingsIcon,
   restorePetSettingsIcon,
 } from "../src/settings-icon.ts";
 
@@ -146,4 +148,110 @@ test("卸载后移除 marker 属性，宿主 svg 保持原样", () => {
   assert.equal(button.querySelector("svg"), svg);
   assert.equal(svg.children.length, 0);
   assert.equal(restorePetSettingsIcon(element), false, "重复卸载必须安全");
+});
+
+test("设置面板打开时，密集 DOM 变更被合并成有限次全量扫描", async () => {
+  const doc = { createElement: (tag: string) => new FakeElement(doc as never, tag) } as {
+    createElement(tag: string): FakeElement;
+  };
+  const body = new FakeElement(doc as never, "body");
+  const head = new FakeElement(doc as never, "head");
+  const surface = new FakeElement(doc as never, "div");
+  surface.className = "dcu-settings-page";
+  const petRow = createButton("宠物").button;
+  body.appendChild(petRow);
+  const byId = new Map<string, FakeElement>();
+  let rowQueries = 0;
+
+  const fakeDocument = {
+    body,
+    head,
+    documentElement: head,
+    createElement: (tag: string) => new FakeElement(fakeDocument as never, tag),
+    getElementById: (id: string) => byId.get(id) ?? null,
+    querySelector: (selector: string) =>
+      selector.includes("dcu-settings-page") ? surface : null,
+    querySelectorAll: (selector: string) => {
+      if (selector === PET_NAV_ROW_SELECTOR) {
+        rowQueries += 1;
+        return [petRow];
+      }
+      return [];
+    },
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+  const observers: { callback: () => void; disconnected: boolean }[] = [];
+  class FakeObserver {
+    record: { callback: () => void; disconnected: boolean };
+    constructor(callback: () => void) {
+      this.record = { callback, disconnected: false };
+      observers.push(this.record);
+    }
+    observe() {}
+    disconnect() {
+      this.record.disconnected = true;
+    }
+  }
+  const globals = globalThis as Record<string, unknown>;
+  const saved = {
+    document: globals.document,
+    window: globals.window,
+    MutationObserver: globals.MutationObserver,
+  };
+  const timers = new Set<ReturnType<typeof setTimeout>>();
+  globals.document = fakeDocument;
+  globals.window = {
+    setTimeout: (callback: () => void, delay: number) => {
+      const handle = setTimeout(() => {
+        timers.delete(handle);
+        callback();
+      }, delay);
+      timers.add(handle);
+      return handle;
+    },
+    clearTimeout: (handle: ReturnType<typeof setTimeout>) => {
+      timers.delete(handle);
+      clearTimeout(handle);
+    },
+    requestAnimationFrame: (callback: () => void) => {
+      const handle = setTimeout(() => {
+        timers.delete(handle);
+        callback();
+      }, 0);
+      timers.add(handle);
+      return handle;
+    },
+    cancelAnimationFrame: (handle: ReturnType<typeof setTimeout>) => {
+      timers.delete(handle);
+      clearTimeout(handle);
+    },
+  };
+  globals.MutationObserver = FakeObserver;
+  try {
+    const dispose = observePetSettingsIcon();
+    const afterInstall = rowQueries;
+    assert.ok(afterInstall >= 1, "安装时扫描一次");
+    // 模拟流式输出：连续 30 次 DOM 变更在限流窗口内不得触发扫描。
+    for (let index = 0; index < 30; index += 1) observers[0].callback();
+    await new Promise((done) => setTimeout(done, 40));
+    assert.equal(rowQueries, afterInstall, "限流窗口内不得全量扫描");
+    // 窗口到期后合并成一次。
+    await new Promise((done) => setTimeout(done, 180));
+    assert.equal(rowQueries - afterInstall, 1, "30 次变更只合并成一次扫描");
+    // 紧接着的下一次变更又落入新的窗口，仍然延迟。
+    observers[0].callback();
+    await new Promise((done) => setTimeout(done, 40));
+    assert.equal(rowQueries - afterInstall, 1, "新窗口内不得立刻扫描");
+    await new Promise((done) => setTimeout(done, 180));
+    assert.equal(rowQueries - afterInstall, 2, "窗口到期后补一次扫描");
+    dispose();
+    assert.equal(observers[0].disconnected, true);
+  } finally {
+    globals.document = saved.document;
+    globals.window = saved.window;
+    globals.MutationObserver = saved.MutationObserver;
+    for (const handle of timers) clearTimeout(handle);
+    timers.clear();
+  }
 });

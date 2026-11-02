@@ -51,6 +51,8 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
     if (publishing) return;
     publishing = true;
     try {
+      // 目录清理一轮只做一次：以前每次 binding() 都要全量扫一遍，热点会话多时是 N×M。
+      (sessions as Sessions & { sweepBindings?(): void }).sweepBindings?.();
       const list = sessions.list.getSnapshot(), requests = pending.getSnapshot(), statuses = sessions.status?.getSnapshot();
       const current = selectedSessionId(list);
       const stamp = now();

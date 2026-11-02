@@ -30,6 +30,8 @@ export interface Sessions {
   status?: Store<ReadonlyMap<string, SessionStatusRow>>;
   /** 宠物内部能力：释放本插件为某个会话建立的 retain（owner 区分用途），宿主对象没有这个方法。 */
   releaseBinding?(id: string, owner?: string): void;
+  /** 宠物内部能力：清理已离开目录的 retain，一轮一次。 */
+  sweepBindings?(): void;
 }
 export type PendingStore = Store<ReadonlyMap<string, { readonly kind?: unknown; readonly key?: string; answer?: (value: unknown) => Promise<void> }>>;
 

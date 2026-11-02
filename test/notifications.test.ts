@@ -248,3 +248,33 @@ test('收起再展开宠物后，用户关掉的通知不会重新出现', async
     fresh.engine.dispose();
   }
 });
+
+test('每轮 publish 只清理一次会话目录，次数与会话数无关', () => {
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f'];
+  const list = new State<SessionList>({
+    ids,
+    byId: Object.fromEntries(ids.map(id => [id, { id, title: id, running: true }])),
+  });
+  const pending = new State<ReadonlyMap<string, Pending>>(new Map());
+  const bindings = Object.fromEntries(ids.map(id => [id, {
+    session: new State<SessionSnapshot>({ running: true, lastAgentError: null }),
+    eventSource: new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } }),
+  }]));
+  let sweeps = 0;
+  const engine = createNotifications(
+    { list, binding: id => bindings[id], sweepBindings() { sweeps += 1; } },
+    pending,
+    () => {},
+    () => 100,
+  );
+  try {
+    // 构造时发布一次，之后每次列表变化发布一次：一次一轮。
+    assert.equal(sweeps, 1);
+    list.set(list.value);
+    assert.equal(sweeps, 2);
+    list.set(list.value);
+    assert.equal(sweeps, 3);
+  } finally {
+    engine.dispose();
+  }
+});
