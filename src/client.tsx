@@ -5,7 +5,7 @@ import { translator } from "./ui-locales.ts";
 import type { PetLocaleStore } from "./pet-locales.ts";
 /** 只通过 DSH 公共插槽与 Session 快照接入，独立于其他宠物插件。 */
 import React, { useEffect, useState, useRef } from "react";
-import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
+import { Button, Modal } from "@deepseek-ai/dsh-client-ui-primitives";
 import { Companion, Settings, usePetController } from "./ui.tsx";
 import { IDLE, type Activity } from "./model.ts";
 import { type Sessions, type PendingStore, type Store, type SessionStatusRow } from "./activity.ts";
@@ -70,11 +70,11 @@ function Overlay({
 }) {
   const controller = usePetController(locale);
   const t = translator(controller.language);
-  const settingsDialog = useRef<HTMLDialogElement>(null);
+  // 设置面板用宿主 Modal：原生 <dialog showModal> 会进入顶层图层，
+  // 把它内部打开的更新弹窗（同样基于 Modal，挂在 body）压在下面看不见。
+  const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => {
-    const show = () => {
-      if (!settingsDialog.current?.open) settingsDialog.current?.showModal();
-    };
+    const show = () => setSettingsOpen(true);
     window.addEventListener("dcp-open-settings", show);
     return () => window.removeEventListener("dcp-open-settings", show);
   }, []);
@@ -170,41 +170,41 @@ function Overlay({
           settings={openSettings}
         />
       )}
-      <dialog
-        ref={settingsDialog}
-        className="dcp dcp-dialog"
-        aria-label={t("宠物设置")}
-        style={{
-          pointerEvents: "auto",
-          width: "min(800px, calc(100vw - 32px))",
-          maxHeight: "85vh",
-          overflow: "auto",
-        }}
-      >
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="dcp-dialog-close"
-          onClick={() => settingsDialog.current?.close()}
+      {settingsOpen && (
+        <Modal
+          open
+          headless
+          className="dcp dcp-settings-modal"
+          title={t("宠物设置")}
+          onClose={() => setSettingsOpen(false)}
         >
-          {t("关闭设置")}
-        </Button>
-        <Settings
-          controller={controller}
-          locale={locale}
-          create={async (description) => {
-            const library = controller.library;
-            if (!library) throw new Error("宠物库尚未加载");
-            await createPetSession(
-              sessions as CreationSessions,
-              description,
-              library.customPath,
-              library.skillPath,
-            );
-          }}
-        />
-      </dialog>
+          <div className="dcp-settings-modal-body">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="dcp-dialog-close"
+              onClick={() => setSettingsOpen(false)}
+            >
+              {t("关闭设置")}
+            </Button>
+            <Settings
+              controller={controller}
+              locale={locale}
+              create={async (description) => {
+                const library = controller.library;
+                if (!library) throw new Error("宠物库尚未加载");
+                await createPetSession(
+                  sessions as CreationSessions,
+                  description,
+                  library.customPath,
+                  library.skillPath,
+                );
+              }}
+            />
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

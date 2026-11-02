@@ -1,4 +1,9 @@
 import { updateErrorMessage } from "./update-errors.ts";
+import React from "react";
+import { createRoot, type Root } from "react-dom/client";
+/** 用宿主 Modal 原语承载更新弹窗：它自带顶层图层、遮罩、焦点陷阱与 Escape 处理，
+ *  自己手写 position:fixed 覆盖层在「设置弹窗内部」这类嵌套场景会被裁剪或压到下面。 */
+import { Modal } from "@deepseek-ai/dsh-client-ui-primitives";
 /** 直接复用同系列插件更新弹窗，仅补充宠物的未发布状态与嵌入容器适配。 */
 export type PluginUpdateUiOptions = {
   readonly language: string;
@@ -29,10 +34,14 @@ type UpdatePayload = {
 };
 
 const UPDATE_HEADER = "x-michengai-plugin-update";
-const STYLE_ID = "michengai-plugin-update-ui";
+const STYLE_ID = "michengai-dsh-codex-pet-update-ui";
 const CSS = `
-.mpi-version{margin-left:8px;color:var(--dsw-alias-label-tertiary,#9da1aa);font-family:inherit;font-size:12px;font-weight:500;line-height:18px;letter-spacing:0;white-space:nowrap;vertical-align:baseline}.mpi-check{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:28px;height:28px;padding:0 10px;border:0.5px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,#4b4d52));border-radius:var(--dsw-radius-sm,7px);background:transparent;color:var(--dsw-alias-label-secondary,#b8bbc2);font:inherit;font-size:12px;font-weight:500;line-height:18px;white-space:nowrap;cursor:pointer}.mpi-check:hover{background:var(--dsw-alias-interactive-bg-hover,#3a3b3f);color:var(--dsw-alias-label-primary,#fff)}.mpi-check:focus-visible,.mpi-dialog .mpi-action:focus-visible,.mpi-dialog .mpi-dialog-close:focus-visible{outline:var(--dsw-focus-ring-width,1px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary,#4f8cff));outline-offset:2px}.mpi-icon{display:inline-flex;flex:0 0 auto;width:16px;height:16px;align-items:center;justify-content:center;pointer-events:none}.mpi-icon svg{display:block;width:16px;height:16px}
-.mpi-overlay{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--dsw-alias-bg-mask-1,rgba(0,0,0,.62));backdrop-filter:var(--dsw-mask-blur,none)}.mpi-dialog{position:relative;box-sizing:border-box;width:min(680px,100%);max-height:calc(100vh - 48px);overflow:auto;border:0;border-radius:var(--dsw-radius-panel,14px);padding:22px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-menu,#202124));color:var(--dsw-alias-label-primary,#fff);box-shadow:var(--dsw-elevation-prominent,var(--dsw-shadow-lv3,0 16px 48px rgba(0,0,0,.24)));font-family:inherit}.mpi-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.mpi-dialog h2{margin:0;font-size:16px;line-height:24px;font-weight:500}.mpi-dialog .mpi-dialog-close{display:inline-flex;flex:0 0 28px;width:28px;height:28px;align-items:center;justify-content:center;padding:0;border:0;border-radius:var(--dsw-radius-sm,8px);background:transparent;color:var(--dsw-alias-label-secondary,#b8bbc2);cursor:pointer}.mpi-dialog .mpi-dialog-close:hover{background:var(--dsw-alias-interactive-bg-hover,#3a3b3f);color:var(--dsw-alias-label-primary,#fff)}.mpi-intro{margin:8px 0 18px;color:var(--dsw-alias-label-secondary,#c2c4ca);font-size:13px;line-height:20px}.mpi-meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 18px;margin:0 0 16px;font-size:12px;line-height:18px}.mpi-meta dt{color:var(--dsw-alias-label-secondary,#c2c4ca)}.mpi-meta dd{margin:0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.mpi-status{margin:0 0 18px;border-radius:var(--dsw-radius-sm,7px);padding:12px 14px;background:var(--dsw-alias-bg-layer-3,var(--dsw-specific-menu-item-hover,#252527));font-size:13px;font-weight:600;line-height:20px}.mpi-status[data-kind=error]{color:var(--dsw-alias-state-error-primary,#ff6464)}.mpi-status[data-kind=success]{color:var(--dsw-alias-state-success-primary,#36d67a)}.mpi-status[data-kind=update]{color:var(--dsw-alias-state-warn-primary,#e8b15a)}.mpi-manual{border-top:1px solid var(--dsw-alias-border-l2,#4b4d52);padding-top:16px}.mpi-manual h3{margin:0 0 6px;font-size:14px;line-height:20px}.mpi-manual p{margin:0 0 10px;color:var(--dsw-alias-label-secondary,#c2c4ca);font-size:12px;line-height:18px}.mpi-command{display:flex;align-items:center;gap:8px;border:1px solid var(--dsw-alias-border-l2,#4b4d52);border-radius:var(--dsw-radius-sm,7px);padding:10px;background:var(--dsw-alias-bg-layer-3,var(--dsw-specific-menu-item-hover,#252527))}.mpi-command code{min-width:0;flex:1;overflow:auto;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:18px;white-space:nowrap}.mpi-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:18px}.mpi-actions-group{display:flex;gap:8px}.mpi-dialog .mpi-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;border:1px solid var(--dsw-alias-border-l2,#4b4d52);border-radius:var(--dsw-radius-sm,7px);padding:6px 10px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer}.mpi-dialog .mpi-action:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#414247)}.mpi-dialog .mpi-action:disabled{cursor:not-allowed;opacity:.55}.mpi-dialog .mpi-primary{border-color:var(--dsw-alias-button-primary-fill,var(--dsw-alias-state-business-primary,#4f8cff));background:var(--dsw-alias-button-primary-fill,var(--dsw-alias-state-business-primary,#4f8cff));color:var(--dsw-alias-label-primary-foreground,#fff)}.mpi-progress{height:4px;margin-top:10px;overflow:hidden;border-radius:99px;background:var(--dsw-alias-border-l2,#4b4d52)}.mpi-progress::after{display:block;width:32%;height:100%;background:var(--dsw-alias-state-business-primary,#4f8cff);content:'';animation:mpi-wave 1.15s ease-in-out infinite}@keyframes mpi-wave{from{transform:translateX(-110%)}to{transform:translateX(330%)}}@media(max-width:560px){.mpi-overlay{padding:10px}.mpi-dialog{max-height:calc(100vh - 20px);padding:16px}.mpi-actions{align-items:stretch}.mpi-actions-group{justify-content:flex-end;flex-wrap:wrap}.mpi-meta{grid-template-columns:1fr;gap:2px}.mpi-meta dd{margin-bottom:6px}}
+.dcp-update-version{margin-left:8px;color:var(--dsw-alias-label-tertiary,#9da1aa);font-family:inherit;font-size:12px;font-weight:500;line-height:18px;letter-spacing:0;white-space:nowrap;vertical-align:baseline}.dcp-update-check{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:28px;height:28px;padding:0 10px;border:0.5px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,#4b4d52));border-radius:var(--dsw-radius-sm,7px);background:transparent;color:var(--dsw-alias-label-secondary,#b8bbc2);font:inherit;font-size:12px;font-weight:500;line-height:18px;white-space:nowrap;cursor:pointer}.dcp-update-check:hover{background:var(--dsw-alias-interactive-bg-hover,#3a3b3f);color:var(--dsw-alias-label-primary,#fff)}.dcp-update-icon{display:inline-flex;flex:0 0 auto;width:16px;height:16px;align-items:center;justify-content:center;pointer-events:none}.dcp-update-icon svg{display:block;width:16px;height:16px}
+.dcp-update-footer{display:flex;align-items:center;gap:8px}.dcp-update-sheet{display:block;min-width:0}
+.dcp-update-content{min-width:0;display:flex;flex-direction:column;gap:0;font-family:inherit;color:var(--dsw-alias-label-primary,#fff)}
+.dcp-update-intro{margin:0 0 16px;color:var(--dsw-alias-label-secondary,#c2c4ca);font-size:13px;line-height:20px}.dcp-update-meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 18px;margin:0 0 16px;font-size:12px;line-height:18px}.dcp-update-meta dt{color:var(--dsw-alias-label-secondary,#c2c4ca)}.dcp-update-meta dd{margin:0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.dcp-update-status{margin:0 0 18px;border-radius:var(--dsw-radius-sm,7px);padding:12px 14px;background:var(--dsw-alias-bg-layer-3,var(--dsw-specific-menu-item-hover,#252527));font-size:13px;font-weight:600;line-height:20px}.dcp-update-status[data-kind=error]{color:var(--dsw-alias-state-error-primary,#ff6464)}.dcp-update-status[data-kind=success]{color:var(--dsw-alias-state-success-primary,#36d67a)}.dcp-update-status[data-kind=update]{color:var(--dsw-alias-state-warn-primary,#e8b15a)}.dcp-update-manual{border-top:1px solid var(--dsw-alias-border-l2,#4b4d52);padding-top:16px}.dcp-update-manual h3{margin:0 0 6px;font-size:14px;line-height:20px}.dcp-update-manual p{margin:0 0 10px;color:var(--dsw-alias-label-secondary,#c2c4ca);font-size:12px;line-height:18px}.dcp-update-command{display:flex;align-items:center;gap:8px;border:1px solid var(--dsw-alias-border-l2,#4b4d52);border-radius:var(--dsw-radius-sm,7px);padding:10px;background:var(--dsw-alias-bg-layer-3,var(--dsw-specific-menu-item-hover,#252527))}.dcp-update-command code{min-width:0;flex:1;overflow:auto;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:18px;white-space:nowrap}
+.dcp-update-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;min-height:28px;height:28px;border:0.5px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,#4b4d52));border-radius:var(--dsw-radius-sm,7px);padding:0 10px;background:transparent;color:var(--dsw-alias-label-primary,inherit);font:inherit;font-size:12px;font-weight:500;line-height:18px;white-space:nowrap;cursor:pointer}.dcp-update-action:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#414247)}.dcp-update-action:disabled{cursor:not-allowed;opacity:.55}.dcp-update-primary{border-color:var(--dsw-alias-button-primary-fill,var(--dsw-alias-state-business-primary,#4f8cff));background:var(--dsw-alias-button-primary-fill,var(--dsw-alias-state-business-primary,#4f8cff));color:var(--dsw-alias-label-primary-foreground,#fff)}.dcp-update-action:focus-visible,.dcp-update-check:focus-visible{outline:var(--dsw-focus-ring-width,1px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary,#4f8cff));outline-offset:2px}
+.dcp-update-progress{height:4px;margin-top:10px;overflow:hidden;border-radius:99px;background:var(--dsw-alias-border-l2,#4b4d52)}.dcp-update-progress::after{display:block;width:32%;height:100%;background:var(--dsw-alias-state-business-primary,#4f8cff);content:'';animation:dcp-update-wave 1.15s ease-in-out infinite}@keyframes dcp-update-wave{from{transform:translateX(-110%)}to{transform:translateX(330%)}}@media(max-width:560px){.dcp-update-meta{grid-template-columns:1fr;gap:2px}.dcp-update-meta dd{margin-bottom:6px}}
 `;
 
 const ZH = {
@@ -190,7 +199,7 @@ export function observePluginUpdate(
   ensureStyle();
   const controller = new AbortController();
   let payload: UpdatePayload | undefined;
-  let overlay: HTMLElement | undefined;
+  let mount: { host: HTMLDivElement; root: Root } | undefined;
   let frame: number | undefined;
 
   const setButtonContent = (
@@ -199,7 +208,7 @@ export function observePluginUpdate(
     iconName: PluginUpdateIconName,
   ): void => {
     const icon = options.createIcon(iconName);
-    icon.classList.add("mpi-icon");
+    icon.classList.add("dcp-update-icon");
     icon.setAttribute("aria-hidden", "true");
     const text = document.createElement("span");
     text.dataset.mpiLabel = "";
@@ -225,7 +234,7 @@ export function observePluginUpdate(
       return;
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "mpi-check";
+    button.className = "dcp-update-check";
     button.dataset.mpiCheck = options.packageName;
     setButtonContent(button, strings(options.language).check, "refresh");
     button.addEventListener("click", openDialog);
@@ -244,50 +253,46 @@ export function observePluginUpdate(
   };
 
   const closeDialog = (): void => {
-    overlay?.remove();
-    overlay = undefined;
+    if (mount === undefined) return;
+    const { host, root } = mount;
+    mount = undefined;
+    root.unmount();
+    host.remove();
   };
 
   function openDialog(): void {
     closeDialog();
     const text = strings(options.language);
-    overlay = document.createElement("div");
-    overlay.className = "mpi-overlay";
     const dialog = document.createElement("section");
-    dialog.className = "mpi-dialog";
-    dialog.setAttribute("role", "dialog");
-    dialog.setAttribute("aria-modal", "true");
-    dialog.innerHTML = `<header class="mpi-head"><h2></h2><button type="button" class="mpi-dialog-close" data-action="close"></button></header><p class="mpi-intro"></p><dl class="mpi-meta"><dt></dt><dd data-role="current"></dd><dt></dt><dd data-role="latest"></dd><dt></dt><dd data-role="profile"></dd></dl><div class="mpi-status" role="status"></div><div class="mpi-progress" hidden></div><section class="mpi-manual"><h3></h3><p></p><div class="mpi-command"><code></code><button type="button" class="mpi-action" data-action="copy"></button></div></section><footer class="mpi-actions"><div class="mpi-actions-group"><button type="button" class="mpi-action" data-action="check"></button><button type="button" class="mpi-action mpi-primary" data-action="update"></button></div></footer>`;
+    dialog.className = "dcp-update-sheet";
+    // 标题、关闭按钮与底部动作行都交给宿主 Modal（与技能管理等插件同一套外观）；
+    // 这里只放正文。
+    dialog.innerHTML = `<p class="dcp-update-intro"></p><dl class="dcp-update-meta"><dt></dt><dd data-role="current"></dd><dt></dt><dd data-role="latest"></dd><dt></dt><dd data-role="profile"></dd></dl><div class="dcp-update-status" role="status"></div><div class="dcp-update-progress" hidden></div><section class="dcp-update-manual"><h3></h3><p></p><div class="dcp-update-command"><code></code><button type="button" class="dcp-update-action" data-action="copy"></button></div></section>`;
     const name = /^zh(?:-|$)/i.test(options.language)
       ? options.zhName
       : options.enName;
-    dialog.querySelector("h2")!.textContent = `${name} ${text.update}`;
-    dialog.querySelector<HTMLElement>(".mpi-intro")!.textContent = text.intro;
+    dialog.querySelector<HTMLElement>(".dcp-update-intro")!.textContent = text.intro;
     const terms = dialog.querySelectorAll("dt");
     terms[0]!.textContent = text.current;
     terms[1]!.textContent = text.latestLabel;
     terms[2]!.textContent = text.profile;
-    dialog.querySelector<HTMLElement>(".mpi-manual h3")!.textContent =
+    dialog.querySelector<HTMLElement>(".dcp-update-manual h3")!.textContent =
       text.manual;
-    dialog.querySelector<HTMLElement>(".mpi-manual p")!.textContent =
+    dialog.querySelector<HTMLElement>(".dcp-update-manual p")!.textContent =
       payload?.profileName === "desktop" ? text.manualHintDesktop : text.manualHint;
-    const status = dialog.querySelector<HTMLElement>(".mpi-status")!;
-    const progress = dialog.querySelector<HTMLElement>(".mpi-progress")!;
-    const command = dialog.querySelector<HTMLElement>(".mpi-command code")!;
-    const close = dialog.querySelector<HTMLButtonElement>(
-      "[data-action=close]",
-    )!;
-    const check = dialog.querySelector<HTMLButtonElement>(
-      "[data-action=check]",
-    )!;
-    const update = dialog.querySelector<HTMLButtonElement>(
-      "[data-action=update]",
-    )!;
+    const status = dialog.querySelector<HTMLElement>(".dcp-update-status")!;
+    const progress = dialog.querySelector<HTMLElement>(".dcp-update-progress")!;
+    const command = dialog.querySelector<HTMLElement>(".dcp-update-command code")!;
+    const check = document.createElement("button");
+    check.type = "button";
+    check.className = "dcp-update-action";
+    check.dataset.action = "check";
+    check.dataset.modalAutofocus = "true";
+    const update = document.createElement("button");
+    update.type = "button";
+    update.className = "dcp-update-action dcp-update-primary";
+    update.dataset.action = "update";
     const copy = dialog.querySelector<HTMLButtonElement>("[data-action=copy]")!;
-    setButtonContent(close, text.close, "close");
-    close.querySelector("[data-mpi-label]")?.remove();
-    close.setAttribute("aria-label", text.close);
-    close.title = text.close;
     setButtonContent(check, text.recheck, "refresh");
     setButtonContent(update, text.auto, "download");
     setButtonContent(copy, text.copy, "copy");
@@ -316,7 +321,7 @@ export function observePluginUpdate(
           : `v${payload.latestVersion}`;
       dialog.querySelector<HTMLElement>("[data-role=profile]")!.textContent =
         payload?.profileName ?? text.unknown;
-      const hint = dialog.querySelector<HTMLElement>(".mpi-manual p");
+      const hint = dialog.querySelector<HTMLElement>(".dcp-update-manual p");
       if (hint !== null)
         hint.textContent =
           payload?.profileName === "desktop"
@@ -393,7 +398,6 @@ export function observePluginUpdate(
         setBusy(false);
       }
     };
-    close.addEventListener("click", closeDialog);
     check.addEventListener("click", () => {
       void checkNow();
     });
@@ -413,20 +417,40 @@ export function observePluginUpdate(
           setButtonLabel(copy, text.copyFailed);
         });
     });
-    overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) closeDialog();
-    });
-    overlay.addEventListener(
+    const host = document.createElement("div");
+    host.className = "dcp-update-host";
+    document.body.append(host);
+    host.addEventListener(
       "keydown",
       (event) => {
         handlePluginUpdateEscape(event, closeDialog);
       },
       true,
     );
-    overlay.append(dialog);
-    (options.root?.closest("dialog[open]") ?? document.body).append(overlay);
+    const root = createRoot(host);
+    mount = { host, root };
+    root.render(
+      React.createElement(Modal, {
+        open: true,
+        className: "dcp-update-dialog",
+        title: `${name} ${text.update}`,
+        closeLabel: text.close,
+        onClose: closeDialog,
+        footer: React.createElement("div", {
+          className: "dcp-update-footer",
+          ref: (node: HTMLDivElement | null): void => {
+            if (node !== null && check.parentElement !== node) node.append(check, update);
+          },
+        }),
+        children: React.createElement("div", {
+          className: "dcp-update-content",
+          ref: (node: HTMLDivElement | null): void => {
+            if (node !== null && !node.contains(dialog)) node.append(dialog);
+          },
+        }),
+      }),
+    );
     render();
-    close.focus();
     void checkNow();
   }
 
@@ -450,7 +474,7 @@ export function observePluginUpdate(
     if (frame !== undefined) window.cancelAnimationFrame(frame);
     (options.root ?? document)
       .querySelectorAll(
-        `[data-mpi-check="${options.packageName}"],.mpi-version[data-package="${options.packageName}"]`,
+        `[data-mpi-check="${options.packageName}"],.dcp-update-version[data-package="${options.packageName}"]`,
       )
       .forEach((node) => node.remove());
   };

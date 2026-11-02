@@ -26,7 +26,9 @@ if (!smokeRoot)
       stdin: {
         contents: `import * as React from 'react'; import * as jsx from 'react/jsx-runtime'; import * as ReactDOM from 'react-dom'; import {createRoot} from 'react-dom/client';
       const Button=React.forwardRef(function Button({variant,size,icon,children,className,...props},ref){return React.createElement('button',Object.assign({},props,{ref,className}),(icon===undefined||icon===null)?null:React.createElement('span',{className:'dsw-button-icon'},icon),children);});
-      window.__ModuleLoader__={load({factory}){window.petPlugin=factory(id=>id==='react'?React:id==='react/jsx-runtime'?jsx:id==='react-dom'?ReactDOM:id==='@deepseek-ai/dsh-client-ui-primitives'?{Button}:{createRoot});}};
+      // 宿主 Modal 的最小替身：只保留 role/label/class 与子节点，供冒烟断言选择器使用。
+      const Modal=function Modal({open,onClose,title,closeLabel,children,footer,className}){return open?React.createElement('div',{className,role:'dialog','aria-label':title,'data-stub-modal':''},React.createElement('h2',null,title),React.createElement('button',{type:'button','aria-label':closeLabel??'Close','data-stub-close':'',onClick:onClose}),children,footer):null;};
+      window.__ModuleLoader__={load({factory}){window.petPlugin=factory(id=>id==='react'?React:id==='react/jsx-runtime'?jsx:id==='react-dom'?ReactDOM:id==='@deepseek-ai/dsh-client-ui-primitives'?{Button,Modal}:{createRoot});}};
       window.renderPet=Component=>createRoot(document.getElementById('root')).render(React.createElement(Component));`,
         resolveDir: process.cwd(),
       },
@@ -177,9 +179,7 @@ if (!smokeRoot)
       `!document.querySelector('.dcp-tray') && !!document.querySelector('.dcp-pet-button')`,
     );
     await page.evaluate(`window.dispatchEvent(new Event('dcp-open-settings'))`);
-    await waitFor(
-      `document.querySelector('dialog[aria-label="宠物设置"]')?.open`,
-    );
+    await waitFor(`!!document.querySelector('.dcp-settings-modal')`);
     await waitFor(
       `document.querySelector('.dcp-page')?.textContent.includes('露露')`,
     );
@@ -195,7 +195,7 @@ if (!smokeRoot)
     );
     assert.equal(await page.evaluate(`petSection.label()`), "Pets");
     await waitFor(
-      `document.querySelector('.dcp-head h2')?.textContent==='Choose a pet' && document.querySelector('.mpi-check')?.textContent==='Check for updates'`,
+      `document.querySelector('.dcp-head h2')?.textContent==='Choose a pet' && document.querySelector('.dcp-update-check')?.textContent==='Check for updates'`,
     );
     assert.equal(
       await page.evaluate(
@@ -209,11 +209,11 @@ if (!smokeRoot)
       resolve(smokeRoot, "pet-settings-en.png"),
       await page.screenshot(),
     );
-    await page.evaluate(`document.querySelector('.mpi-check').click()`);
+    await page.evaluate(`document.querySelector('.dcp-update-check').click()`);
     await waitFor(
-      `document.querySelector('.mpi-dialog h2')?.textContent.includes('Pets')`,
+      `document.querySelector('.dcp-update-dialog h2')?.textContent.includes('Pets')`,
     );
-    await page.evaluate(`document.querySelector('.mpi-dialog-close').click()`);
+    await page.evaluate(`document.querySelector('.dcp-update-dialog [data-stub-close]').click()`);
 
     assert.equal(
       await page.evaluate(
@@ -281,19 +281,19 @@ if (!smokeRoot)
       `window.updateMode='unpublished';window.originalPetFetch=window.fetch;window.fetch=async (url,options)=>String(url).endsWith('/api/update')?Response.json({packageName:'@michengai/dsh-codex-pet',currentVersion:'0.1.0',latestVersion:updateMode==='unpublished'?undefined:'0.2.0',notPublished:updateMode==='unpublished',latestCheckFailed:false,updateAvailable:updateMode!=='unpublished',profileName:'smoke',canAutoUpdate:true,...(options?.method==='POST'?{updatedVersion:'0.2.0',autoReload:false}:{})}):originalPetFetch(url,options);document.querySelector('.dcp-project-links button').click()`,
     );
     await waitFor(
-      `document.querySelector('.mpi-status')?.textContent.includes('尚未发布到 npm')`,
+      `document.querySelector('.dcp-update-status')?.textContent.includes('尚未发布到 npm')`,
     );
     assert.equal(
       await page.evaluate(
-        `document.querySelector('.mpi-dialog .mpi-primary').disabled`,
+        `document.querySelector('.dcp-update-action.dcp-update-primary').disabled`,
       ),
       true,
     );
     await page.evaluate(
-      `window.updateMode='available';Array.from(document.querySelectorAll('.mpi-dialog footer button')).find(b=>b.textContent==='重新检查').click()`,
+      `window.updateMode='available';Array.from(document.querySelectorAll('.dcp-update-footer button')).find(b=>b.textContent==='重新检查').click()`,
     );
     await waitFor(
-      `document.querySelector('.mpi-status')?.textContent.includes('发现新版本')`,
+      `document.querySelector('.dcp-update-status')?.textContent.includes('发现新版本')`,
     );
     await new Promise((resolve) => setTimeout(resolve, 250));
     writeFileSync(
@@ -301,40 +301,40 @@ if (!smokeRoot)
       await page.screenshot(),
     );
     await page.evaluate(
-      `document.querySelector('.mpi-dialog .mpi-primary').click()`,
+      `document.querySelector('.dcp-update-action.dcp-update-primary').click()`,
     );
     await waitFor(
-      `document.querySelector('.mpi-status')?.textContent.includes('更新完成')`,
+      `document.querySelector('.dcp-update-status')?.textContent.includes('更新完成')`,
     );
     assert.equal(
       await page.evaluate(
-        `document.querySelector('.mpi-dialog .mpi-primary').disabled`,
+        `document.querySelector('.dcp-update-action.dcp-update-primary').disabled`,
       ),
       true,
     );
     await page.evaluate(
-      `document.querySelector('.mpi-dialog-close').click();window.fetch=window.originalPetFetch;document.querySelector('dialog[aria-label="宠物设置"]').close()`,
+      `document.querySelector('.dcp-update-dialog [data-stub-close]').click();window.fetch=window.originalPetFetch;document.querySelector('.dcp-settings-modal .dcp-dialog-close').click()`,
     );
     // 后端仍携带兼容中文 error，英文弹窗必须优先按 code 翻译。
     await page.evaluate(
       `petLocale.set({active:'en'});window.dispatchEvent(new Event('dcp-open-settings'));window.fetch=async(url,options)=>String(url).endsWith('/api/update')?(options?.method==='POST'?Response.json({code:'UPDATE_TIMEOUT',error:'更新超时，已请求取消；进程结束前不能再次安装。'},{status:503}):Response.json({packageName:'@michengai/dsh-codex-pet',currentVersion:'0.1.0',latestVersion:'0.2.0',notPublished:false,latestCheckFailed:false,updateAvailable:true,profileName:'smoke',canAutoUpdate:true})):originalPetFetch(url,options);void 0`,
     );
     await waitFor(
-      `document.querySelector('.mpi-check')?.textContent==='Check for updates'`,
+      `document.querySelector('.dcp-update-check')?.textContent==='Check for updates'`,
     );
-    await page.evaluate(`document.querySelector('.mpi-check').click()`);
+    await page.evaluate(`document.querySelector('.dcp-update-check').click()`);
     await waitFor(
-      `document.querySelector('.mpi-dialog .mpi-primary')?.disabled===false`,
+      `document.querySelector('.dcp-update-action.dcp-update-primary')?.disabled===false`,
     );
     await page.evaluate(
-      `document.querySelector('.mpi-dialog .mpi-primary').click()`,
+      `document.querySelector('.dcp-update-action.dcp-update-primary').click()`,
     );
     await waitFor(
-      `document.querySelector('.mpi-status')?.textContent.includes('timed out')`,
+      `document.querySelector('.dcp-update-status')?.textContent.includes('timed out')`,
     );
     assert.equal(
       await page.evaluate(
-        `document.querySelector('.mpi-status').textContent.includes('更新超时')`,
+        `document.querySelector('.dcp-update-status').textContent.includes('更新超时')`,
       ),
       false,
     );
@@ -343,7 +343,7 @@ if (!smokeRoot)
       await page.screenshot(),
     );
     await page.evaluate(
-      `document.querySelector('.mpi-dialog-close').click();window.fetch=originalPetFetch;document.querySelector('dialog[aria-label="Pet settings"]').close();petLocale.set({active:'zh'})`,
+      `document.querySelector('.dcp-update-dialog [data-stub-close]').click();window.fetch=originalPetFetch;document.querySelector('.dcp-settings-modal .dcp-dialog-close').click();petLocale.set({active:'zh'})`,
     );
     // 消费者通过插件公开接口读取状态与发出命令，插件无需认识消费者。
     await page.evaluate(
