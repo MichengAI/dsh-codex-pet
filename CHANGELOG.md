@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.8] - 2026-11-03
+
+- The lag is gone: the plugin no longer opens every session just to collect notifications. Machines with many sessions used to stall for tens of seconds on startup, on maximizing the window, and on view switches; it now matches the cost of not installing the plugin.
+- Collapsing the pet costs nothing: no timers, no session subscriptions, no animation polling while it is collapsed. Notifications and state come back when it is shown again.
+- Notifications now behave the way people expect: hiding and showing the pet no longer resurrects notices you already dismissed; muting a running notice still notifies you when that turn finishes; sessions that completed while the pet was hidden show up again.
+- The three header entries in settings (GitHub, feedback, check for updates) no longer wrap onto two lines or stretch across the row; they match the host button metrics.
+- The update dialog now looks like the one in the sibling plugins, and it is visible with proper styling when opened from the pet's own settings.
+- Closing and reopening settings keeps the pet description you had already typed.
 ## [1.0.7] - 2026-10-27
 
 - Add custom vector plugin icon: Add transparent vector SVG icon `assets/icon.svg` and register it via `icon` field in `package.json` for better recognition in plugin catalogs.
