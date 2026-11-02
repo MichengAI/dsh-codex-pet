@@ -358,3 +358,25 @@ test('第二轮之后关掉的通知，收起再展开也不会复活', async ()
     resumed.engine.dispose();
   }
 });
+
+test('关掉「运行中」通知后，这一轮完成仍会提醒', async () => {
+  const x = setup();
+  try {
+    const running = x.state.items.find(item => item.id === 'a')!;
+    assert.equal(running.pose, 'running');
+    await x.engine.command({ type: 'dismiss', id: running.id, token: running.token });
+    assert.deepEqual(x.state.items.map(item => item.id), ['b']);
+    // 同一轮跑完：token 不变，但 pose 从 running 变 review ⇒ 必须重新提醒。
+    x.bindings.a.eventSource.set({
+      revision: 1,
+      change: { kind: 'append', entries: [{ type: 'event', event: { type: 'turn/end', data: { reason: { kind: 'completed' } } } }] },
+    });
+    x.bindings.a.session.set({ running: false, lastAgentError: null });
+    x.list.set({ ...x.list.value, byId: { ...x.list.value.byId, a: { ...x.list.value.byId.a, running: false } } });
+    const item = x.state.items.find(entry => entry.id === 'a');
+    assert.ok(item, '关掉运行中通知不能吞掉完成提醒');
+    assert.equal(item.pose, 'review');
+  } finally {
+    x.engine.dispose();
+  }
+});

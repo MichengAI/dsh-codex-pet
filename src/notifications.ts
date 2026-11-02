@@ -18,7 +18,7 @@ export interface NotificationState { items: Notice[]; activity: Activity; hidden
  *  token —— 引擎本地的 `${round}:${requestKey}`，用来区分同一会话里的第几轮。
  *  单看 token 跨引擎会复用（round 从 0 起算），单看 mark 又会漏掉同一句话排队的下一轮，
  *  所以两个都留，跨引擎再用 record.fresh 兜住「引擎刚启动、还没观察过任何轮次」的情形。 */
-export interface DismissedNotice { mark: number; token: string }
+export interface DismissedNotice { mark: number; token: string; pose: string }
 /**
  * 已知边界（不是缺陷，改不了也不打算改）：
  * 1. 宿主 lastPromptAt 只认 `source.kind === 'user'` 的消息；插件注入的 prompt（如 simplify 的
@@ -134,8 +134,10 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         // 只有「同一次完成」才保持隐藏：用户又发消息（mark 前进）或本轮已变（token 变）都重新提醒；
         // 引擎刚启动时 round 从 0 起算，用 fresh 表示「还没观察过轮次」，此时认 mark 就够。
         const muted = dismissed.get(id);
+        // pose 也参与判断：关掉「运行中」的通知不该顺带吞掉这一轮完成后的提醒。
         if (
           muted !== undefined &&
+          muted.pose === activity.pose &&
           muted.mark === (row.updatedAt ?? 0) &&
           (muted.token === token || record.fresh === true)
         ) { hidden++; continue; }
@@ -157,11 +159,11 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
       if (command.type === 'restore') { dismissed.clear(); publish(); return; }
       const item = state.items.find(item => item.id === command.id && item.token === command.token);
       if (!item) throw new Error('这条通知已更新，请使用最新通知');
-      if (command.type === 'dismiss') { dismissed.set(item.id, { mark: sessions.list.getSnapshot().byId[item.id]?.updatedAt ?? 0, token: item.token }); publish(); return; }
+      if (command.type === 'dismiss') { dismissed.set(item.id, { mark: sessions.list.getSnapshot().byId[item.id]?.updatedAt ?? 0, token: item.token, pose: item.pose }); publish(); return; }
       if (command.type === 'open') {
         if (!sessions.open) throw new Error('宿主未提供打开会话能力');
         sessions.open(item.id);
-        if (item.pose === 'review') dismissed.set(item.id, { mark: sessions.list.getSnapshot().byId[item.id]?.updatedAt ?? 0, token: item.token });
+        if (item.pose === 'review') dismissed.set(item.id, { mark: sessions.list.getSnapshot().byId[item.id]?.updatedAt ?? 0, token: item.token, pose: item.pose });
         publish();
         return;
       }
