@@ -31,10 +31,11 @@ export function validateAnswers(questions: readonly Question[], value: Answers |
   }
   return value;
 }
-export function createNotifications(sessions: Sessions, pending: Store<ReadonlyMap<string, Pending>>, notify: (state: NotificationState) => void, now = Date.now) {
+/** carried：跨引擎实例保留的「已关闭通知」记录，收起/展开宠物后不会重复弹出。 */
+export function createNotifications(sessions: Sessions, pending: Store<ReadonlyMap<string, Pending>>, notify: (state: NotificationState) => void, now = Date.now, carried: Map<string, string> = new Map()) {
   const records = new Map<string, RecordState>();
   const bindings = new Map<string, { binding: NonNullable<ReturnType<Sessions['binding']>>; off: () => void }>();
-  const dismissed = new Map<string, string>();
+  const dismissed = carried;
   const busy = new Set<string>();
   const answered = new Set<string>();
   let state: NotificationState = { items: [], activity: IDLE, hidden: 0 }, latestFirst = false;
@@ -64,7 +65,8 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         const request = requests.get(id);
         // 打开会话（retain → open）会把该会话历史全量拉到客户端，代价随会话数线性增长。
         // 因此只有真可能产生通知的会话才打开：运行中 / 等待处理 / 有新完成 / 当前会话。
-        const active = !!status?.running || !!row.running || !!request || !!status?.pendingInteraction || !!row.pendingInteraction || !!status?.completionUnread || id === current;
+        // 目录行只有 running/origin（SessionSummary），待处理与未读完成只能看 sessionStatus。
+        const active = !!status?.running || !!row.running || !!request || !!status?.pendingInteraction || !!status?.completionUnread || id === current;
         if (active) hotUntil.set(id, stamp + HOT_GRACE_MS);
         const hot = active || (hotUntil.get(id) ?? 0) > stamp;
         if (!hot) {

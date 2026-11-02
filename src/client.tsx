@@ -82,6 +82,8 @@ function Overlay({
   const notifications = useRef<ReturnType<typeof createNotifications> | null>(
     null,
   );
+  // 已关闭的通知记录要跨引擎实例保留：收起再展开时不该重新弹出。
+  const dismissed = useRef(new Map<string, string>());
   // 没有宠物在屏幕上就不跑通知引擎：引擎会 retain（打开）会话列表里的每个会话，
   // 并每秒遍历一次全量会话。宠物未加载或已收起时这笔开销必须为零。
   const petVisible = controller.library?.config.visible === true;
@@ -96,7 +98,13 @@ function Overlay({
       );
       return;
     }
-    const engine = createNotifications(sessions, pending, setState);
+    const engine = createNotifications(
+      sessions,
+      pending,
+      setState,
+      Date.now,
+      dismissed.current,
+    );
     notifications.current = engine;
     return () => {
       notifications.current = null;

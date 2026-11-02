@@ -112,19 +112,28 @@ export function Sprite({
     paint();
     // 按帧时长定时推进，而不是每帧 rAF 空转：精灵每 110–320ms 才换一格，
     // 常驻 60fps 轮询会让窗口永远无法进入空闲状态。
+    let live = true;
     const advance = () => {
-      // 标签页隐藏时暂停推进，恢复后继续，不排队任何回调。
-      const wait = document.hidden ? 500 : animation.durations[frame]!;
       timer = window.setTimeout(() => {
-        if (!document.hidden) {
-          frame = (frame + 1) % animation.durations.length;
-          paint();
-        }
+        // 标签页隐藏时不推进、也不再排下一拍；恢复可见后由 visibilitychange 接上。
+        if (!live || document.hidden) return;
+        frame = (frame + 1) % animation.durations.length;
+        paint();
         advance();
-      }, wait);
+      }, animation.durations[frame]!);
     };
+    const resume = () => {
+      if (!live || document.hidden) return;
+      window.clearTimeout(timer);
+      advance();
+    };
+    document.addEventListener("visibilitychange", resume);
     if (animate && !look && !reduced.matches) advance();
-    return () => window.clearTimeout(timer);
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", resume);
+    };
   }, [pet.id, pet.version, size, pose, animate, look]);
   return (
     <div
@@ -458,19 +467,22 @@ export function FloatingPet({
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   }, [place]);
-  // 注视计算的锚点（宠物中心）：只在尺寸/位置/窗口变化时重算。
+  // 注视计算的锚点（宠物中心）：尺寸/位置/窗口变化时重算，鼠标移动不再触发强制布局；
+  // 另外按 500ms 上限兜底复测一次，容器被宿主布局挪动后方向也能自愈。
   const center = useRef<{ x: number; y: number } | null>(null);
+  const measuredAt = useRef(0);
+  const measure = useCallback(() => {
+    const box = root.current?.getBoundingClientRect();
+    center.current = box
+      ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+      : null;
+    measuredAt.current = Date.now();
+  }, []);
   useEffect(() => {
-    const measure = () => {
-      const box = root.current?.getBoundingClientRect();
-      center.current = box
-        ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
-        : null;
-    };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [position.left, position.top, config.size, petHeight]);
+  }, [measure, position.left, position.top, config.size, petHeight]);
   const perform = useCallback((pose: Pose) => {
     if (timer.current) clearTimeout(timer.current);
     setLook(null);
@@ -511,7 +523,8 @@ export function FloatingPet({
         setLook(null);
         return;
       }
-      // 中心点只在尺寸/位置/窗口变化时重算，鼠标移动不再触发强制布局。
+      // 锚点最多每 500ms 复测一次：容器被挪动时注视方向能自愈，又不至于每次移动都强制布局。
+      if (Date.now() - measuredAt.current > 500) measure();
       const origin = center.current;
       if (!origin) return;
       const cell = lookCell(
@@ -531,7 +544,7 @@ export function FloatingPet({
     };
     window.addEventListener("mousemove", track);
     return () => window.removeEventListener("mousemove", track);
-  }, [activity.pose, action, pet.version]);
+  }, [activity.pose, action, pet.version, measure]);
   useEffect(() => {
     if (!menu) return;
     const close = (event: PointerEvent) => {

@@ -70,6 +70,31 @@ test('收起宠物时 releaseBindings 释放全部 retain，再展开会重新 r
   assert.equal(retains, 3);
 });
 
+test('通知引擎释放会话不会掐断创建流程持有的同一会话', () => {
+  const released: string[] = [];
+  let retains = 0;
+  const session = { getSnapshot: () => ({ running: false, lastAgentError: null }), subscribe: () => () => {} };
+  const eventSource = { getSnapshot: () => ({ revision: 0, change: { kind: 'replace', entries: [] } }), subscribe: () => () => {} };
+  const list = { ids: ['s1'], byId: { s1: { id: 's1', running: false } } };
+  const sessions = compatibleSessions({
+    list: { getSnapshot: () => list, subscribe: () => () => {} },
+    binding: () => undefined,
+    retain() {
+      retains += 1;
+      return { binding: { session, eventSource }, ready: Promise.resolve(), release() { released.push('s1'); } };
+    },
+  } as unknown as Sessions);
+  // 创建流程与通知引擎同时需要同一会话：只应打开一次。
+  sessions.binding('s1', 'creation');
+  sessions.binding('s1');
+  assert.equal(retains, 1);
+  // 收起宠物只摘掉通知引擎的持有，创建流程的会话仍在。
+  sessions.releaseBindings();
+  assert.deepEqual(released, []);
+  sessions.releaseBinding('s1', 'creation');
+  assert.deepEqual(released, ['s1']);
+});
+
 test('当前会话只认 retainedBy.mainView', () => {
   assert.equal(selectedSessionId({
     ids: ['a', 'b'],

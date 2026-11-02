@@ -10,7 +10,8 @@ export interface CreationSessions {
       binding: { session: { prompt(content: { type: 'text'; text: string }[], mode: 'queue'): Promise<{ ok: boolean; error?: { message?: string } }> } };
     }) => unknown,
   ): Promise<unknown>;
-  binding(id: string): { session: { prompt(content: { type: 'text'; text: string }[], mode: 'queue'): Promise<{ ok: boolean; error?: { message?: string } }> } } | undefined;
+  /** owner 让创建流程持有自己的 retain，通知引擎释放会话时不会连带掐断它。 */
+  binding(id: string, owner?: string): { session: { prompt(content: { type: 'text'; text: string }[], mode: 'queue'): Promise<{ ok: boolean; error?: { message?: string } }> } } | undefined;
 }
 
 function tryOpen(sessions: CreationSessions, id: string): void {
@@ -26,7 +27,7 @@ export async function createPetSession(sessions: CreationSessions, description: 
     if (!result.ok) throw new Error(result.error?.message ?? 'DSH 未接受宠物创建请求');
   };
   tryOpen(sessions, id);
-  const binding = sessions.binding(id);
+  const binding = sessions.binding(id, 'creation');
   if (binding?.session.prompt) {
     await send(binding.session);
     tryOpen(sessions, id);

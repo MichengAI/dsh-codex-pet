@@ -8,13 +8,14 @@ class State<T> implements Store<T> {
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   set(value: T) { this.value = value; for (const listener of [...this.listeners]) listener(); }
 }
-function setup() {
+function setup(carried?: Map<string, string>) {
   const list = new State<SessionList>({ ids: ['a', 'b'], byId: { a: { id: 'a', title: '甲', running: true }, b: { id: 'b', title: '乙', running: true } } });
   const pending = new State<ReadonlyMap<string, Pending>>(new Map());
   const bindings = Object.fromEntries(['a', 'b'].map(id => [id, { session: new State<SessionSnapshot>({ running: true, lastAgentError: null }), eventSource: new State<EventWindow>({ revision: 0, change: { kind: 'replace', entries: [] } }) }]));
   let state!: NotificationState; let opened = ''; let now = 100;
-  const engine = createNotifications({ list, binding: id => bindings[id], open(id) { opened = id; } }, pending, value => { state = value; }, () => now);
-  return { engine, list, pending, bindings, get state() { return state; }, get opened() { return opened; }, tick(n: number) { now += n; list.set(list.value); } };
+  const dismissed = carried ?? new Map<string, string>();
+  const engine = createNotifications({ list, binding: id => bindings[id], open(id) { opened = id; } }, pending, value => { state = value; }, () => now, dismissed);
+  return { engine, list, pending, bindings, dismissed, get state() { return state; }, get opened() { return opened; }, tick(n: number) { now += n; list.set(list.value); } };
 }
 test('保留多个会话，切换不丢完成通知，关闭不停止任务，新轮次重新提醒', async () => {
   const x = setup();
@@ -221,4 +222,29 @@ test('retainedBy.mainView 读取当前会话快照', () => {
     assert.equal(state.items[0]?.pose, 'failed');
     assert.equal(state.items[0]?.sessionId, 'a');
   } finally { engine.dispose(); }
+});
+
+test('收起再展开宠物后，用户关掉的通知不会重新出现', async () => {
+  const first = setup();
+  try {
+    const a = first.state.items.find(i => i.id === 'a')!;
+    await first.engine.command({ type: 'dismiss', id: a.id, token: a.token });
+    assert.deepEqual(first.state.items.map(i => i.id), ['b']);
+  } finally {
+    first.engine.dispose();
+  }
+  // 重新展开（新引擎）但沿用同一份已关闭记录：a 仍然隐藏。
+  const resumed = setup(first.dismissed);
+  try {
+    assert.deepEqual(resumed.state.items.map(i => i.id), ['b']);
+  } finally {
+    resumed.engine.dispose();
+  }
+  // 对照：不带记录的新引擎会把 a 重新列出来（旧行为）。
+  const fresh = setup();
+  try {
+    assert.deepEqual(fresh.state.items.map(i => i.id).sort(), ['a', 'b']);
+  } finally {
+    fresh.engine.dispose();
+  }
 });
