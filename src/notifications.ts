@@ -13,11 +13,15 @@ export interface Notice extends Activity {
   request?: { key: string; kind: string; toolName?: string; reason?: string; questions?: readonly Question[] };
 }
 export interface NotificationState { items: Notice[]; activity: Activity; hidden: number }
-/** 用户关掉的某一次通知：token 可能是跨实例重复的（round 从 0 起算），
- *  因此带上看关闭时的会话事件 revision，用它区分「同一次完成」与「之后的新一轮」。 */
-export interface DismissedNotice { token: string; revision: number }
+/** 用户关掉通知时记下的两件事：
+ *  mark —— 宿主 SessionSummary.updatedAt（最后一条用户消息时间），只在用户发新消息时前进；
+ *  token —— 引擎本地的 `${round}:${requestKey}`，用来区分同一会话里的第几轮。
+ *  单看 token 跨引擎会复用（round 从 0 起算），单看 mark 又会漏掉同一句话排队的下一轮，
+ *  所以两个都留，跨引擎再用 record.fresh 兜住「引擎刚启动、还没观察过任何轮次」的情形。 */
+export interface DismissedNotice { mark: number; token: string }
+export type DismissedMark = DismissedNotice;
 export type NoticeCommand = { type: 'open'; id: string; token: string } | { type: 'dismiss'; id: string; token: string } | { type: 'approve' | 'reject' | 'answer'; id: string; token: string; requestKey: string; answers?: Answers } | { type: 'stop'; id: string; token: string } | { type: 'restore' };
-type RecordState = { round: number; running: boolean; completion: boolean; error: string | null; revision: number; updatedAt: number; lastPose: string; requestKey?: string; awaitingStart?: boolean; finished?: string; snapshotError?: string | null; suppressStopCompletion?: boolean };
+type RecordState = { fresh?: boolean; round: number; running: boolean; completion: boolean; error: string | null; revision: number; updatedAt: number; lastPose: string; requestKey?: string; awaitingStart?: boolean; finished?: string; snapshotError?: string | null; suppressStopCompletion?: boolean };
 const priority: Record<string, number> = { waiting: 0, failed: 1, review: 2, running: 3 };
 const lifetime: Record<string, number> = { failed: 3600000, waiting: 86400000, review: 604800000 };
 export function validateAnswers(questions: readonly Question[], value: Answers | undefined): Answers {
@@ -35,7 +39,7 @@ export function validateAnswers(questions: readonly Question[], value: Answers |
   return value;
 }
 /** carried：跨引擎实例保留的「已关闭通知」记录，收起/展开宠物后不会重复弹出。 */
-export function createNotifications(sessions: Sessions, pending: Store<ReadonlyMap<string, Pending>>, notify: (state: NotificationState) => void, now = Date.now, carried: Map<string, DismissedNotice> = new Map()) {
+export function createNotifications(sessions: Sessions, pending: Store<ReadonlyMap<string, Pending>>, notify: (state: NotificationState) => void, now = Date.now, carried: Map<string, DismissedMark> = new Map()) {
   const records = new Map<string, RecordState>();
   const bindings = new Map<string, { binding: NonNullable<ReturnType<Sessions['binding']>>; off: () => void }>();
   const dismissed = carried;
@@ -84,7 +88,7 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         }
         const binding = hot ? sessions.binding(id) : undefined;
         let record = records.get(id);
-        if (!record) { record = { round: 0, running: row.running, completion: !!status?.completionUnread, error: null, revision: binding?.eventSource?.getSnapshot().revision ?? -1, updatedAt: row.updatedAt ?? now(), lastPose: '' }; records.set(id, record); }
+        if (!record) { record = { fresh: true, round: 0, running: row.running, completion: !!status?.completionUnread, error: null, revision: binding?.eventSource?.getSnapshot().revision ?? -1, updatedAt: row.updatedAt ?? now(), lastPose: '' }; records.set(id, record); }
         const previous = bindings.get(id);
         if (binding && (previous?.binding.session !== binding.session || previous.binding.eventSource !== binding.eventSource)) {
           previous?.off();
@@ -95,13 +99,13 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         const snapshot = binding?.session.getSnapshot();
         // 当前详细快照为准；后台 running 使用持续更新的列表，避免冷快照覆盖它。
         const running = status?.running ?? (id === current ? snapshot?.running ?? row.running : row.running);
-        if (running && !record.running) { record.round++; record.awaitingStart = true; record.finished = undefined; record.completion = false; record.error = null; record.suppressStopCompletion = false; record.updatedAt = now(); }
+        if (running && !record.running) { record.fresh = false; record.round++; record.awaitingStart = true; record.finished = undefined; record.completion = false; record.error = null; record.suppressStopCompletion = false; record.updatedAt = now(); }
         const events = binding?.eventSource?.getSnapshot();
         if (events && record.revision !== events.revision) {
           record.revision = events.revision;
           if (events.change.kind === 'append') for (const entry of events.change.entries) {
             if (entry.type !== 'event') continue;
-            if (entry.event.type === 'turn/start') { if (!record.awaitingStart) record.round++; record.awaitingStart = false; record.finished = undefined; record.completion = false; record.error = null; }
+            if (entry.event.type === 'turn/start') { record.fresh = false; if (!record.awaitingStart) record.round++; record.awaitingStart = false; record.finished = undefined; record.completion = false; record.error = null; }
             if (entry.event.type === 'turn/end') { record.finished = entry.event.data?.reason?.kind; record.completion = record.finished === 'completed'; record.updatedAt = now(); }
           } else if (events.change.kind === 'replace') record.suppressStopCompletion = true;
         }
@@ -121,9 +125,14 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
         if ((record.lastPose && record.lastPose !== activity.pose) || record.requestKey !== request?.key) record.updatedAt = now();
         record.lastPose = activity.pose; record.requestKey = request?.key;
         const token = `${record.round}:${request?.key ?? ''}`;
-        // 只有「同一次完成」才保持隐藏：token 相同且会话没有产生新事件，否则用户会漏看隐藏期间的新一轮。
+        // 只有「同一次完成」才保持隐藏：用户又发消息（mark 前进）或本轮已变（token 变）都重新提醒；
+        // 引擎刚启动时 round 从 0 起算，用 fresh 表示「还没观察过轮次」，此时认 mark 就够。
         const muted = dismissed.get(id);
-        if (muted !== undefined && muted.token === token && muted.revision === record.revision) { hidden++; continue; }
+        if (
+          muted !== undefined &&
+          muted.mark === (row.updatedAt ?? 0) &&
+          (muted.token === token || record.fresh === true)
+        ) { hidden++; continue; }
         const ttl = lifetime[activity.pose]; if (ttl && now() - record.updatedAt >= ttl) continue;
         items.push({ ...activity, id, token, updatedAt: record.updatedAt, request: request && typeof request.key === 'string' ? { key: request.key, kind: String(request.kind), toolName: request.toolName, reason: request.reason, questions: request.questions } : undefined });
       }
@@ -142,11 +151,11 @@ export function createNotifications(sessions: Sessions, pending: Store<ReadonlyM
       if (command.type === 'restore') { dismissed.clear(); publish(); return; }
       const item = state.items.find(item => item.id === command.id && item.token === command.token);
       if (!item) throw new Error('这条通知已更新，请使用最新通知');
-      if (command.type === 'dismiss') { dismissed.set(item.id, { token: item.token, revision: records.get(item.id)?.revision ?? -1 }); publish(); return; }
+      if (command.type === 'dismiss') { dismissed.set(item.id, { mark: sessions.list.getSnapshot().byId[item.id]?.updatedAt ?? 0, token: item.token }); publish(); return; }
       if (command.type === 'open') {
         if (!sessions.open) throw new Error('宿主未提供打开会话能力');
         sessions.open(item.id);
-        if (item.pose === 'review') dismissed.set(item.id, { token: item.token, revision: records.get(item.id)?.revision ?? -1 });
+        if (item.pose === 'review') dismissed.set(item.id, { mark: sessions.list.getSnapshot().byId[item.id]?.updatedAt ?? 0, token: item.token });
         publish();
         return;
       }

@@ -9,13 +9,22 @@ class State<T> implements Store<T> {
   set(value: T) { this.value = value; for (const listener of [...this.listeners]) listener(); }
 }
 function setup(carried?: Map<string, DismissedNotice>, revision = 0) {
-  const list = new State<SessionList>({ ids: ['a', 'b'], byId: { a: { id: 'a', title: '甲', running: true }, b: { id: 'b', title: '乙', running: true } } });
+  const list = new State<SessionList>({ ids: ['a', 'b'], byId: { a: { id: 'a', title: '甲', running: true, updatedAt: 1000 }, b: { id: 'b', title: '乙', running: true, updatedAt: 2000 } } });
   const pending = new State<ReadonlyMap<string, Pending>>(new Map());
   const bindings = Object.fromEntries(['a', 'b'].map(id => [id, { session: new State<SessionSnapshot>({ running: true, lastAgentError: null }), eventSource: new State<EventWindow>({ revision, change: { kind: 'replace', entries: [] } }) }]));
   let state!: NotificationState; let opened = ''; let now = 100;
   const dismissed = carried ?? new Map<string, DismissedNotice>();
   const engine = createNotifications({ list, binding: id => bindings[id], open(id) { opened = id; } }, pending, value => { state = value; }, () => now, dismissed);
-  return { engine, list, pending, bindings, dismissed, get state() { return state; }, get opened() { return opened; }, tick(n: number) { now += n; list.set(list.value); } };
+  return {
+    engine, list, pending, bindings, dismissed,
+    get state() { return state; },
+    get opened() { return opened; },
+    tick(n: number) { now += n; list.set(list.value); },
+    /** 模拟用户又发了一句（新一轮）。 */
+    prompt(id: string, at: number) {
+      list.set({ ...list.value, byId: { ...list.value.byId, [id]: { ...list.value.byId[id]!, updatedAt: at } } });
+    },
+  };
 }
 test('保留多个会话，切换不丢完成通知，关闭不停止任务，新轮次重新提醒', async () => {
   const x = setup();
@@ -290,13 +299,61 @@ test('隐藏期间同一会话跑完新一轮，旧关闭记录不会把它吞�
   } finally {
     first.engine.dispose();
   }
-  // 收起宠物期间该会话又跑了一轮：宿主事件 revision 前进。
+  // 收起宠物期间该会话又收到一条用户消息（新一轮）：宿主 updatedAt 前进。
   const resumed = setup(dismissed, 1);
+  resumed.prompt('a', 5000);
   try {
     assert.ok(
       resumed.state.items.some(item => item.id === 'a'),
       '隐藏期间的新一轮完成必须重新提醒',
     );
+  } finally {
+    resumed.engine.dispose();
+  }
+});
+
+test('普通事件（usage 等）不会把用户已关闭的通知弹回来', async () => {
+  const x = setup();
+  try {
+    const a = x.state.items.find(i => i.id === 'a')!;
+    await x.engine.command({ type: 'dismiss', id: a.id, token: a.token });
+    assert.deepEqual(x.state.items.map(i => i.id), ['b']);
+    // 会话继续产生事件（usage/流式追加），但用户没有发新消息：必须保持关闭。
+    x.bindings.a.eventSource.set({
+      revision: 7,
+      change: { kind: 'append', entries: [{ type: 'event', event: { type: 'usage' } }] },
+    });
+    x.tick(1);
+    assert.deepEqual(x.state.items.map(i => i.id), ['b'], '普通事件不得复活已关闭的通知');
+    // 用户再发一句：新一轮，必须重新提醒。
+    x.prompt('a', 9000);
+    assert.ok(x.state.items.some(item => item.id === 'a'), '新一轮必须重新提醒');
+  } finally {
+    x.engine.dispose();
+  }
+});
+
+test('第二轮之后关掉的通知，收起再展开也不会复活', async () => {
+  const first = setup();
+  let dismissed: Map<string, DismissedNotice>;
+  try {
+    // 让该会话跑完一轮停一下再开始（round 前进到 1），模拟「不是第一轮完成」。
+    first.bindings.a.session.set({ running: false, lastAgentError: null });
+    first.list.set({ ...first.list.value, byId: { ...first.list.value.byId, a: { ...first.list.value.byId.a, running: false } } });
+    first.bindings.a.session.set({ running: true, lastAgentError: null });
+    first.list.set({ ...first.list.value, byId: { ...first.list.value.byId, a: { ...first.list.value.byId.a, running: true } } });
+    const a = first.state.items.find(item => item.id === 'a')!;
+    assert.equal(a.token.startsWith('1:'), true, '应处于第 2 轮');
+    await first.engine.command({ type: 'dismiss', id: a.id, token: a.token });
+    assert.deepEqual(first.state.items.map(item => item.id), ['b']);
+    dismissed = first.dismissed;
+  } finally {
+    first.engine.dispose();
+  }
+  // 新引擎的 round 从 0 起算、token 对不上，但用户没有发新消息 ⇒ 仍然保持关闭。
+  const resumed = setup(dismissed);
+  try {
+    assert.deepEqual(resumed.state.items.map(item => item.id), ['b'], '跨实例不得复活已关闭通知');
   } finally {
     resumed.engine.dispose();
   }
