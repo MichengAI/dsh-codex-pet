@@ -7,8 +7,34 @@
  * 宿主 svg 只负责被隐藏，不参与皮肤的内容级识别。
  */
 
+import React from "react";
+
 /** Codex 内置 Lucide PawPrint 几何（viewBox: 0 0 24 24，描边图标）。 */
 const PAW = '<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>';
+
+/** 原生 settings.section.icon 插槽图标组件 */
+export function PetNavIcon({ size = 16 }: { size?: number }): React.ReactElement {
+  return React.createElement(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      viewBox: "0 0 24 24",
+      width: size,
+      height: size,
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    React.createElement("circle", { cx: 11, cy: 4, r: 2 }),
+    React.createElement("circle", { cx: 18, cy: 8, r: 2 }),
+    React.createElement("circle", { cx: 20, cy: 16, r: 2 }),
+    React.createElement("path", {
+      d: "M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z",
+    }),
+  );
+}
 
 /** mask 只取 alpha 通道，因此把描边固定为黑色。 */
 const PAW_MASK = `url("data:image/svg+xml,${encodeURIComponent(

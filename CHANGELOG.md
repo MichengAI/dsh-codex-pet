@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.9] - 2026-11-03
+
+- Align with latest DSH host conventions: verified compatibility across DSH latest prerelease `0.2.2-alpha.3` and all RCs up to `0.2.1-rc.5`, and integrated the official settings section icon slot to ensure the pet settings row presents the native paw icon on newer hosts.
+
 ## [1.0.8] - 2026-11-03
 
 - The lag is gone: the plugin no longer opens every session just to collect notifications. Machines with many sessions used to stall for tens of seconds on startup, on maximizing the window, and on view switches; it now matches the cost of not installing the plugin.

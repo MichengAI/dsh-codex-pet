@@ -19,7 +19,7 @@ import {
 } from "./notifications.ts";
 import type { TrayCommand } from "./notification-tray.tsx";
 import { createPetSession, type CreationSessions } from "./creation.ts";
-import { observePetSettingsIcon } from "./settings-icon.ts";
+import { PetNavIcon, observePetSettingsIcon } from "./settings-icon.ts";
 import { GlobalOverlay } from "./global-overlay.tsx";
 interface ClientContext {
   locale: PetLocaleStore;
@@ -295,6 +295,15 @@ export function apply(ctx: ClientContext): void {
         order: 50,
       },
       () => <Page sessions={sessions} locale={ctx.locale} />,
+    ),
+  );
+  (ctx.slots.inject as any)("settings.section.icon", () =>
+    (ctx.slots.register as any)(
+      {
+        name: "settings.section.icon",
+        id: "codex-pet",
+      },
+      PetNavIcon,
     ),
   );
   ctx.slots.inject("shell.overlay", () =>

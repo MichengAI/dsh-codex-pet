@@ -13,7 +13,7 @@ test('支持版本矩阵开放 0.2.x 全系列代际范围，开发基线固定�
   assert.equal(pkg.engines?.dsh, '>=0.2.0-rc.1 <0.3.0-0');
   const dshPeer = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'];
   assert.equal(dshPeer, '>=0.2.0-rc.1 <0.3.0-0');
-  for (const v of ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.2', '0.2.1-rc.3', '0.2.1-rc.4', '0.2.2-alpha.1', '0.2.2-rc.1', '0.2.9']) {
+  for (const v of ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.2', '0.2.1-rc.3', '0.2.1-rc.4', '0.2.1-rc.5', '0.2.2-alpha.1', '0.2.2-alpha.2', '0.2.2-alpha.3', '0.2.2-rc.1', '0.2.9']) {
     assert.ok(semver.satisfies(v, dshPeer, { includePrerelease: true }), `放行 0.2.x 版本 ${v}`);
   }
   for (const v of ['0.1.7-rc.2', '0.2.0-alpha.1', '0.3.0-alpha.1', '0.3.0-rc.1', '0.3.0', '1.0.0']) {
