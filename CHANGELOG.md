@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.12] - 2026-11-03
+
+- Accurately detect settings nav icon slot container: only skip DOM pseudo-element when span.navIcon container is present, preventing dual icons on newer hosts while maintaining single icon compatibility on older hosts.
+
 ## [1.0.9] - 2026-11-03
 
 - Align with latest DSH host conventions: verified compatibility across DSH latest prerelease `0.2.2-alpha.3` and all RCs up to `0.2.1-rc.5`, and integrated the official settings section icon slot to ensure the pet settings row presents the native paw icon on newer hosts.
