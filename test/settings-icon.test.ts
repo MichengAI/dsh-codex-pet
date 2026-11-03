@@ -134,6 +134,15 @@ test("英文文案同样适配", () => {
   assert.equal(applyPetSettingsIcon(element), true);
 });
 
+test("当宿主已使用原生插槽容器(如 navIcon)渲染图标时，不打 marker 避免双图标", () => {
+  const { button, element } = createButton("宠物", "wrapped");
+  button.children[0].className = "navIcon";
+  button.children[0].setAttribute("aria-hidden", "true");
+  assert.equal(isPetNavRow(element), true);
+  assert.equal(applyPetSettingsIcon(element), false, "不打 marker");
+  assert.equal(button.getAttribute(PET_NAV_ICON_MARKER), null);
+});
+
 test("其他插件的设置行不注入图标", () => {
   const { button, element } = createButton("技能");
   assert.equal(isPetNavRow(element), false);

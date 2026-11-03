@@ -90,6 +90,17 @@ export function isPetNavRow(button: Element): boolean {
 export function applyPetSettingsIcon(button: Element): boolean {
   const isOwn = isPetNavRow(button);
   if (isOwn) {
+    const hasSlotIcon = Array.from(button.children).some((child) =>
+      child.tagName === "SPAN" &&
+      (child.className.includes("navIcon") || child.getAttribute("aria-hidden") === "true")
+    ) || Boolean(button.querySelector?.('[class*="navIcon"]'));
+    if (hasSlotIcon) {
+      if (button.hasAttribute(PET_NAV_ICON_MARKER)) {
+        button.removeAttribute(PET_NAV_ICON_MARKER);
+        return true;
+      }
+      return false;
+    }
     if (button.getAttribute(PET_NAV_ICON_MARKER) === "") return false;
     button.setAttribute(PET_NAV_ICON_MARKER, "");
     return true;
