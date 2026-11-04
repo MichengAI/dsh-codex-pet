@@ -20,7 +20,7 @@ test('支持版本矩阵开放 0.2.x 全系列代际范围，开发基线固定�
     assert.equal(semver.satisfies(v, dshPeer, { includePrerelease: true }), false, `拦截范围外版本 ${v}`);
   }
   assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.2.2-rc.1');
-  assert.equal(pkg.devDependencies['@deepseek-ai/cordis'], '4.0.5');
+  assert.equal(pkg.devDependencies['@deepseek-ai/cordis'], '4.1.0');
   for (const [name, version] of Object.entries(pkg.devDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh')) assert.equal(version, '0.2.2-rc.1', name);
   }
