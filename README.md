@@ -6,75 +6,75 @@
 
 # DSH Codex Pet
 
-**A little companion for your DeepSeek Harness tasks**
+**让宠物陪你处理 DeepSeek Harness 任务**
 
-[简体中文](README.zh-CN.md) · [Changelog](CHANGELOG.md) · [Apache-2.0](LICENSE)
+[English](README.en.md) · [更新日志](CHANGELOG.zh-CN.md) · [Apache-2.0](LICENSE)
 
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![许可证：Apache-2.0](https://img.shields.io/badge/许可证-Apache--2.0-blue.svg)](LICENSE)
 [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-codex-pet.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
-[![npm downloads](https://img.shields.io/npm/dt/%40michengai%2Fdsh-codex-pet.svg?label=npm%20downloads)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
+[![npm 下载量](https://img.shields.io/npm/dt/%40michengai%2Fdsh-codex-pet.svg?label=npm%20%E4%B8%8B%E8%BD%BD%E9%87%8F)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
 [![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/MichengAI/dsh-codex-pet)
 [![Node.js 22.19+](https://img.shields.io/badge/Node.js-22.19%2B-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
 
 </div>
 
-> DSH Codex Pet is a community-maintained pet plugin for DeepSeek Harness (DSH), not an official OpenAI or DeepSeek AI product. From 1.0.1 it supports DSH `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, and `0.2.2-rc.1`. Earlier hosts and the `0.2.1` alphas are rejected by the version gate, so the plugin will not run; local pet settings and custom pets are not deleted.
+> DSH Codex Pet 是社区维护的 DeepSeek Harness（DSH）宠物插件，并非 OpenAI 或 DeepSeek AI 官方产品。1.0.1 起支持 DSH `0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`～`0.2.1-rc.5`、`0.2.2-rc.1`。更早的宿主和 `0.2.1` 的 alpha 会被版本门拒绝，插件不会运行；本机宠物配置和自定义宠物不会因此删除。
 
-## Features
+## 功能概览
 
-Keep a companion nearby while you work in DSH, follow task progress, and handle requests that need your attention. Choose a built-in pet or create your own with a Skill.
+让宠物陪你处理 DSH 任务，随时查看会话进展和待处理请求。你可以选择内置宠物，也可以通过 Skill 创建自己的伙伴。
 
-- **Nine built-in pets**: choose a companion and adjust its size in pet settings. Assets are bundled locally.
-- **In-page companion**: keep a companion in DSH Web. Floating desktop pets require a desktop app with pet support.
-- **Multiple tasks at a glance**: follow running tasks, completion, errors, and requests that need your attention. An empty notification list leaves only the pet visible.
-- **Act from the notification**: open the associated task, stop its current turn, or handle supported approval, question, and plan requests.
-- **Quiet when you need it**: dismiss an individual reminder without stopping its task; collapse or restore the pet through its menu or settings.
-- **Create your own companion**: describe a pet in settings and start a dedicated DSH task using the bundled `hatch-pet` Skill.
-- **Small interactions**: drag to move, double-click to jump, and right-click for the pet menu.
+- **9 只内置宠物**：在宠物设置中选择伙伴、调整大小，资源随插件本地打包。
+- **页内陪伴**：在 DSH 网页中陪伴工作；桌面浮窗需要使用支持宠物功能的桌面端。
+- **多会话动态**：查看运行中、完成、错误和待处理请求；没有通知时只显示宠物。
+- **就近处理任务**：从通知打开对应会话、停止当前轮次，或处理支持的审批、问题和计划请求。
+- **按需安静**：关闭单条提醒不会停止任务；通过菜单或设置收起、恢复宠物。
+- **创建自己的伙伴**：在设置中描述宠物，通过随包 `hatch-pet` Skill 发起独立 DSH 创建任务。
+- **轻量互动**：拖动移动、双击跳跃、右键打开宠物菜单。
 
-## Screenshots
+## 界面预览
 
-### Multiple task notifications
+### 多会话提醒
 
-See running tasks beside your companion, with separate controls to open the conversation, stop its current turn, or dismiss its reminder.
+宠物旁集中展示运行中的任务，可分别打开会话、停止当前轮次或关闭提醒。
 
 <p align="center">
-  <img src="assets/screenshots/pet-notifications.png" alt="A pet with two running task notifications" width="403">
+  <img src="assets/screenshots/pet-notifications.png" alt="宠物与两条运行中的任务通知" width="403">
 </p>
 
-### Pet settings
+### 宠物设置
 
-Choose from the nine built-in pets, access the custom pet directory, and adjust the pet size.
+选择 9 只内置宠物、打开自定义宠物目录，并调整宠物大小。
 
-![Pet library and appearance settings](assets/screenshots/pet-settings.png)
+![宠物库与外观设置](assets/screenshots/pet-settings.png)
 
-### A companion in your conversation
+### 会话内陪伴
 
-Keep working in DSH while the pet and task notifications remain in the corner of the page.
+在 DSH 中继续工作，宠物和任务通知显示在页面角落。
 
-![Pet and task notifications alongside a DSH conversation](assets/screenshots/pet-conversation.png)
+![DSH 会话中的宠物与任务通知](assets/screenshots/pet-conversation.png)
 
-## DSH product ecosystem
+## DSH 产品生态
 
-For a desktop workbench, download [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop/releases). Existing [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) installations can add plugins as needed by following each project's README. Below are 11 first-party plugins; consult the corresponding desktop release notes and bundled catalog for what that version includes.
+想使用桌面工作台，可下载 [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop/releases)；已有 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 环境，可按各项目 README 按需安装。以下列出 11 个自研插件；桌面端实际随附范围以对应版本的发行说明和内置清单为准。
 
-| Plugin | What you can do |
+| 插件 | 你可以用它做什么 |
 | --- | --- |
-| [Codex UI](https://github.com/MichengAI/dsh-codex-ui) | Organize projects and conversations, search tasks, and navigate chat turns |
-| [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) | Choose and summon specialists for your task |
-| [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) | Find, enable, create, and import local skills |
-| [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) | Search, restore, or clean up archived conversations |
-| [IM Connect](https://github.com/MichengAI/dsh-im-connect) | Send tasks and receive replies through messaging platforms |
-| [Automation](https://github.com/MichengAI/dsh-automation) | Schedule tasks and review each run |
-| [BTW](https://github.com/MichengAI/dsh-btw) | Ask side questions without interrupting the main task |
-| [Simplify](https://github.com/MichengAI/dsh-simplify) | Use `/simplify` to improve code within your Git changes |
-| [PUA](https://github.com/MichengAI/dsh-pua) | Guide the Agent to try new approaches after failures, investigate causes, and verify results before completion |
-| [Code Review](https://github.com/MichengAI/dsh-code-review) | Use `/review` to request an independent Agent code review and receive the report in the current conversation |
-| [Codex Pet](https://github.com/MichengAI/dsh-codex-pet) | View conversation notifications and respond to tool approvals and questions through a desktop pet |
+| [Codex UI](https://github.com/MichengAI/dsh-codex-ui) | 整理项目与会话、搜索任务、跳转对话轮次 |
+| [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) | 按任务选择并召唤专业角色 |
+| [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) | 统一查找、启停、创建和导入本机技能 |
+| [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) | 搜索、恢复或清理已归档会话 |
+| [IM Connect](https://github.com/MichengAI/dsh-im-connect) | 从消息平台下任务、收回复 |
+| [Automation](https://github.com/MichengAI/dsh-automation) | 按计划执行任务，查看每次运行的结果 |
+| [BTW](https://github.com/MichengAI/dsh-btw) | 在当前上下文中临时旁问，不打断主任务 |
+| [Simplify](https://github.com/MichengAI/dsh-simplify) | 用 `/simplify` 整理 Git 改动范围内的代码 |
+| [PUA](https://github.com/MichengAI/dsh-pua) | 引导 Agent 在失败时换方法、查原因，并在完成前验证结果 |
+| [Code Review](https://github.com/MichengAI/dsh-code-review) | 用 `/review` 发起独立 Agent 代码审查，在当前会话接收报告 |
+| [Codex Pet](https://github.com/MichengAI/dsh-codex-pet) | 通过桌面宠物查看会话提醒、处理工具审批和问题回答 |
 
-## Installation
+## 安装
 
-Supported DeepSeek Harness versions: **`0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, and `0.2.2-rc.1`**. Hosts before `0.2.0` (including the previously supported `0.1.2-rc.1`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.3`, `0.1.7-rc.1`, and `0.1.7-rc.2`) and `0.2.1-alpha.1` through `0.2.1-alpha.5` are rejected by the version gate, and the plugin will not run. If you still use one of those hosts, install `@michengai/dsh-codex-pet@0.1.19` instead of `@latest`. The version gate only refuses to load the plugin. It does not delete pet selection, position, or custom pets under `DSH_HOME/codex-pet`. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
+支持的 DeepSeek Harness 版本：**`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`～`0.2.1-rc.5`、`0.2.2-rc.1`**。`0.2.0` 之前的宿主（包括此前支持的 `0.1.2-rc.1`、`0.1.5-rc.1`、`0.1.5-rc.2`、`0.1.5-rc.3`、`0.1.7-rc.1`、`0.1.7-rc.2`）以及 `0.2.1-alpha.1` 至 `0.2.1-alpha.5` 会被版本门拒绝，插件不会运行。仍在使用这些宿主时，请安装 `@michengai/dsh-codex-pet@0.1.19`，不要装 `@latest`。版本门只拒绝加载，不删除 `DSH_HOME/codex-pet` 里的宠物选择、位置和自定义宠物。需要可用的 `dsh` 命令。以下示例使用 `web` profile，请按实际环境替换。
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -83,39 +83,39 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://registry.npmjs.org/ --ignore-scripts
 ```
 
-Restart DSH after installation, then open **Settings → Pets**.
+安装后重启 DSH，再打开 **设置 → 宠物**。
 
-## Usage
+## 使用
 
-Open **Settings → Pets** (`宠物` in the current UI), or open settings from the pet's right-click menu.
+打开 **设置 → 宠物**，也可从宠物右键菜单打开设置。
 
-| Goal | Action |
+| 目标 | 操作 |
 | --- | --- |
-| Pick a companion | Select a pet in settings and adjust its size. |
-| Move or play | Drag the pet to move it; double-click to jump. |
-| Read task updates | Read the notification bubbles; expand the list when several tasks need attention. |
-| Continue a conversation | Click its notification or reply control to open the corresponding DSH task. |
-| Handle a request | Open the request details and answer the supported approval, question, or plan prompt. |
-| Stop a task turn | Click the stop control on that running task's notification. |
-| Dismiss a reminder | Click its close control. The task continues running. |
-| Hide or restore the pet | Use the right-click menu or pet settings. |
+| 选择伙伴 | 在设置中选择宠物并调整大小。 |
+| 移动与互动 | 拖动宠物移动，双击跳跃。 |
+| 查看任务动态 | 阅读通知气泡；多个任务需要关注时展开列表。 |
+| 继续会话 | 点击通知或回复按钮，打开对应的 DSH 任务。 |
+| 处理请求 | 展开请求详情，处理支持的审批、问题或计划。 |
+| 停止任务轮次 | 点击对应运行中通知的停止按钮。 |
+| 关闭提醒 | 点击通知关闭按钮，任务仍继续运行。 |
+| 收起或恢复宠物 | 使用右键菜单或宠物设置。 |
 
-The pet is a notification and action surface. Start new conversations and write follow-up messages in the main DSH interface.
+宠物承担通知和待处理操作。新建会话、输入后续消息仍在 DSH 主界面完成。
 
-### Create a custom pet
+### 创建自定义宠物
 
-1. Open pet settings, click the **+** icon (`创建`), and describe the companion.
-2. Click **Create in DSH** (`在 DSH 中创建`). The plugin opens a dedicated task and sends the bundled Skill instructions.
-3. Follow that task's progress. Creation uses DSH's configured model and image tools.
-4. Once the pet files are saved, refresh the pet library and select the new companion.
+1. 打开宠物设置，点击 **+** 图标，描述想要的伙伴。
+2. 点击 **在 DSH 中创建**，插件会打开独立任务并发送随包 Skill 指令。
+3. 在该任务中查看进展，创建使用 DSH 当前配置的模型和图像工具。
+4. 宠物文件生成并保存后，刷新宠物库并选择新伙伴。
 
-Creating pets requires an image-generation tool configured in DSH.
+创建宠物需要先在 DSH 中配置图像生成工具。
 
-## Updates and uninstallation
+## 更新与卸载
 
-Use **Settings → Pets → Check for updates**. If automatic installation is unavailable, copy the update command shown in the dialog. Wait for running tasks to finish, then update and restart DSH as prompted.
+在 **设置 → 宠物 → 检查更新** 中更新。若当前环境不支持在线安装，可复制界面提供的更新命令。等待正在运行的任务结束后操作，完成后按提示重启 DSH。
 
-To uninstall:
+卸载命令：
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -124,12 +124,12 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 dsh plugin --profile web remove @michengai/dsh-codex-pet
 ```
 
-Custom pets are stored in `.dsh/codex-pet/pets` under your user directory by default; open the folder from pet settings. If `DSH_HOME` is set, pets are stored in its `codex-pet/pets` folder. Uninstalling keeps those files and settings.
+自定义宠物默认保存在用户目录的 `.dsh/codex-pet/pets` 下，可从宠物设置打开。设置了 `DSH_HOME` 时使用该目录下的 `codex-pet/pets`。卸载插件会保留这些文件与配置。
 
-## Contributing
+## 参与开发
 
-See the [development and validation guide (Chinese)](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md) for local development, testing, and release procedures. GitHub and npm both include a ready-to-run `lib`; after changing source, run `npm run build` before committing.
+本地开发、测试与发布流程见 [开发与验证指南](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md)。GitHub 与 npm 都包含可直接运行的 `lib`；修改源码后，提交前运行 `npm run build`。
 
-## License
+## 许可证
 
-Original plugin code is licensed under [Apache License 2.0](LICENSE). Bundled pet artwork originates from OpenAI Codex and is excluded from this project's Apache-2.0 license grant; see [NOTICE](NOTICE).
+原创插件代码采用 [Apache License 2.0](LICENSE)。随包宠物图集来源于 OpenAI Codex，不属于本项目授予的 Apache-2.0 许可范围，详见 [NOTICE](NOTICE)。
