@@ -131,6 +131,10 @@ dsh plugin --profile web remove @michengai/dsh-codex-pet
 
 Eigene Haustiere werden standardmäßig im Benutzerverzeichnis unter `.dsh/codex-pet/pets` abgelegt und bleiben bei einer Deinstallation erhalten.
 
+## Mitwirken
+
+Hinweise zu lokaler Entwicklung, Tests und Veröffentlichungen findest du im [Entwicklungs- und Verifizierungsleitfaden (Chinesisch)](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md). Sowohl GitHub als auch npm enthalten das ausführbare `lib`-Verzeichnis; führe nach Änderungen am Quellcode vor jedem Commit `npm run build` aus.
+
 ## Lizenz
 
 Der Quellcode dieses Plugins steht unter der [Apache License 2.0](LICENSE). Die integrierten Pixel-Art-Grafiken stammen aus OpenAI Codex und sind von der Apache-2.0-Lizenz dieses Projekts ausgenommen; siehe [NOTICE](NOTICE).

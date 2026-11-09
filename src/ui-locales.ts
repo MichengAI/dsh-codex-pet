@@ -40,10 +40,7 @@ export function normalizeLanguage(lang: string | undefined | null): SupportedLan
 export function translator(language: string) {
   return (message: string, values: Record<string, string | number> = {}): string => {
     const norm = normalizeLanguage(language);
-    if (norm === "zh") {
-      return message.replace(/\{(\w+)\}/g, (match, key: string) => String(values[key] ?? match));
-    }
-    const dict = dictionaries[norm] as Record<string, string>;
+    const dict = (dictionaries[norm] ?? dictionaries.en) as Record<string, string>;
     const text = dict?.[message] ?? (dictionaries.en as Record<string, string>)[message] ?? message;
     return text.replace(/\{(\w+)\}/g, (match, key: string) => String(values[key] ?? match));
   };

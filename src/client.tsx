@@ -55,7 +55,18 @@ function openSettings(): void {
       new CustomEvent("dcu-settings-open-section", {
         bubbles: true,
         cancelable: true,
-        detail: { labels: ["宠物", "Pets"] },
+        detail: {
+          labels: [
+            "宠物",
+            "Pets",
+            "ペット",
+            "Mascotas",
+            "Animaux",
+            "Haustiere",
+            "Питомцы",
+            "Mascotes",
+          ],
+        },
       }),
     );
   else window.dispatchEvent(new Event("dcp-open-settings"));

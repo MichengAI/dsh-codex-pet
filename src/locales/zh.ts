@@ -91,6 +91,9 @@ export const zh = {
   "项目链接": "项目链接",
   "问题反馈": "问题反馈",
   "GitHub": "GitHub",
+  "有 1 项宠物资源需要检查": "有 1 项宠物资源需要检查",
+  "还有 1 个会话": "还有 1 个会话",
+  "恢复 1 条已关闭通知": "恢复 1 条已关闭通知",
 } as const;
 
 export type PetLocaleKey = keyof typeof zh;

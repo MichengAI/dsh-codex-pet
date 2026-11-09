@@ -77,10 +77,21 @@ function ensureNavIconStyle(): void {
   (document.head ?? document.documentElement).appendChild(style);
 }
 
+const PET_LABELS = new Set([
+  "宠物",
+  "Pets",
+  "ペット",
+  "Mascotas",
+  "Animaux",
+  "Haustiere",
+  "Питомцы",
+  "Mascotes",
+]);
+
 /** 只认本插件的设置分区文案，避免误改其他插件的导航行。 */
 export function isPetNavRow(button: Element): boolean {
   const label = button.textContent?.trim() ?? "";
-  return label === "宠物" || label === "Pets";
+  return PET_LABELS.has(label);
 }
 
 /**

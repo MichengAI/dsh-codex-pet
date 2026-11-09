@@ -131,6 +131,10 @@ dsh plugin --profile web remove @michengai/dsh-codex-pet
 
 カスタムペットはデフォルトでユーザーディレクトリの `.dsh/codex-pet/pets` に保存されます。アンインストールしてもこれらの設定や自作ペットファイルが消去されることはありません。
 
+## 開発への参加
+
+ローカル開発、テスト、リリースの手順については、[開発と検証ガイド（中国語）](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md) をご覧ください。GitHub および npm にはすぐに実行可能な `lib` が同梱されています。ソースコードを変更した際は、コミット前に `npm run build` を実行してください。
+
 ## ライセンス
 
 本プラグインのオリジナルコードは [Apache License 2.0](LICENSE) の下で提供されます。同梱されているペットのドット絵アセットは OpenAI Codex に由来しており、本プロジェクトの Apache-2.0 ライセンス許諾の対象外となります。詳細は [NOTICE](NOTICE) をご覧ください。

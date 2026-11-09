@@ -91,6 +91,9 @@ export const pt = {
   "项目链接": "Links do projeto",
   "问题反馈": "Feedbacks",
   "GitHub": "GitHub",
+  "有 1 项宠物资源需要检查": "1 recurso de mascote precisa de atenção",
+  "还有 1 个会话": "Mais 1 conversa",
+  "恢复 1 条已关闭通知": "Restaurar 1 notificação descartada",
 } as const;
 
 export type PetLocaleKey = keyof typeof pt;

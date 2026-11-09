@@ -131,6 +131,10 @@ dsh plugin --profile web remove @michengai/dsh-codex-pet
 
 Les animaux personnalisés sont enregistrés par défaut dans `.dsh/codex-pet/pets` de votre dossier utilisateur. La désinstallation du plugin conserve vos créations et paramètres intacts.
 
+## Contribuer
+
+Consultez le [guide de développement et de validation (en chinois)](https://github.com/MichengAI/dsh-codex-pet/blob/main/CONTRIBUTING.md) pour découvrir les procédures de développement local, de test et de publication. GitHub et npm contiennent tous deux un dossier `lib` prêt à l'emploi ; après toute modification des sources, exécutez `npm run build` avant de valider.
+
 ## Licence
 
 Le code d'origine de ce plugin est sous licence [Apache License 2.0](LICENSE). Les sprites et animations pixel-art des animaux proviennent d'OpenAI Codex et sont exclus de la licence Apache-2.0 de ce dépôt ; consultez [NOTICE](NOTICE) pour plus de détails.

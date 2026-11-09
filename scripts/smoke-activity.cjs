@@ -268,7 +268,7 @@ if (!smokeRoot)
       "https://github.com/MichengAI/dsh-codex-pet",
     );
     // 设置皮肤会改写 [data-shortcut-modal="settings"] nav button（32px 全宽胶囊），
-    // 链接容器必须保持非 nav 元素，否则检查更新会换行、三个按钮错位。
+    // 链接容器必须保持非 nav 元素，避免头部链接按钮被宿主皮肤破坏样式。
     assert.equal(
       await page.evaluate(
         `document.querySelector('.dcp-project-links').tagName`,

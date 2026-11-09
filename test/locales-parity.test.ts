@@ -91,3 +91,27 @@ test("normalizeLanguage 安全回退", () => {
   assert.equal(normalizeLanguage(undefined), "en");
   assert.equal(normalizeLanguage(""), "en");
 });
+
+test("8 门语言核心文案语义与单复数表达守护", () => {
+  // 单复数
+  assert.equal(translator("en")("还有 1 个会话"), "1 more conversation");
+  assert.equal(translator("fr")("还有 1 个会话"), "1 autre conversation");
+  assert.equal(translator("de")("还有 1 个会话"), "Noch 1 weitere Konversation");
+  assert.equal(translator("ru")("还有 1 个会话"), "Ещё 1 беседа");
+  assert.equal(translator("en")("恢复 1 条已关闭通知"), "Restore 1 dismissed notification");
+  assert.equal(translator("fr")("恢复 1 条已关闭通知"), "Restaurer 1 notification fermée");
+  assert.equal(translator("de")("恢复 1 条已关闭通知"), "1 verworfene Benachrichtigung wiederherstellen");
+  assert.equal(translator("ru")("恢复 1 条已关闭通知"), "Восстановить 1 закрытое уведомление");
+
+  // 核心词条
+  assert.equal(translator("zh")("宠物"), "宠物");
+  assert.equal(translator("ja")("宠物"), "ペット");
+  assert.equal(translator("es")("宠物"), "Mascotas");
+  assert.equal(translator("fr")("宠物"), "Animaux");
+  assert.equal(translator("de")("宠物"), "Haustiere");
+  assert.equal(translator("ru")("宠物"), "Питомцы");
+  assert.equal(translator("pt")("宠物"), "Mascotes");
+  assert.equal(translator("en")("当前任务"), "Current task");
+  assert.equal(translator("ja")("当前任务"), "現在のタスク");
+  assert.equal(translator("de")("当前任务"), "Aktuelle Aufgabe");
+});
