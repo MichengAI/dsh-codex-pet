@@ -147,8 +147,10 @@ test("8 门语言核心文案语义与单复数表达守护", () => {
 
   // 设置行 8 语 label 集合对齐
   assert.equal(PET_SECTION_LABELS.length, 8);
+  assert.equal(PET_SECTION_LABELS_SET.size, 8);
   for (const label of ["宠物", "Pets", "ペット", "Mascotas", "Animaux", "Haustiere", "Питомцы", "Mascotes"]) {
     assert.ok(PET_SECTION_LABELS.includes(label), `PET_SECTION_LABELS 应包含 ${label}`);
+    assert.ok(PET_SECTION_LABELS_SET.has(label), `PET_SECTION_LABELS_SET 应包含 ${label}`);
   }
 
   // 核心词条

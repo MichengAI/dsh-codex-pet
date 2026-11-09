@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.14] - 2026-11-09
+
+- Full 8-language localization: the pet UI, speech bubbles, notification tray, and all 9 built-in pet names and descriptions natively support Simplified Chinese, English, Japanese, Spanish, French, German, Russian, and Portuguese.
+- Multilingual catalog and documentation: bundled dedicated README manuals and plugin catalog manifests for all 8 official languages, with language-switcher navigation at the top of each document.
+- Accurate multilingual notification counts: task and notification summaries adapt to regional singular and plural grammar rules across all languages, including Russian plural inflections.
+- Streamlined settings panel: removed the inline update-checking entry from the settings page, standardizing updates through the DSH plugin manager and CLI commands.
+- Updated documentation screenshots: settings page screenshots now reflect the current layout without the obsolete update button.
+
 ## [1.0.13] - 2026-11-04
 
 - Align with official DSH `0.2.2-rc.1` release; upgrade development dependencies to `0.2.2-rc.1`.
