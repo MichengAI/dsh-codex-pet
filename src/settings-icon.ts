@@ -46,6 +46,8 @@ export const PET_NAV_ICON_MARKER = "data-dcp-nav-icon";
 export const PET_NAV_ROW_SELECTOR =
   '[role="dialog"] nav button, .dcu-settings-link';
 
+import { PET_SECTION_LABELS_SET } from "./ui-locales.ts";
+
 const NAV_ICON_STYLE_ID = "dcp-settings-nav-icon-style";
 const NAV_ICON_CSS = [
   `[${PET_NAV_ICON_MARKER}] > svg { display: none !important; }`,
@@ -77,21 +79,10 @@ function ensureNavIconStyle(): void {
   (document.head ?? document.documentElement).appendChild(style);
 }
 
-const PET_LABELS = new Set([
-  "宠物",
-  "Pets",
-  "ペット",
-  "Mascotas",
-  "Animaux",
-  "Haustiere",
-  "Питомцы",
-  "Mascotes",
-]);
-
 /** 只认本插件的设置分区文案，避免误改其他插件的导航行。 */
 export function isPetNavRow(button: Element): boolean {
   const label = button.textContent?.trim() ?? "";
-  return PET_LABELS.has(label);
+  return PET_SECTION_LABELS_SET.has(label);
 }
 
 /**

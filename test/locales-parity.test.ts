@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, access } from "node:fs/promises";
 import { constants } from "node:fs";
-import { dictionaries, normalizeLanguage, translator } from "../src/ui-locales.ts";
+import { dictionaries, normalizeLanguage, translator, resolveTaskTitle, PET_SECTION_LABELS } from "../src/ui-locales.ts";
 
 const SUPPORTED_LANGS = ["zh", "en", "ja", "es", "fr", "de", "ru", "pt"] as const;
 
@@ -93,15 +93,39 @@ test("normalizeLanguage 安全回退", () => {
 });
 
 test("8 门语言核心文案语义与单复数表达守护", () => {
-  // 单复数
-  assert.equal(translator("en")("还有 1 个会话"), "1 more conversation");
-  assert.equal(translator("fr")("还有 1 个会话"), "1 autre conversation");
-  assert.equal(translator("de")("还有 1 个会话"), "Noch 1 weitere Konversation");
-  assert.equal(translator("ru")("还有 1 个会话"), "Ещё 1 беседа");
-  assert.equal(translator("en")("恢复 1 条已关闭通知"), "Restore 1 dismissed notification");
-  assert.equal(translator("fr")("恢复 1 条已关闭通知"), "Restaurer 1 notification fermée");
-  assert.equal(translator("de")("恢复 1 条已关闭通知"), "1 verworfene Benachrichtigung wiederherstellen");
-  assert.equal(translator("ru")("恢复 1 条已关闭通知"), "Восстановить 1 закрытое уведомление");
+  // 单复数与俄语变格守护
+  assert.equal(translator("en")("还有 {count} 个会话", { count: 1 }), "1 more conversation");
+  assert.equal(translator("en")("还有 {count} 个会话", { count: 2 }), "2 more conversations");
+  assert.equal(translator("en")("还有 {count} 个会话", { count: 21 }), "21 more conversations");
+
+  assert.equal(translator("ru")("还有 {count} 个会话", { count: 1 }), "Ещё 1 беседа");
+  assert.equal(translator("ru")("还有 {count} 个会话", { count: 2 }), "Ещё 2 беседы");
+  assert.equal(translator("ru")("还有 {count} 个会话", { count: 5 }), "Ещё 5 бесед");
+  assert.equal(translator("ru")("还有 {count} 个会话", { count: 21 }), "Ещё 21 беседа");
+
+  assert.equal(translator("ru")("恢复 {count} 条已关闭通知", { count: 1 }), "Восстановить 1 закрытое уведомление");
+  assert.equal(translator("ru")("恢复 {count} 条已关闭通知", { count: 2 }), "Восстановить 2 закрытых уведомления");
+  assert.equal(translator("ru")("恢复 {count} 条已关闭通知", { count: 5 }), "Восстановить 5 закрытых уведомлений");
+
+  assert.equal(translator("fr")("还有 {count} 个会话", { count: 1 }), "1 autre conversation");
+  assert.equal(translator("fr")("还有 {count} 个会话", { count: 2 }), "2 autres conversations");
+
+  assert.equal(translator("de")("还有 {count} 个会话", { count: 1 }), "Noch 1 weitere Konversation");
+  assert.equal(translator("de")("还有 {count} 个会话", { count: 2 }), "Noch 2 weitere Konversationen");
+
+  // 用户任务标题保护（避免误进词典）
+  assert.equal(resolveTaskTitle("当前任务", translator("en")), "Current task");
+  assert.equal(resolveTaskTitle("", translator("en")), "Current task");
+  assert.equal(resolveTaskTitle(undefined, translator("en")), "Current task");
+  assert.equal(resolveTaskTitle("宠物", translator("en")), "宠物");
+  assert.equal(resolveTaskTitle("空闲", translator("en")), "空闲");
+  assert.equal(resolveTaskTitle("自定义编码会话", translator("en")), "自定义编码会话");
+
+  // 设置行 8 语 label 集合对齐
+  assert.equal(PET_SECTION_LABELS.length, 8);
+  for (const label of ["宠物", "Pets", "ペット", "Mascotas", "Animaux", "Haustiere", "Питомцы", "Mascotes"]) {
+    assert.ok(PET_SECTION_LABELS.includes(label), `PET_SECTION_LABELS 应包含 ${label}`);
+  }
 
   // 核心词条
   assert.equal(translator("zh")("宠物"), "宠物");

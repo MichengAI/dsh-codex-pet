@@ -1,5 +1,5 @@
 import { createLibraryStore } from "./library-store.ts";
-import { translator } from "./ui-locales.ts";
+import { resolveTaskTitle, translator } from "./ui-locales.ts";
 import { PluginUpdateHeader } from "./plugin-update-ui.tsx";
 import { localizePet, type PetLocaleStore } from "./pet-locales.ts";
 import {
@@ -607,7 +607,7 @@ export function FloatingPet({
           onClick={open}
           title={t("打开关联任务")}
           >
-          <strong>{t(activity.title || "当前任务")}</strong>
+          <strong>{resolveTaskTitle(activity.title, t)}</strong>
           <span>{t(activity.text)}</span>
         </button>
       )}

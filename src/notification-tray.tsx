@@ -1,4 +1,4 @@
-import { translator } from './ui-locales.ts';
+import { resolveTaskTitle, translator } from './ui-locales.ts';
 import { ChevronDownIcon, Cross2Icon, ResetIcon, MixerHorizontalIcon, QuestionMarkCircledIcon, StopIcon } from '@radix-ui/react-icons';
 /** Web 与原生浮窗共用的会话通知列表；所有提交都携带原请求身份。 */
 import React, { useState } from 'react';
@@ -40,17 +40,22 @@ export function NotificationTray({ state, command, language }: TrayProps) {
       {expanded && state.items.length > 1 && <button className="dcp-tray-sort" aria-label={t('最新优先')} aria-pressed={latest} title={latest ? t('最新活动优先') : t('待处理事项优先')} onClick={() => { setLatest(!latest); void run({ type: 'sort', latest: !latest }); }}><MixerHorizontalIcon /></button>}
     </header>}
     <div className="dcp-notice-list" role="list">
-      {visible.map(item => <article role="listitem" key={item.id} data-status={item.pose}>
-        <button className="dcp-notice-dismiss" aria-label={t('关闭通知：{title}', { title: item.title })} title={t('关闭本轮提醒，任务继续运行')} onClick={() => void run({ type: 'dismiss', id: item.id, token: item.token })}><Cross2Icon /></button>
-        <div className="dcp-notice-card">
-          <button className="dcp-bubble-link" title={item.title} onClick={() => void run({ type: 'open', id: item.id, token: item.token })}><strong>{t(item.title || "当前任务")}</strong><span>{t(item.text)}</span></button>
-          <div className="dcp-notice-actions">
-            {item.request ? <button className="dcp-notice-action" aria-label={t('处理请求：{title}', { title: item.title })} title={t('查看并处理')} aria-expanded={detail === item.request.key} onClick={() => { setExpanded(true); setDetail(detail === item.request!.key ? null : item.request!.key); }}><QuestionMarkCircledIcon /></button> : <button className="dcp-notice-action" aria-label={t('回复会话：{title}', { title: item.title })} title={t('打开会话回复')} onClick={() => void run({ type: 'open', id: item.id, token: item.token })}><ResetIcon /></button>}
-            {item.pose === 'running' && <button className="dcp-notice-action" aria-label={t('停止当前轮次：{title}', { title: item.title })} title={t('停止当前轮次')} onClick={() => void run({ type: 'stop', id: item.id, token: item.token })}><StopIcon /></button>}
-          </div>
-        </div>
-        {item.request && detail === item.request.key && <RequestForm key={item.request.key} item={item} command={command} language={language} />}
-      </article>)}
+      {visible.map(item => {
+        const title = resolveTaskTitle(item.title, t);
+        return (
+          <article role="listitem" key={item.id} data-status={item.pose}>
+            <button className="dcp-notice-dismiss" aria-label={t('关闭通知：{title}', { title })} title={t('关闭本轮提醒，任务继续运行')} onClick={() => void run({ type: 'dismiss', id: item.id, token: item.token })}><Cross2Icon /></button>
+            <div className="dcp-notice-card">
+              <button className="dcp-bubble-link" title={title} onClick={() => void run({ type: 'open', id: item.id, token: item.token })}><strong>{title}</strong><span>{t(item.text)}</span></button>
+              <div className="dcp-notice-actions">
+                {item.request ? <button className="dcp-notice-action" aria-label={t('处理请求：{title}', { title })} title={t('查看并处理')} aria-expanded={detail === item.request.key} onClick={() => { setExpanded(true); setDetail(detail === item.request!.key ? null : item.request!.key); }}><QuestionMarkCircledIcon /></button> : <button className="dcp-notice-action" aria-label={t('回复会话：{title}', { title })} title={t('打开会话回复')} onClick={() => void run({ type: 'open', id: item.id, token: item.token })}><ResetIcon /></button>}
+                {item.pose === 'running' && <button className="dcp-notice-action" aria-label={t('停止当前轮次：{title}', { title })} title={t('停止当前轮次')} onClick={() => void run({ type: 'stop', id: item.id, token: item.token })}><StopIcon /></button>}
+              </div>
+            </div>
+            {item.request && detail === item.request.key && <RequestForm key={item.request.key} item={item} command={command} language={language} />}
+          </article>
+        );
+      })}
     </div>
     {!expanded && state.items.length > 1 && <button onClick={() => setExpanded(true)}>{state.items.length === 2 ? t('还有 1 个会话') : t('还有 {count} 个会话', { count: state.items.length - 1 })}</button>}
     {expanded && state.hidden > 0 && <button onClick={() => void run({ type: 'restore' })}>{state.hidden === 1 ? t('恢复 1 条已关闭通知') : t('恢复 {count} 条已关闭通知', { count: state.hidden })}</button>}

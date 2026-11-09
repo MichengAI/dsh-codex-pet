@@ -1,7 +1,7 @@
 import { compatibleSessions, type CompatibleSessions } from "./session-compat.ts";
 import { pendingFromSessionStatus } from "./pending-status.ts";
 import { createCompanionProvider } from "./companion-api.ts";
-import { translator } from "./ui-locales.ts";
+import { translator, PET_SECTION_LABELS } from "./ui-locales.ts";
 import type { PetLocaleStore } from "./pet-locales.ts";
 /** 只通过 DSH 公共插槽与 Session 快照接入，独立于其他宠物插件。 */
 import React, { useEffect, useState, useRef } from "react";
@@ -56,16 +56,8 @@ function openSettings(): void {
         bubbles: true,
         cancelable: true,
         detail: {
-          labels: [
-            "宠物",
-            "Pets",
-            "ペット",
-            "Mascotas",
-            "Animaux",
-            "Haustiere",
-            "Питомцы",
-            "Mascotes",
-          ],
+          labels: PET_SECTION_LABELS,
+          sectionId: "michengai-codex-pet",
         },
       }),
     );

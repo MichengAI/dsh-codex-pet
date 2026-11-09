@@ -134,6 +134,16 @@ test("英文文案同样适配", () => {
   assert.equal(applyPetSettingsIcon(element), true);
 });
 
+test("全 8 门官方语言 label 均能被设置行准确认领并应用图标", () => {
+  const langs = ["宠物", "Pets", "ペット", "Mascotas", "Animaux", "Haustiere", "Питомцы", "Mascotes"];
+  for (const label of langs) {
+    const { button, element } = createButton(label);
+    assert.equal(isPetNavRow(element), true, `文案 [${label}] 应被认领为宠物设置行`);
+    assert.equal(applyPetSettingsIcon(element), true, `文案 [${label}] 应能成功应用图标`);
+    assert.equal(button.getAttribute(PET_NAV_ICON_MARKER), "");
+  }
+});
+
 test("当宿主已使用原生插槽容器(如 navIcon)渲染图标时，不打 marker 避免双图标", () => {
   const { button, element } = createButton("宠物", "wrapped");
   button.children[0].className = "navIcon";
