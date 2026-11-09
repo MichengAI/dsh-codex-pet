@@ -302,11 +302,9 @@ export function Settings({
       {!!library?.warnings.length && (
         <details className="dcp-note">
           <summary>
-            {library.warnings.length === 1
-              ? t("有 1 项宠物资源需要检查")
-              : t("有 {count} 项宠物资源需要检查", {
-                  count: library.warnings.length,
-                })}
+            {t("有 {count} 项宠物资源需要检查", {
+              count: library.warnings.length,
+            })}
           </summary>
           {library.warnings.map((message) => (
             <p key={message}>{message}</p>

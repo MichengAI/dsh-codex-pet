@@ -98,11 +98,11 @@ const moreConversationsPlurals: Record<SupportedLanguage, PluralMap | string> = 
   zh: "还有 {count} 个会话",
   ja: "他 {count} 件の会話",
   en: {
-    one: "1 more conversation",
+    one: "{count} more conversation",
     other: "{count} more conversations",
   },
   es: {
-    one: "1 conversación más",
+    one: "{count} conversación más",
     other: "{count} conversaciones más",
   },
   fr: {
@@ -110,7 +110,7 @@ const moreConversationsPlurals: Record<SupportedLanguage, PluralMap | string> = 
     other: "{count} autres conversations",
   },
   de: {
-    one: "Noch 1 weitere Konversation",
+    one: "Noch {count} weitere Konversation",
     other: "Noch {count} weitere Konversationen",
   },
   ru: {
@@ -120,7 +120,7 @@ const moreConversationsPlurals: Record<SupportedLanguage, PluralMap | string> = 
     other: "Ещё {count} бесед",
   },
   pt: {
-    one: "Mais 1 conversa",
+    one: "Mais {count} conversa",
     other: "Mais {count} conversas",
   },
 };
@@ -129,11 +129,11 @@ const restoreDismissedPlurals: Record<SupportedLanguage, PluralMap | string> = {
   zh: "恢复 {count} 条已关闭通知",
   ja: "閉じた通知 {count} 件を復元",
   en: {
-    one: "Restore 1 dismissed notification",
+    one: "Restore {count} dismissed notification",
     other: "Restore {count} dismissed notifications",
   },
   es: {
-    one: "Restaurar 1 notificación descartada",
+    one: "Restaurar {count} notificación descartada",
     other: "Restaurar {count} notificaciones descartadas",
   },
   fr: {
@@ -141,7 +141,7 @@ const restoreDismissedPlurals: Record<SupportedLanguage, PluralMap | string> = {
     other: "Restaurer {count} notifications fermées",
   },
   de: {
-    one: "1 verworfene Benachrichtigung wiederherstellen",
+    one: "{count} verworfene Benachrichtigung wiederherstellen",
     other: "{count} verworfene Benachrichtigungen wiederherstellen",
   },
   ru: {
@@ -151,7 +151,7 @@ const restoreDismissedPlurals: Record<SupportedLanguage, PluralMap | string> = {
     other: "Восстановить {count} закрытых уведомлений",
   },
   pt: {
-    one: "Restaurar 1 notificação descartada",
+    one: "Restaurar {count} notificação descartada",
     other: "Restaurar {count} notificações descartadas",
   },
 };
@@ -160,11 +160,11 @@ const petResourceWarningsPlurals: Record<SupportedLanguage, PluralMap | string> 
   zh: "有 {count} 项宠物资源需要检查",
   ja: "{count} 件のペットリソースの確認が必要です",
   en: {
-    one: "1 pet resource needs attention",
+    one: "{count} pet resource needs attention",
     other: "{count} pet resources need attention",
   },
   es: {
-    one: "1 recurso de mascota requiere atención",
+    one: "{count} recurso de mascota requiere atención",
     other: "{count} recursos de mascotas requieren atención",
   },
   fr: {
@@ -172,7 +172,7 @@ const petResourceWarningsPlurals: Record<SupportedLanguage, PluralMap | string> 
     other: "{count} ressources d'animaux nécessitent une attention",
   },
   de: {
-    one: "1 Haustier-Ressource erfordert Aufmerksamkeit",
+    one: "{count} Haustier-Ressource erfordert Aufmerksamkeit",
     other: "{count} Haustier-Ressourcen erfordern Aufmerksamkeit",
   },
   ru: {
@@ -182,7 +182,7 @@ const petResourceWarningsPlurals: Record<SupportedLanguage, PluralMap | string> 
     other: "Требуется проверить {count} ресурсов питомцев",
   },
   pt: {
-    one: "1 recurso de mascote precisa de atenção",
+    one: "{count} recurso de mascote precisa de atenção",
     other: "{count} recursos de mascotes precisam de atenção",
   },
 };

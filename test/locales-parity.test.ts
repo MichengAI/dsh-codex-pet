@@ -2,7 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, access } from "node:fs/promises";
 import { constants } from "node:fs";
-import { dictionaries, normalizeLanguage, translator, resolveTaskTitle, PET_SECTION_LABELS } from "../src/ui-locales.ts";
+import {
+  dictionaries,
+  normalizeLanguage,
+  translator,
+  resolveTaskTitle,
+  PET_SECTION_LABELS,
+  PET_SECTION_LABELS_SET,
+  formatMoreConversations,
+  formatRestoreDismissed,
+  formatPetResourceWarnings,
+} from "../src/ui-locales.ts";
 
 const SUPPORTED_LANGS = ["zh", "en", "ja", "es", "fr", "de", "ru", "pt"] as const;
 
@@ -112,6 +122,20 @@ test("8 门语言核心文案语义与单复数表达守护", () => {
 
   assert.equal(translator("de")("还有 {count} 个会话", { count: 1 }), "Noch 1 weitere Konversation");
   assert.equal(translator("de")("还有 {count} 个会话", { count: 2 }), "Noch 2 weitere Konversationen");
+
+  // 资源告警复数与俄语变格守护 (覆盖 R5)
+  assert.equal(translator("en")("有 {count} 项宠物资源需要检查", { count: 1 }), "1 pet resource needs attention");
+  assert.equal(translator("en")("有 {count} 项宠物资源需要检查", { count: 2 }), "2 pet resources need attention");
+  assert.equal(translator("ru")("有 {count} 项宠物资源需要检查", { count: 1 }), "Требуется проверить 1 ресурс питомцев");
+  assert.equal(translator("ru")("有 {count} 项宠物资源需要检查", { count: 2 }), "Требуется проверить 2 ресурса питомцев");
+  assert.equal(translator("ru")("有 {count} 项宠物资源需要检查", { count: 5 }), "Требуется проверить 5 ресурсов питомцев");
+
+  // 格式化函数直接可达性与 count=0 动态替换（不写死 1，覆盖 R3）
+  assert.equal(formatMoreConversations("fr", 0), "0 autre conversation");
+  assert.equal(formatMoreConversations("pt", 0), "Mais 0 conversa");
+  assert.equal(formatRestoreDismissed("fr", 0), "Restaurer 0 notification fermée");
+  assert.equal(formatPetResourceWarnings("de", 1), "1 Haustier-Ressource erfordert Aufmerksamkeit");
+  assert.equal(formatPetResourceWarnings("ru", 3), "Требуется проверить 3 ресурса питомцев");
 
   // 用户任务标题保护（避免误进词典）
   assert.equal(resolveTaskTitle("当前任务", translator("en")), "Current task");

@@ -91,9 +91,6 @@ export const ja = {
   "项目链接": "プロジェクトリンク",
   "问题反馈": "フィードバック",
   "GitHub": "GitHub",
-  "有 1 项宠物资源需要检查": "1 件のペットリソースの確認が必要です",
-  "还有 1 个会话": "他 1 件の会話",
-  "恢复 1 条已关闭通知": "閉じた通知 1 件を復元",
 } as const;
 
 export type PetLocaleKey = keyof typeof ja;

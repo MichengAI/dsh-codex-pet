@@ -57,7 +57,7 @@ function openSettings(): void {
         cancelable: true,
         detail: {
           labels: PET_SECTION_LABELS,
-          sectionId: "michengai-codex-pet",
+          sectionId: "codex-pet",
         },
       }),
     );

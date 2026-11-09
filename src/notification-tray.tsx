@@ -57,8 +57,8 @@ export function NotificationTray({ state, command, language }: TrayProps) {
         );
       })}
     </div>
-    {!expanded && state.items.length > 1 && <button onClick={() => setExpanded(true)}>{state.items.length === 2 ? t('还有 1 个会话') : t('还有 {count} 个会话', { count: state.items.length - 1 })}</button>}
-    {expanded && state.hidden > 0 && <button onClick={() => void run({ type: 'restore' })}>{state.hidden === 1 ? t('恢复 1 条已关闭通知') : t('恢复 {count} 条已关闭通知', { count: state.hidden })}</button>}
+    {!expanded && state.items.length > 1 && <button onClick={() => setExpanded(true)}>{t('还有 {count} 个会话', { count: state.items.length - 1 })}</button>}
+    {expanded && state.hidden > 0 && <button onClick={() => void run({ type: 'restore' })}>{t('恢复 {count} 条已关闭通知', { count: state.hidden })}</button>}
     {error && <p role="alert">{t(error)}</p>}
   </section>;
 }
