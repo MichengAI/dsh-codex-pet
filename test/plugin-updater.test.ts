@@ -135,7 +135,7 @@ test("版本比较不降级，支持预发布并拒绝无效版本", () => {
   assert.equal(isNewerVersion("1.0.0", "invalid"), false);
 });
 
-test("官方 Desktop 在线更新指向 desktop profile，且不通知父进程", async () => {
+test("官方 Desktop 在线更新指向 desktop profile，且客户端不暴露在线更新入口", async () => {
   const profileDir = resolve("/dsh-profile/desktop");
   const pnpm = resolve("/dsh-runtime/pnpm.mjs");
   const exe = resolve("/dsh-tools/DeepSeek Harness.exe");
@@ -162,10 +162,11 @@ test("官方 Desktop 在线更新指向 desktop profile，且不通知父进程"
   assert.equal(runtime.profileDir, profileDir);
   assert.equal(runtime.canAutoUpdate, true);
   assert.equal(shouldNotifyParent(runtime, () => {}), false);
-  const ui = await readFile(
-    new URL("../src/shared-plugin-update-ui.ts", import.meta.url),
+  const client = await readFile(
+    new URL("../src/plugin-update-ui.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(ui, /#e8b15a/);
-  assert.match(ui, /manualHintDesktop/);
+  assert.doesNotMatch(client, /observePluginUpdate/);
+  assert.doesNotMatch(client, /createPluginUpdateIcon/);
+  assert.doesNotMatch(client, /UPDATE_ICON_PATHS/);
 });

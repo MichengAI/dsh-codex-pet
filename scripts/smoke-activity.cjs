@@ -195,7 +195,11 @@ if (!smokeRoot)
     );
     assert.equal(await page.evaluate(`petSection.label()`), "Pets");
     await waitFor(
-      `document.querySelector('.dcp-head h2')?.textContent==='Choose a pet' && document.querySelector('.dcp-update-check')?.textContent==='Check for updates'`,
+      `document.querySelector('.dcp-head h2')?.textContent==='Choose a pet'`,
+    );
+    assert.equal(
+      await page.evaluate(`document.querySelector('.dcp-update-check')`),
+      null,
     );
     assert.equal(
       await page.evaluate(
@@ -209,11 +213,6 @@ if (!smokeRoot)
       resolve(smokeRoot, "pet-settings-en.png"),
       await page.screenshot(),
     );
-    await page.evaluate(`document.querySelector('.dcp-update-check').click()`);
-    await waitFor(
-      `document.querySelector('.dcp-update-dialog h2')?.textContent.includes('Pets')`,
-    );
-    await page.evaluate(`document.querySelector('.dcp-update-dialog [data-stub-close]').click()`);
 
     assert.equal(
       await page.evaluate(
@@ -276,74 +275,20 @@ if (!smokeRoot)
       ),
       "DIV",
     );
-    // 仅拦截隔离窗口的更新响应，不调用真实安装器。
-    await page.evaluate(
-      `window.updateMode='unpublished';window.originalPetFetch=window.fetch;window.fetch=async (url,options)=>String(url).endsWith('/api/update')?Response.json({packageName:'@michengai/dsh-codex-pet',currentVersion:'0.1.0',latestVersion:updateMode==='unpublished'?undefined:'0.2.0',notPublished:updateMode==='unpublished',latestCheckFailed:false,updateAvailable:updateMode!=='unpublished',profileName:'smoke',canAutoUpdate:true,...(options?.method==='POST'?{updatedVersion:'0.2.0',autoReload:false}:{})}):originalPetFetch(url,options);document.querySelector('.dcp-project-links button').click()`,
-    );
-    await waitFor(
-      `document.querySelector('.dcp-update-status')?.textContent.includes('尚未发布到 npm')`,
+    assert.equal(
+      await page.evaluate(
+        `document.querySelector('.dcp-update-check')`,
+      ),
+      null,
     );
     assert.equal(
       await page.evaluate(
-        `document.querySelector('.dcp-update-action.dcp-update-primary').disabled`,
+        `document.querySelector('.dcp-update-dialog')`,
       ),
-      true,
+      null,
     );
     await page.evaluate(
-      `window.updateMode='available';Array.from(document.querySelectorAll('.dcp-update-footer button')).find(b=>b.textContent==='重新检查').click()`,
-    );
-    await waitFor(
-      `document.querySelector('.dcp-update-status')?.textContent.includes('发现新版本')`,
-    );
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    writeFileSync(
-      resolve(smokeRoot, "pet-update-dialog.png"),
-      await page.screenshot(),
-    );
-    await page.evaluate(
-      `document.querySelector('.dcp-update-action.dcp-update-primary').click()`,
-    );
-    await waitFor(
-      `document.querySelector('.dcp-update-status')?.textContent.includes('更新完成')`,
-    );
-    assert.equal(
-      await page.evaluate(
-        `document.querySelector('.dcp-update-action.dcp-update-primary').disabled`,
-      ),
-      true,
-    );
-    await page.evaluate(
-      `document.querySelector('.dcp-update-dialog [data-stub-close]').click();window.fetch=window.originalPetFetch;document.querySelector('.dcp-settings-modal .dcp-dialog-close').click()`,
-    );
-    // 后端仍携带兼容中文 error，英文弹窗必须优先按 code 翻译。
-    await page.evaluate(
-      `petLocale.set({active:'en'});window.dispatchEvent(new Event('dcp-open-settings'));window.fetch=async(url,options)=>String(url).endsWith('/api/update')?(options?.method==='POST'?Response.json({code:'UPDATE_TIMEOUT',error:'更新超时，已请求取消；进程结束前不能再次安装。'},{status:503}):Response.json({packageName:'@michengai/dsh-codex-pet',currentVersion:'0.1.0',latestVersion:'0.2.0',notPublished:false,latestCheckFailed:false,updateAvailable:true,profileName:'smoke',canAutoUpdate:true})):originalPetFetch(url,options);void 0`,
-    );
-    await waitFor(
-      `document.querySelector('.dcp-update-check')?.textContent==='Check for updates'`,
-    );
-    await page.evaluate(`document.querySelector('.dcp-update-check').click()`);
-    await waitFor(
-      `document.querySelector('.dcp-update-action.dcp-update-primary')?.disabled===false`,
-    );
-    await page.evaluate(
-      `document.querySelector('.dcp-update-action.dcp-update-primary').click()`,
-    );
-    await waitFor(
-      `document.querySelector('.dcp-update-status')?.textContent.includes('timed out')`,
-    );
-    assert.equal(
-      await page.evaluate(
-        `document.querySelector('.dcp-update-status').textContent.includes('更新超时')`,
-      ),
-      false,
-    );
-    writeFileSync(
-      resolve(smokeRoot, "pet-update-error-en.png"),
-      await page.screenshot(),
-    );
-    await page.evaluate(
-      `document.querySelector('.dcp-update-dialog [data-stub-close]').click();window.fetch=originalPetFetch;document.querySelector('.dcp-settings-modal .dcp-dialog-close').click();petLocale.set({active:'zh'})`,
+      `document.querySelector('.dcp-settings-modal .dcp-dialog-close').click();petLocale.set({active:'zh'})`,
     );
     // 消费者通过插件公开接口读取状态与发出命令，插件无需认识消费者。
     await page.evaluate(

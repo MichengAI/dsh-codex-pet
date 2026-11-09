@@ -8,7 +8,9 @@
 
 **让宠物陪你处理 DeepSeek Harness 任务**
 
-[English](README.en.md) · [更新日志](CHANGELOG.zh-CN.md) · [Apache-2.0](LICENSE)
+[简体中文](README.zh-CN.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+
+[更新日志](CHANGELOG.zh-CN.md) · [Apache-2.0](LICENSE)
 
 [![许可证：Apache-2.0](https://img.shields.io/badge/许可证-Apache--2.0-blue.svg)](LICENSE)
 [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-codex-pet.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
@@ -113,7 +115,14 @@ dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://
 
 ## 更新与卸载
 
-在 **设置 → 宠物 → 检查更新** 中更新。若当前环境不支持在线安装，可复制界面提供的更新命令。等待正在运行的任务结束后操作，完成后按提示重启 DSH。
+在 DSH 插件市场或通过命令行更新：
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
+dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://registry.npmjs.org/ --ignore-scripts
+```
 
 卸载命令：
 

@@ -8,7 +8,9 @@
 
 **A little companion for your DeepSeek Harness tasks**
 
-[简体中文](README.md) · [Changelog](CHANGELOG.md) · [Apache-2.0](LICENSE)
+[简体中文](README.zh-CN.md) · [English](README.en.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [Português](README.pt.md)
+
+[Changelog](CHANGELOG.md) · [Apache-2.0](LICENSE)
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-codex-pet.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-codex-pet)
@@ -113,7 +115,14 @@ Creating pets requires an image-generation tool configured in DSH.
 
 ## Updates and uninstallation
 
-Use **Settings → Pets → Check for updates**. If automatic installation is unavailable, copy the update command shown in the dialog. Wait for running tasks to finish, then update and restart DSH as prompted.
+Update via the DSH plugin manager or from your terminal:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
+dsh plugin --profile web add @michengai/dsh-codex-pet@latest --registry=https://registry.npmjs.org/ --ignore-scripts
+```
 
 To uninstall:
 
