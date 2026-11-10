@@ -1,8 +1,3 @@
-import {
-    registerPluginUpdater,
-    type HostRequest,
-    type HostResponse,
-} from "./plugin-updater.ts";
 /** DSH Host 插件的宠物资源和配置路由。 */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
@@ -63,30 +58,6 @@ export async function createHost(
         options.skillRoot,
     );
     await library.init();
-    let updateHandler:
-        | ((req: HostRequest, res: HostResponse) => Promise<void>)
-        | undefined;
-    registerPluginUpdater(
-        {
-            logger: {
-                warn: (message) => console.warn("[dsh-codex-pet]", message),
-            },
-            webServer: {
-                register(route) {
-                    updateHandler = route.handler;
-                    return () => {
-                        updateHandler = undefined;
-                    };
-                },
-            },
-            get: (name) => host?.get?.(name),
-        },
-        {
-            endpoint: `${BASE}/api/update`,
-            packageName: "@michengai/dsh-codex-pet",
-            manifestUrl: new URL("../package.json", import.meta.url),
-        },
-    );
     const snapshot = () => ({
         ...library.snapshot(),
         creationAvailable: false,
@@ -105,10 +76,6 @@ export async function createHost(
                 return;
             }
             const path = new URL(req.url ?? "/", authority).pathname;
-            if (path === `${BASE}/api/update` && updateHandler) {
-                await updateHandler(req, res);
-                return;
-            }
             if (req.method === "GET" && path === `${BASE}/api/state`) {
                 json(res, 200, snapshot());
                 return;
