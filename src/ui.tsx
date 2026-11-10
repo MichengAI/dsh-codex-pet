@@ -1,6 +1,6 @@
 import { createLibraryStore } from "./library-store.ts";
 import { resolveTaskTitle, translator } from "./ui-locales.ts";
-import { PluginUpdateHeader } from "./plugin-update-ui.tsx";
+import { ProjectHeader } from "./project-header.tsx";
 import { localizePet, type PetLocaleStore } from "./pet-locales.ts";
 import {
   NotificationTray,
@@ -189,7 +189,7 @@ export function Settings({
   return (
     <div className="dcp dcp-page">
       <style>{styles}</style>
-      <PluginUpdateHeader locale={locale} />
+      <ProjectHeader locale={locale} />
       <header className="dcp-head">
         <div>
           <h2>{t("选择宠物")}</h2>

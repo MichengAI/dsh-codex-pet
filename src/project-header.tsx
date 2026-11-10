@@ -6,7 +6,7 @@ import type { PetLocaleStore } from "./pet-locales.ts";
 
 declare const __PET_VERSION__: string;
 
-export function PluginUpdateHeader({ locale }: { locale?: PetLocaleStore }) {
+export function ProjectHeader({ locale }: { locale?: PetLocaleStore }) {
   const language = useSyncExternalStore(
     (fn) => locale?.subscribe(fn) ?? (() => {}),
     () => locale?.getSnapshot().active ?? "zh",
