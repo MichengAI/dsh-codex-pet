@@ -35,7 +35,7 @@ export function NotificationTray({ state, command, language }: TrayProps) {
   const run = async (value: TrayCommand) => { setError(''); try { await command(value); } catch (e) { setError(e instanceof Error ? e.message : t('操作失败')); } };
   const visible = expanded ? state.items : state.items.slice(0, 1);
   if (state.items.length === 0) return null;
-  return <section className="dcp-tray" aria-label={t('宠物会话通知')}>
+  return <section className="dcp-tray" data-window-drag-exclude="" aria-label={t('宠物会话通知')}>
     {state.items.length > 1 && <header className="dcp-tray-toolbar"><button className="dcp-tray-toggle" aria-label={expanded ? t('收起会话') : t('展开会话')} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}><span>{t('会话')}</span><span className="dcp-tray-count">{state.items.length}</span><ChevronDownIcon className={expanded ? 'is-expanded' : ''} /></button>
       {expanded && state.items.length > 1 && <button className="dcp-tray-sort" aria-label={t('最新优先')} aria-pressed={latest} title={latest ? t('最新活动优先') : t('待处理事项优先')} onClick={() => { setLatest(!latest); void run({ type: 'sort', latest: !latest }); }}><MixerHorizontalIcon /></button>}
     </header>}

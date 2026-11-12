@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.15] - 2026-11-12
+
+- Verified full compatibility with DeepSeek Harness `0.2.2-rc.2`, covering all `0.2.x` RC hosts (`0.2.0-rc.1` through `0.2.2-rc.2`), and aligned development dependencies with `0.2.2-rc.2`.
+- Improved macOS Desktop window-drag region handling for the floating pet, speech bubble, notification tray, and context menu so controls near the draggable header remain reliably interactive.
+- Updated supported host version lists across all 8 language README manuals.
+
 ## [1.0.14] - 2026-11-09
 
 - Full 8-language localization: the pet UI, speech bubbles, notification tray, and all 9 built-in pet names and descriptions natively support Simplified Chinese, English, Japanese, Spanish, French, German, Russian, and Portuguese.

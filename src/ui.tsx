@@ -566,6 +566,7 @@ export function FloatingPet({
   return (
     <div
       className="dcp dcp-floating"
+      data-window-drag-exclude=""
       ref={root}
       style={{
         left: position.left,
@@ -596,6 +597,7 @@ export function FloatingPet({
       {!tray && activity.text && !menu && (
         <button
           className="dcp-bubble"
+          data-window-drag-exclude=""
           style={{
             ...(position.top < 84
               ? { top: "calc(100% + 28px)", bottom: "auto" }
@@ -706,6 +708,7 @@ export function FloatingPet({
       {menu && (
         <div
           className="dcp-menu"
+          data-window-drag-exclude=""
           style={{
             ...(position.top < 220
               ? { top: "calc(100% + 28px)", bottom: "auto" }
