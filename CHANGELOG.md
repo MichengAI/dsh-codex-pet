@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.16] - 2026-11-13
+
+- Unified settings header card: standardized the main title to 24px bold and wrapped the header in an elevated card container.
+- Multilingual subtitle support: added localized descriptions across all 8 official languages highlighting companion features and notification reminders.
+- Clean settings layout: removed duplicate section titles and aligned refresh, create, and pet visibility controls cleanly above the list.
+
 ## [1.0.15] - 2026-11-12
 
 - Verified full compatibility with DeepSeek Harness `0.2.2-rc.2`, covering all `0.2.x` RC hosts (`0.2.0-rc.1` through `0.2.2-rc.2`), and aligned development dependencies with `0.2.2-rc.2`.
