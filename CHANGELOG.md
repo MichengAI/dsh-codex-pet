@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.16] - 2026-11-13
+## [1.0.17] - 2026-11-13
 
 - Unified settings header card: standardized the main title to 24px bold and wrapped the header in an elevated card container.
 - Multilingual subtitle support: added localized descriptions across all 8 official languages highlighting companion features and notification reminders.

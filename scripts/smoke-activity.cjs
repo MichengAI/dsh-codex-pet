@@ -28,7 +28,8 @@ if (!smokeRoot)
       const Button=React.forwardRef(function Button({variant,size,icon,children,className,...props},ref){return React.createElement('button',Object.assign({},props,{ref,className}),(icon===undefined||icon===null)?null:React.createElement('span',{className:'dsw-button-icon'},icon),children);});
       // 宿主 Modal 的最小替身：只保留 role/label/class 与子节点，供冒烟断言选择器使用。
       const Modal=function Modal({open,onClose,title,closeLabel,children,footer,className}){return open?React.createElement('div',{className,role:'dialog','aria-label':title,'data-stub-modal':''},React.createElement('h2',null,title),React.createElement('button',{type:'button','aria-label':closeLabel??'Close','data-stub-close':'',onClick:onClose}),children,footer):null;};
-      window.__ModuleLoader__={load({factory}){window.petPlugin=factory(id=>id==='react'?React:id==='react/jsx-runtime'?jsx:id==='react-dom'?ReactDOM:id==='@deepseek-ai/dsh-client-ui-primitives'?{Button,Modal}:{createRoot});}};
+      const IconListPenOutlineMedium=function IconListPenOutlineMedium(){return React.createElement('svg');};
+      window.__ModuleLoader__={load({factory}){window.petPlugin=factory(id=>id==='react'?React:id==='react/jsx-runtime'?jsx:id==='react-dom'?ReactDOM:id==='@deepseek-ai/dsh-client-ui-primitives'?{Button,Modal,IconListPenOutlineMedium}:{createRoot});}};
       window.renderPet=Component=>createRoot(document.getElementById('root')).render(React.createElement(Component));`,
         resolveDir: process.cwd(),
       },
@@ -195,7 +196,7 @@ if (!smokeRoot)
     );
     assert.equal(await page.evaluate(`petSection.label()`), "Pets");
     await waitFor(
-      `document.querySelector('.dcp-head h2')?.textContent==='Choose a pet'`,
+      `document.querySelector('.dcp-project-title')?.textContent==='Pets'`,
     );
     assert.equal(
       await page.evaluate(`document.querySelector('.dcp-update-check')`),
@@ -261,11 +262,10 @@ if (!smokeRoot)
       await page.evaluate(`document.querySelector('.dcp-version')`),
       null,
     );
-    assert.equal(
+    assert.ok(
       await page.evaluate(
-        `document.querySelector('.dcp-project-links a').href`,
+        `!!document.querySelector('.dcp-project-links button[aria-label="GitHub"]')`,
       ),
-      "https://github.com/MichengAI/dsh-codex-pet",
     );
     // 设置皮肤会改写 [data-shortcut-modal="settings"] nav button（32px 全宽胶囊），
     // 链接容器必须保持非 nav 元素，避免头部链接按钮被宿主皮肤破坏样式。
