@@ -258,8 +258,8 @@ if (!smokeRoot)
       await page.screenshot(),
     );
     assert.equal(
-      await page.evaluate(`document.querySelector('.dcp-version').textContent`),
-      "v" + JSON.parse(readFileSync("package.json", "utf8")).version,
+      await page.evaluate(`document.querySelector('.dcp-version')`),
+      null,
     );
     assert.equal(
       await page.evaluate(
