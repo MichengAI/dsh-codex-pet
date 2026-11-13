@@ -1,6 +1,7 @@
 /** es 界面词典 */
 export const es = {
   "宠物": "Mascotas",
+  "桌面宠物陪伴式交互，实时提示关键任务进展并突出需要关注的事项": "Compañeros de escritorio que siguen notificaciones multitarea y destacan asuntos que requieren atención",
   "宠物设置": "Ajustes de mascota",
   "关闭设置": "Cerrar ajustes",
   "选择宠物": "Elegir una mascota",

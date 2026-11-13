@@ -1,6 +1,7 @@
 /** pt 界面词典 */
 export const pt = {
   "宠物": "Mascotes",
+  "桌面宠物陪伴式交互，实时提示关键任务进展并突出需要关注的事项": "Companheiros de área de trabalho que acompanham notificações multitarefa e destacam itens importantes",
   "宠物设置": "Configurações do mascote",
   "关闭设置": "Fechar configurações",
   "选择宠物": "Escolher um mascote",

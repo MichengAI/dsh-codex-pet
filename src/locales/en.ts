@@ -1,6 +1,7 @@
 /** en 界面词典 */
 export const en = {
   "宠物": "Pets",
+  "桌面宠物陪伴式交互，实时提示关键任务进展并突出需要关注的事项": "Desktop pet companions that track multi-task notifications and highlight items needing attention",
   "宠物设置": "Pet settings",
   "关闭设置": "Close settings",
   "选择宠物": "Choose a pet",

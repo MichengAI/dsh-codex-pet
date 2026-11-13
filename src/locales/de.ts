@@ -1,6 +1,7 @@
 /** de 界面词典 */
 export const de = {
   "宠物": "Haustiere",
+  "桌面宠物陪伴式交互，实时提示关键任务进展并突出需要关注的事项": "Desktop-Haustierbegleiter, die Multitask-Benachrichtigungen verfolgen und wichtige Angelegenheiten hervorheben",
   "宠物设置": "Haustier-Einstellungen",
   "关闭设置": "Einstellungen schließen",
   "选择宠物": "Haustier auswählen",
