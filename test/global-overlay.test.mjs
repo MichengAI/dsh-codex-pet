@@ -116,7 +116,7 @@ createRoot(document.getElementById('mount')).render(
       setup(buildContext) {
         buildContext.onResolve({ filter: /^@deepseek-ai\/dsh-client-ui-primitives$/ }, () => ({ path: 'mock-primitives', namespace: 'mock' }));
         buildContext.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({
-          contents: 'import React from "react"; export const Button = ({ icon, variant, size, ...rest }) => React.createElement("button", rest); export const Modal = ({ children }) => children; export const IconEditOutlineRegular = () => null;',
+          contents: 'import React from "react"; export const Button = ({ icon, variant, size, ...rest }) => React.createElement("button", rest); export const Modal = ({ children }) => children; export const IconEditOutlineRegular = () => null; export const IconListPenOutlineMedium = () => null;',
           loader: 'js',
           resolveDir: new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'),
         }));

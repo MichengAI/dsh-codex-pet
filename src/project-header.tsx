@@ -1,6 +1,7 @@
 /** 标题链接由 React 渲染，纯净展示项目头部与外链。 */
 import React, { useSyncExternalStore } from "react";
-import { GithubMark16, FeedbackMark16 } from "./project-icons.tsx";
+import { Button, IconListPenOutlineMedium } from "@deepseek-ai/dsh-client-ui-primitives";
+import { GithubMark16 } from "./project-icons.tsx";
 import { translator } from "./ui-locales.ts";
 import type { PetLocaleStore } from "./pet-locales.ts";
 
@@ -12,36 +13,47 @@ export function ProjectHeader({ locale }: { locale?: PetLocaleStore }) {
   const t = translator(language);
 
   return (
-    <>
-      <style>{`.dcp-project-head{display:flex;align-items:center;justify-content:flex-start;gap:8px 12px;flex-wrap:wrap;margin-bottom:0}.dcp-project-head h1{display:inline-flex;align-items:baseline;margin:0;white-space:nowrap}.dcp-project-links{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:nowrap;flex:0 0 auto}.dcp-project-links a{display:inline-flex;align-items:center;justify-content:center;gap:4px;box-sizing:border-box;min-height:28px;height:28px;padding:0 10px;border:0.5px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,#383838));border-radius:var(--dsw-radius-sm,7px);background:transparent;color:var(--dsw-alias-label-primary,inherit);font-family:inherit;font-size:12px;font-weight:500;line-height:18px;text-decoration:none;white-space:nowrap;cursor:pointer}.dcp-project-links a:hover{background:var(--dsw-alias-interactive-bg-hover,#ffffff0a);color:var(--dsw-alias-label-primary,inherit)}.dcp-project-links a:focus-visible{outline:var(--dsw-focus-ring-width,1px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary,#4f8cff));outline-offset:2px}.dcp-project-links svg{display:block;flex:none;width:16px;height:16px}`}</style>
-      <header className="dcp-project-head">
-        <h1>{t("宠物")}</h1>
-        {/* 用 div + role=navigation 而不是 <nav>：DSH 设置皮肤的
-            `[data-shortcut-modal="settings"] nav button` 会把任何 nav 里的按钮
-            改写成 32px 全宽胶囊（!important），导致换行错位。 */}
+    <div className="dcp-project-card">
+      <style>{`.dcp-project-card{box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding:18px 20px;background:var(--dsw-alias-bg-layer-2,#18181b);border:1px solid var(--dsw-alias-border-l1,rgba(255,255,255,0.08));border-radius:12px;margin-bottom:16px}.dcp-project-title-row{display:flex;align-items:center;gap:8px 12px;min-width:0;flex-wrap:wrap}.dcp-project-title{margin:0;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.4px;color:var(--dsw-alias-label-primary);display:inline-flex;align-items:baseline;white-space:nowrap}.dcp-project-links{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex:0 0 auto}body:not([data-ds-dark-theme]) .dcp-project-card{background:var(--dsw-alias-bg-layer-2,#ffffff);border-color:var(--dsw-alias-border-l1,rgba(0,0,0,0.08))}`}</style>
+      <header className="dcp-project-title-row">
+        <h2 className="dcp-project-title">{t("宠物")}</h2>
         <div
           className="dcp-project-links"
           role="navigation"
           aria-label={t("项目链接")}
         >
-          <a
-            href="https://github.com/MichengAI/dsh-codex-pet"
-            target="_blank"
-            rel="noreferrer"
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<GithubMark16 />}
+            aria-label="GitHub"
+            onClick={() => {
+              window.open(
+                "https://github.com/MichengAI/dsh-codex-pet",
+                "_blank",
+                "noreferrer",
+              );
+            }}
           >
-            <GithubMark16 />
             GitHub
-          </a>
-          <a
-            href="https://github.com/MichengAI/dsh-codex-pet/issues"
-            target="_blank"
-            rel="noreferrer"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<IconListPenOutlineMedium size={14} />}
+            aria-label={t("问题反馈")}
+            onClick={() => {
+              window.open(
+                "https://github.com/MichengAI/dsh-codex-pet/issues",
+                "_blank",
+                "noreferrer",
+              );
+            }}
           >
-            <FeedbackMark16 />
             {t("问题反馈")}
-          </a>
+          </Button>
         </div>
       </header>
-    </>
+    </div>
   );
 }
