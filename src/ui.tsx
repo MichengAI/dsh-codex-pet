@@ -191,12 +191,6 @@ export function Settings({
       <style>{styles}</style>
       <ProjectHeader locale={locale} />
       <header className="dcp-head">
-        <div>
-          <h2>{t("选择宠物")}</h2>
-          <p className="dcp-sub">
-            {t("宠物会管理对话串，并突出显示需要关注的事项")}
-          </p>
-        </div>
         <div className="dcp-actions">
           <Button
             type="button"
