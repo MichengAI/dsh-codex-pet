@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.19] - 2026-11-14
+
+- Verified against DSH `0.2.2-rc.1` and `0.2.2-rc.3`; the end-to-end matrix now covers the `0.2.2` generation.
+
 ## [1.0.18] - 2026-11-14
 
 - DSH host support now covers `0.2.2-rc.3`; the verified host list, development baseline and localized README badges follow the same version.
