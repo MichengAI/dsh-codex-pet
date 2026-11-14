@@ -84,7 +84,8 @@ jobs:
       fail-fast: false
       matrix:
         locale: [zh-CN, en-US]
-        dsh: [0.2.0-rc.1, 0.2.0-rc.2, 0.2.1-rc.1, 0.2.1-rc.2, 0.2.1-rc.3, 0.2.2-rc.1, 0.2.2-rc.2, 0.2.2-rc.3]
+        # 0.2.2-rc.2 的官方宿主依赖图混入 darwin-only 包且同版本分批发布，Linux CI 无法安装；rc.1 / rc.3 正常。
+        dsh: [0.2.0-rc.1, 0.2.0-rc.2, 0.2.1-rc.1, 0.2.1-rc.2, 0.2.1-rc.3, 0.2.2-rc.1, 0.2.2-rc.3]
     env:
       DSH_PET_E2E_VERSION: ${{ matrix.dsh }}
       DSH_PET_E2E_LOCALE: ${{ matrix.locale }}
