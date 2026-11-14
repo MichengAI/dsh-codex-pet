@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.18] - 2026-11-14
+
+### Host Compatibility
+
+- DSH host support now covers `0.2.2-rc.3`; the verified host list, development baseline and localized README badges follow the same version.
+
 ## [1.0.17] - 2026-11-13
 
 - Unified settings header card: standardized the main title to 24px bold and wrapped the header in an elevated card container.

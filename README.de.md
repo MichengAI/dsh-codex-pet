@@ -20,7 +20,7 @@
 
 </div>
 
-> DSH Codex Pet ist ein von der Community gepflegtes Begleiter-Plugin für DeepSeek Harness (DSH), kein offizielles Produkt von OpenAI oder DeepSeek AI. Ab Version 1.0.1 werden DSH `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, `0.2.2-rc.1` sowie `0.2.2-rc.2` unterstützt. Ältere Hosts und `0.2.1`-Alphas werden durch die Versionsprüfung abgewiesen; Einstellungen und eigene Haustiere bleiben dabei erhalten.
+> DSH Codex Pet ist ein von der Community gepflegtes Begleiter-Plugin für DeepSeek Harness (DSH), kein offizielles Produkt von OpenAI oder DeepSeek AI. Ab Version 1.0.1 werden DSH `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, `0.2.2-rc.1` sowi`0.2.2-rc.2`, e `0.2.2-rc.3` unterstützt. Ältere Hosts und `0.2.1`-Alphas werden durch die Versionsprüfung abgewiesen; Einstellungen und eigene Haustiere bleiben dabei erhalten.
 
 ## Funktionen
 
@@ -76,7 +76,7 @@ Für einen vollwertigen Desktop-Arbeitsplatz empfehlen wir [DSH Codex Desktop](h
 
 ## Installation
 
-Unterstützte DeepSeek Harness Versionen: **`0.2.0-rc.1`**, **`0.2.0-rc.2`**, **`0.2.1-rc.1`–`0.2.1-rc.5`**, **`0.2.2-rc.1`** und **`0.2.2-rc.2`**. Stelle sicher, dass der Befehl `dsh` verfügbar ist:
+Unterstützte DeepSeek Harness Versionen: **`0.2.0-rc.1`**, **`0.2.0-rc.2`**, **`0.2.1-rc.1`–`0.2.1-rc.5`**, **`0.2.2-rc.1`** und **`0.2.2-rc.2`, `0.2.2-rc.3`**. Stelle sicher, dass der Befehl `dsh` verfügbar ist:
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
