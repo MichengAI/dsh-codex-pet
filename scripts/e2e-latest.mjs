@@ -166,66 +166,31 @@ try {
   try {
     await settingsPanel.waitFor({ timeout: 5000 });
   } catch {
-    // 旧宿主使用左下角「设置」按钮；新宿主把入口放在账号菜单。
-    const directSettings = page.getByRole('button', {
-      name: /^(设置|Settings)$/,
+    const accountMenu = page.getByRole('button', {
+      name: /账号菜单|Account menu/i,
     });
-    if (await directSettings.isVisible().catch(() => false)) {
-      await directSettings.click();
-    } else {
-      const accountMenu = page.getByRole('button', {
-        name: /账号菜单|Account menu/i,
-      });
-      await accountMenu.click();
-      await page.getByRole('menuitem', { name: /^(设置|Settings)/ }).click();
-    }
+    await accountMenu.click();
+    await page.getByRole('menuitem', { name: /^(设置|Settings)/ }).click();
     await settingsPanel.waitFor();
   }
   const petSectionRow = settingsPanel.getByRole('button', { name: /^(宠物|Pets)$/ });
   await petSectionRow.waitFor();
-  const usesNativeIconSlot = await petSectionRow.evaluate((button) =>
-    Boolean(button.querySelector('span[class*="navIcon"]'))
-  );
-  if (usesNativeIconSlot) {
-    const slotIcon = await petSectionRow.evaluate((button) => {
-      const svg = button.querySelector('span[class*="navIcon"] svg');
-      const path = svg?.querySelector('path')?.getAttribute('d') ?? '';
-      return {
-        hasMarker: button.hasAttribute('data-dcp-nav-icon'),
-        noSpanIcon: button.querySelectorAll('.dcp-settings-nav-icon').length,
-        svgVisible: svg !== null && getComputedStyle(svg).display !== 'none',
-        isPawPath: path.startsWith('M9 10a5 5 0'),
-      };
-    });
-    assert.equal(slotIcon.hasMarker, false, '原生插槽存在时不得重复打 mask 标记');
-    assert.equal(slotIcon.noSpanIcon, 0, '禁止插入额外的 span 节点');
-    assert.equal(slotIcon.svgVisible, true, '原生 settings.section.icon SVG 必须可见');
-    assert.equal(slotIcon.isPawPath, true, '原生插槽必须渲染宠物爪印图标');
-  } else {
-    // 标记由 MutationObserver 异步补齐：等它出现再断言，避免用帧调度的时序去赌。
-    await page
-      .locator(
-        `[role="dialog"] nav button[data-dcp-nav-icon], .dcu-settings-link[data-dcp-nav-icon]`,
-      )
-      .first()
-      .waitFor({ timeout: 5000 });
-    const navIcon = await petSectionRow.evaluate((button) => {
-      const svg = button.querySelector(':scope > svg');
-      const before = getComputedStyle(button, '::before');
-      return {
-        hasMarker: button.hasAttribute('data-dcp-nav-icon'),
-        noSpanIcon: button.querySelectorAll('.dcp-settings-nav-icon').length,
-        beforeMasked: (before.maskImage || before.webkitMaskImage || '').startsWith('url("data:image/svg+xml'),
-        svgHidden: svg !== null && getComputedStyle(svg).display === 'none',
-        legacyMarker: svg?.getAttribute('data-pet-icon') ?? null,
-      };
-    });
-    assert.equal(navIcon.hasMarker, true, '宠物设置入口必须带 mask 属性标记');
-    assert.equal(navIcon.noSpanIcon, 0, '禁止插入额外的 span 节点');
-    assert.equal(navIcon.beforeMasked, true, '导航图标必须使用 ::before 与 CSS mask');
-    assert.equal(navIcon.svgHidden, true, '宿主 svg 只能被样式隐藏');
-    assert.equal(navIcon.legacyMarker, null, '不得再改写宿主 svg 内容');
-  }
+  const slotIcon = await petSectionRow.evaluate((button) => {
+    const svg = button.querySelector('span[class*="navIcon"] svg');
+    const path = svg?.querySelector('path')?.getAttribute('d') ?? '';
+    return {
+      hasSlot: Boolean(button.querySelector('span[class*="navIcon"]')),
+      hasMarker: button.hasAttribute('data-dcp-nav-icon'),
+      noSpanIcon: button.querySelectorAll('.dcp-settings-nav-icon').length,
+      svgVisible: svg !== null && getComputedStyle(svg).display !== 'none',
+      isPawPath: path.startsWith('M9 10a5 5 0'),
+    };
+  });
+  assert.equal(slotIcon.hasSlot, true, '0.2.2+ 宿主必须支持原生 settings.section.icon 插槽');
+  assert.equal(slotIcon.hasMarker, false, '原生插槽存在时不得重复打 mask 标记');
+  assert.equal(slotIcon.noSpanIcon, 0, '禁止插入额外的 span 节点');
+  assert.equal(slotIcon.svgVisible, true, '原生 settings.section.icon SVG 必须可见');
+  assert.equal(slotIcon.isPawPath, true, '原生插槽必须渲染宠物爪印图标');
   await petSectionRow.click();
   const sectionPage = settingsPanel.locator('.dcp-page');
   await sectionPage.waitFor();

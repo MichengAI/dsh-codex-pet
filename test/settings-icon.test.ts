@@ -129,7 +129,7 @@ test("宠物设置行使用纯属性标记，宿主 svg 内容保持不变", () 
 });
 
 test("英文文案同样适配", () => {
-  const { button, element } = createButton("Pets");
+  const { element } = createButton("Pets");
   assert.equal(isPetNavRow(element), true);
   assert.equal(applyPetSettingsIcon(element), true);
 });
@@ -154,7 +154,7 @@ test("当宿主已使用原生插槽容器(如 navIcon)渲染图标时，不打 
 });
 
 test("其他插件的设置行不注入图标", () => {
-  const { button, element } = createButton("技能");
+  const { element } = createButton("技能");
   assert.equal(isPetNavRow(element), false);
   assert.equal(applyPetSettingsIcon(element), false);
 });

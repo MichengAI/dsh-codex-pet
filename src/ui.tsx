@@ -8,7 +8,7 @@ import {
   polishedTrayStyles,
   type TrayProps,
 } from "./notification-tray.tsx";
-import React, {
+import {
   useCallback,
   useEffect,
   useId,
@@ -632,8 +632,7 @@ export function FloatingPet({
         onPointerMove={(event) => {
           const point = drag.current;
           if (!point) return;
-          const dx = event.screenX - point.x,
-            dy = event.screenY - point.y;
+          const dx = event.screenX - point.x;
           if (
             Math.hypot(
               event.screenX - point.startX,
@@ -798,7 +797,6 @@ export function Companion({
   open?(): void;
   settings?(): void;
 }) {
-  const t = translator(controller.language);
   const library = controller.library;
   const selected = library?.pets.find(
     (item) => item.id === library.config.selected,

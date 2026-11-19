@@ -1,7 +1,7 @@
 import { resolveTaskTitle, translator } from './ui-locales.ts';
 import { ChevronDownIcon, Cross2Icon, ResetIcon, MixerHorizontalIcon, QuestionMarkCircledIcon, StopIcon } from '@radix-ui/react-icons';
 /** Web 与原生浮窗共用的会话通知列表；所有提交都携带原请求身份。 */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { Answers, Notice, NoticeCommand, NotificationState } from './notifications.ts';
 export type TrayCommand = NoticeCommand | { type: 'sort'; latest: boolean };
 export interface TrayProps { language?: string; state: NotificationState; command(value: TrayCommand): Promise<void> }

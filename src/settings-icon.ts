@@ -8,6 +8,7 @@
  */
 
 import React from "react";
+import { PET_SECTION_LABELS_SET } from "./ui-locales.ts";
 
 /** Codex 内置 Lucide PawPrint 几何（viewBox: 0 0 24 24，描边图标）。 */
 const PAW = '<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>';
@@ -45,8 +46,6 @@ export const PET_NAV_ICON_MARKER = "data-dcp-nav-icon";
 /** 原生 DSH 设置弹窗与 dsh-codex-ui 设置页的导航按钮。 */
 export const PET_NAV_ROW_SELECTOR =
   '[role="dialog"] nav button, .dcu-settings-link';
-
-import { PET_SECTION_LABELS_SET } from "./ui-locales.ts";
 
 const NAV_ICON_STYLE_ID = "dcp-settings-nav-icon-style";
 const NAV_ICON_CSS = [

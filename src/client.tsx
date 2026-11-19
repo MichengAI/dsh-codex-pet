@@ -7,7 +7,7 @@ import type { PetLocaleStore } from "./pet-locales.ts";
 import React, { useEffect, useState, useRef } from "react";
 import { Button, Modal } from "@deepseek-ai/dsh-client-ui-primitives";
 import { Companion, Settings, usePetController } from "./ui.tsx";
-import { IDLE, type Activity } from "./model.ts";
+import { IDLE } from "./model.ts";
 import { type Sessions, type PendingStore, type Store, type SessionStatusRow } from "./activity.ts";
 import type { ISessions, SessionTarget } from "@deepseek-ai/dsh-api-session-controller/client";
 import type { UiWorkspace } from "@deepseek-ai/dsh-client-ui-workspace/client";

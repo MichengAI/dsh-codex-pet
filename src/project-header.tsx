@@ -1,5 +1,5 @@
 /** 标题链接由 React 渲染，纯净展示项目头部与外链。 */
-import React, { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { Button, IconListPenOutlineMedium } from "@deepseek-ai/dsh-client-ui-primitives";
 import { GithubMark16 } from "./project-icons.tsx";
 import { translator } from "./ui-locales.ts";

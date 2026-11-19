@@ -1,7 +1,7 @@
 /** DSH Host 插件的宠物资源和配置路由。 */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
-import { readFile, mkdir } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn, execFile } from "node:child_process";
 import { BASE } from "./model.ts";
@@ -49,7 +49,6 @@ async function body(req: IncomingMessage): Promise<Record<string, unknown>> {
 }
 export async function createHost(
     options: { root?: string; dataRoot?: string; skillRoot?: string } = {},
-    host?: { get?: (name: string) => unknown },
 ) {
     const root = options.root ?? packageRoot;
     const library = new PetLibrary(
@@ -202,7 +201,7 @@ export function apply(ctx: HostContext): void {
         let disposed = false,
             remove: (() => void) | undefined,
             host: Awaited<ReturnType<typeof createHost>> | undefined;
-        void createHost({}, ctx)
+        void createHost({})
             .then((value) => {
                 host = value;
                 if (disposed) {
