@@ -24,6 +24,7 @@ export async function testHost(repo, pkg, npmCli) {
   // 宿主自 0.2.2-rc.1 起内部自带稳定 HMR 支持，通过 overrides 强制同版锁定即可满足隔离运行要求。
   const overrides = {};
   const peers = {};
+  const platformExcluded = new Set();
   let pending = ['@deepseek-ai/dsh'];
   while (pending.length) {
     const batch = pending.splice(0, 12).filter(name => !overrides[name]);
@@ -32,6 +33,10 @@ export async function testHost(repo, pkg, npmCli) {
       const response = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}/${version}`, { signal: AbortSignal.timeout(30000) });
       if (!response.ok) throw new Error(`读取 ${name}@${version} 失败：${response.status}`);
       const manifest = await response.json();
+      if (manifest.os && Array.isArray(manifest.os)) {
+        const allowed = manifest.os.some(os => os.startsWith('!') ? os.slice(1) !== process.platform : os === process.platform);
+        if (!allowed) platformExcluded.add(name);
+      }
       for (const [peerName, range] of Object.entries(manifest.peerDependencies || {})) {
         if (!peerName.startsWith('@deepseek-ai/dsh') && !manifest.peerDependenciesMeta?.[peerName]?.optional) peers[peerName] = range;
       }
@@ -45,7 +50,11 @@ export async function testHost(repo, pkg, npmCli) {
   const publishedAt = (await index.json()).time?.[version];
   if (!publishedAt) throw new Error(`缺少 ${version} 的发布时间`);
   console.log(`隔离宿主 ${version}：固定 ${Object.keys(overrides).length} 个官方包，依赖不晚于 ${publishedAt}`);
-  await writeFile(join(root, 'package.json'), JSON.stringify({ name: 'dsh-pet-test-host', version: '0.0.0', private: true, dependencies: { ...peers, ...overrides }, overrides }, null, 2));
+  const dependencies = { ...peers };
+  for (const [name, ver] of Object.entries(overrides)) {
+    if (!platformExcluded.has(name)) dependencies[name] = ver;
+  }
+  await writeFile(join(root, 'package.json'), JSON.stringify({ name: 'dsh-pet-test-host', version: '0.0.0', private: true, dependencies, overrides }, null, 2));
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (/(_KEY|_TOKEN|_SECRET|PASSWORD|CREDENTIAL)/i.test(key)) delete env[key];
   const child = spawn(process.execPath, isolatedHostInstallArgs(npmCli, root, publishedAt), { env, windowsHide: true, stdio: 'inherit' });
