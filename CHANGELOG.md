@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.0] - 2026-11-19
+
+- Narrowed supported DeepSeek Harness versions to the `0.2.2` generation (`>=0.2.2-rc.1 <0.3.0-0`), supporting all official hosts from `0.2.2-rc.1` through `0.2.2-rc.5`.
+- Users on earlier hosts (`0.2.0-rc` and `0.2.1-rc`) can continue using `@michengai/dsh-codex-pet@1.0.19`; existing pet preferences, window coordinates, and custom pets remain fully backward-compatible.
+- Pruned obsolete internal icons and dead references to reduce package size and improve runtime stability.
+
 ## [1.0.19] - 2026-11-14
 
 - Verified against DSH `0.2.2-rc.1` and `0.2.2-rc.3`; the end-to-end matrix now covers the `0.2.2` generation.

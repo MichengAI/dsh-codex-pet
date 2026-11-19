@@ -91,6 +91,8 @@ export function isPetNavRow(button: Element): boolean {
 export function applyPetSettingsIcon(button: Element): boolean {
   const isOwn = isPetNavRow(button);
   if (isOwn) {
+    // 宿主 0.2.2-rc 系列默认通过 span.navIcon 插槽容器渲染原生图标；
+    // 下方 PET_NAV_ICON_MARKER 伪元素逻辑作为宿主类名突变或未提供插槽容器时的降级兜底路径保留。
     const hasSlotIcon = Array.from(button.children).some((child) =>
       child.tagName === "SPAN" && child.className && String(child.className).includes("navIcon")
     ) || Boolean(button.querySelector?.('span[class*="navIcon"]'));

@@ -21,6 +21,7 @@ export async function testHost(repo, pkg, npmCli) {
   const root = join(resolve(process.env.DSH_PET_E2E_ROOT || join(repo, '.preview')), `dsh-host-${version}`);
   await mkdir(root, { recursive: true });
   // 从目标版本自身的依赖图收集包名，不能拿最新版包清单推断旧版。
+  // 宿主自 0.2.2-rc.1 起内部自带稳定 HMR 支持，通过 overrides 强制同版锁定即可满足隔离运行要求。
   const overrides = {};
   const peers = {};
   let pending = ['@deepseek-ai/dsh'];
