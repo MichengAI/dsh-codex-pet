@@ -17,7 +17,7 @@ export async function testHost(repo, pkg, npmCli) {
   const version = process.env.DSH_PET_E2E_VERSION || pkg.devDependencies['@deepseek-ai/dsh'];
   const range = pkg.engines?.dsh || pkg.peerDependencies?.['@deepseek-ai/dsh-host-webserver'];
   if (!semver.satisfies(version, range, { includePrerelease: true })) throw new Error(`不在兼容矩阵内：${version}`);
-  if (version === pkg.devDependencies['@deepseek-ai/dsh']) return createRequire(join(repo, 'package.json')).resolve('@deepseek-ai/dsh/package.json');
+  if (!process.env.DSH_PET_E2E_VERSION && version === pkg.devDependencies['@deepseek-ai/dsh']) return createRequire(join(repo, 'package.json')).resolve('@deepseek-ai/dsh/package.json');
   const root = join(resolve(process.env.DSH_PET_E2E_ROOT || join(repo, '.preview')), `dsh-host-${version}`);
   await mkdir(root, { recursive: true });
   // 从目标版本自身的依赖图收集包名，不能拿最新版包清单推断旧版。
