@@ -20,7 +20,7 @@
 
 </div>
 
-> DSH Codex Pet is a community-maintained pet plugin for DeepSeek Harness (DSH), not an official OpenAI or DeepSeek AI product. It supports DSH `0.2.2-rc.1`–`0.2.2-rc.5` (`>=0.2.2-rc.1 <0.3.0-0`). Earlier hosts are rejected by the version gate, so the plugin will not run; local pet settings and custom pets are not deleted.
+> DSH Codex Pet is a community-maintained pet plugin for DeepSeek Harness (DSH), not an official OpenAI or DeepSeek AI product. It supports DSH `0.2.2-rc.1`–`0.2.3-alpha.2` (`>=0.2.2-rc.1 <0.3.0-0`). Earlier hosts are rejected by the version gate, so the plugin will not run; local pet settings and custom pets are not deleted.
 
 ## Features
 
@@ -76,7 +76,7 @@ For a desktop workbench, download [DSH Codex Desktop](https://github.com/Micheng
 
 ## Installation
 
-Supported DeepSeek Harness versions: **`>=0.2.2-rc.1 <0.3.0-0`** (covering `0.2.2-rc.1`–`0.2.2-rc.5` and subsequent compatible releases). Hosts before `0.2.2-rc.1` are rejected by the version gate, and the plugin will not run. If you still use an earlier host, install `@michengai/dsh-codex-pet@1.0.19` instead of `@latest`. The version gate only refuses to load the plugin. It does not delete pet selection, position, or custom pets under `DSH_HOME/codex-pet`. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
+Supported DeepSeek Harness versions: **`>=0.2.2-rc.1 <0.3.0-0`** (covering `0.2.2-rc.1`–`0.2.2-rc.5`, `0.2.3-alpha.2`, and subsequent compatible releases). Hosts before `0.2.2-rc.1` are rejected by the version gate, and the plugin will not run. If you still use an earlier host, install `@michengai/dsh-codex-pet@1.0.19` instead of `@latest`. The version gate only refuses to load the plugin. It does not delete pet selection, position, or custom pets under `DSH_HOME/codex-pet`. Make sure the `dsh` command is available. The example uses the `web` profile; replace it with your target profile.
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
