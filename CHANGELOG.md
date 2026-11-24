@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.2] - 2026-11-24
+
+- Fully adapted to DeepSeek Harness `0.2.3-alpha.2` and the latest runtime environment, while maintaining full backward compatibility with `0.2.2-rc.1` through `0.2.2-rc.5`.
+- Improved settings icon rendering compatibility to blend seamlessly with native icon slots and custom host environments (such as DS-Bot), preventing duplicate icons or visual conflicts.
+- Enhanced session interactions and multi-task notification stability, ensuring smooth pet status awareness, pending interaction alerts, and response handling across host versions.
+
 ## [1.1.1] - 2026-11-19
 
 - Narrowed supported DeepSeek Harness versions to the `0.2.2` generation (`>=0.2.2-rc.1 <0.3.0-0`), supporting all official hosts from `0.2.2-rc.1` through `0.2.2-rc.5`.
