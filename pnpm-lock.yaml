@@ -11,6 +11,18 @@ importers:
       '@deepseek-ai/cordis':
         specifier: 4.2.0-alpha.1
         version: 4.2.0-alpha.1(@deepseek-ai/cordis-plugin-include@1.2.0-alpha.1)(@deepseek-ai/cordis-plugin-loader@1.2.0-alpha.1)
+      '@deepseek-ai/cordis-plugin-group':
+        specifier: 1.2.0-alpha.1
+        version: 1.2.0-alpha.1(@deepseek-ai/cordis-plugin-loader@1.2.0-alpha.1)(@deepseek-ai/cordis@4.2.0-alpha.1)
+      '@deepseek-ai/cordis-plugin-include':
+        specifier: 1.2.0-alpha.1
+        version: 1.2.0-alpha.1(@deepseek-ai/cordis-plugin-loader@1.2.0-alpha.1)(@deepseek-ai/cordis@4.2.0-alpha.1)
+      '@deepseek-ai/cordis-plugin-loader':
+        specifier: 1.2.0-alpha.1
+        version: 1.2.0-alpha.1(@deepseek-ai/cordis@4.2.0-alpha.1)(node-addon-require-builtin@0.1.10)
+      '@deepseek-ai/cordis-plugin-timer':
+        specifier: 1.3.0-alpha.1
+        version: 1.3.0-alpha.1(@deepseek-ai/cordis@4.2.0-alpha.1)
       '@deepseek-ai/dsh':
         specifier: 0.2.3-alpha.2
         version: 0.2.3-alpha.2(e756502e70ff332b940b69c593f919ba)
