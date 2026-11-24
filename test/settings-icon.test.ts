@@ -153,6 +153,28 @@ test("当宿主已使用原生插槽容器(如 navIcon)渲染图标时，不打 
   assert.equal(button.getAttribute(PET_NAV_ICON_MARKER), null);
 });
 
+test("DS-Bot 定制宿主（bt-settings-icon）原生插槽渲染时，不打 marker 避免图标冲突", () => {
+  const { button, element } = createButton("宠物", "wrapped");
+  button.children[0].className = "bt-settings-icon";
+  button.children[0].setAttribute("aria-hidden", "true");
+  assert.equal(isPetNavRow(element), true);
+  assert.equal(applyPetSettingsIcon(element), false, "DS-Bot 原生插槽不打 marker");
+  assert.equal(button.hasAttribute(PET_NAV_ICON_MARKER), false, "不能带有 marker 属性");
+
+  // 模拟若有残留 marker，必须能自愈清除
+  button.setAttribute(PET_NAV_ICON_MARKER, "");
+  assert.equal(applyPetSettingsIcon(element), true, "自愈清除残留 marker");
+  assert.equal(button.hasAttribute(PET_NAV_ICON_MARKER), false, "残留 marker 必须被成功清除");
+});
+
+test("当宿主支持原生插槽且子容器包含 svg 时，不打 marker", () => {
+  const { button, element } = createButton("宠物", "wrapped");
+  button.children[0].className = "custom-icon-slot";
+  assert.equal(isPetNavRow(element), true);
+  assert.equal(applyPetSettingsIcon(element, () => true), false, "支持插槽且存在 svg 时不打 marker");
+  assert.equal(button.hasAttribute(PET_NAV_ICON_MARKER), false);
+});
+
 test("其他插件的设置行不注入图标", () => {
   const { element } = createButton("技能");
   assert.equal(isPetNavRow(element), false);

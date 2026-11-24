@@ -92,17 +92,21 @@ async function startHost(patch) {
 async function dismissOnboarding() {
   const deadline = Date.now() + 60000;
   while (Date.now() < deadline) {
-    for (const name of [/^(继续|Continue)$/i, /^(稍后配置|稍后设置|Set up later|Configure later)$/i]) {
-      const button = page.getByRole('button', { name });
-      if (await button.isVisible()) await button.click({ timeout: 5000 });
+    for (const name of [/^(继续|Continue)$/i, /^(稍后配置|稍后设置|Set up later|Configure later)$/i, /^(关闭|Close)$/i]) {
+      const button = page.getByRole('button', { name }).first();
+      if (await button.isVisible().catch(() => false)) await button.click({ timeout: 5000 }).catch(() => {});
     }
-    try {
-      // trial 检查遮挡和可操作性，不触发宠物动作。
-      await page.locator('.dcp-pet-button').click({ trial: true, timeout: 1000 });
-      return;
-    } catch (error) {
-      if (error.name !== 'TimeoutError') throw error;
+    const dialogs = await page.locator('[role="dialog"]:visible').count().catch(() => 0);
+    if (dialogs === 0) {
+      try {
+        // trial 检查遮挡和可操作性，不触发宠物动作。
+        await page.locator('.dcp-pet-button').click({ trial: true, timeout: 1000 });
+        return;
+      } catch (error) {
+        if (error.name !== 'TimeoutError') throw error;
+      }
     }
+    await page.waitForTimeout(200);
   }
   throw new Error('引导结束后宠物仍不可操作');
 }
@@ -138,9 +142,14 @@ try {
   page = await browser.newPage({ locale, viewport: { width: 1280, height: 900 } });
   page.setDefaultTimeout(60000);
   page.on('pageerror', error => errors.push(error.message));
+  page.on('console', msg => {
+    if (msg.type() === 'error' || msg.type() === 'warn') {
+      observations.push(`[browser ${msg.type()}] ${msg.text()}`);
+    }
+  });
   await page.goto(url);
-  await page.locator('.dcp-pet-button').waitFor({ timeout: 45000 });
   await dismissOnboarding();
+  await page.locator('.dcp-pet-button').waitFor({ timeout: 45000 });
   await page.waitForFunction(expected => document.documentElement.lang.startsWith(expected), locale.split('-')[0]);
   const state = await page.evaluate(async () => (await fetch('/dsh-codex-pet/api/state')).json());
   assert.equal(state.pets.length, 9);
@@ -153,7 +162,7 @@ try {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const startModalClose = page
       .locator('[role="dialog"]:visible')
-      .getByRole('button', { name: /^(关闭|Close)$/ })
+      .getByRole('button', { name: /^(关闭|Close|继续|Continue)$/ })
       .first();
     if (await startModalClose.isVisible().catch(() => false)) {
       await startModalClose.click();

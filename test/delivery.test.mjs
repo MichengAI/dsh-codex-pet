@@ -13,12 +13,14 @@ test('支持版本矩阵收缩至 0.2.2-rc.1 起代际范围，开发基线固�
   assert.equal(pkg.engines?.dsh, '>=0.2.2-rc.1 <0.3.0-0');
   const dshPeer = pkg.peerDependencies['@deepseek-ai/dsh-host-webserver'];
   assert.equal(dshPeer, '>=0.2.2-rc.1 <0.3.0-0');
-  for (const v of ['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3', '0.2.2-rc.4', '0.2.2-rc.5', '0.2.9']) {
+  for (const v of ['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3', '0.2.2-rc.4', '0.2.2-rc.5', '0.2.3-alpha.1', '0.2.3-alpha.2', '0.2.9']) {
     assert.ok(semver.satisfies(v, dshPeer, { includePrerelease: true }), `放行 0.2.2+ 版本 ${v}`);
   }
   for (const v of ['0.1.7-rc.2', '0.2.0-alpha.1', '0.2.0-rc.1', '0.2.1-rc.1', '0.2.1-rc.5', '0.2.2-alpha.1', '0.3.0-alpha.1', '0.3.0-rc.1', '0.3.0', '1.0.0']) {
     assert.equal(semver.satisfies(v, dshPeer, { includePrerelease: true }), false, `拦截范围外版本 ${v}`);
   }
+  assert.equal(pkg.peerDependenciesMeta?.['@deepseek-ai/dsh-client-ui-primitives']?.optional, true);
+  assert.equal(pkg.peerDependenciesMeta?.['@deepseek-ai/dsh-host-webserver']?.optional, true);
   assert.equal(pkg.devDependencies['@deepseek-ai/dsh'], '0.2.2-rc.5');
   assert.equal(pkg.devDependencies['@deepseek-ai/cordis'], '4.1.0');
   for (const [name, version] of Object.entries(pkg.devDependencies)) {

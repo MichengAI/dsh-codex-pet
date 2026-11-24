@@ -88,14 +88,32 @@ export function isPetNavRow(button: Element): boolean {
  * 100% 对齐 dshmarket：用纯属性标记控制 ::before 伪元素渲染图标。
  * 不修改任何 DOM 节点，避免移动端列表项排版下与文字重叠冲突。
  */
-export function applyPetSettingsIcon(button: Element): boolean {
+export function applyPetSettingsIcon(
+  button: Element,
+  isSlotSupported?: () => boolean,
+): boolean {
   const isOwn = isPetNavRow(button);
   if (isOwn) {
     // 宿主 0.2.2-rc 系列默认通过 span.navIcon 插槽容器渲染原生图标；
+    // 定制宿主（如 DS-Bot 等）可能采用 bt-settings-icon 或带有内联 SVG 的容器；
     // 下方 PET_NAV_ICON_MARKER 伪元素逻辑作为宿主类名突变或未提供插槽容器时的降级兜底路径保留。
-    const hasSlotIcon = Array.from(button.children).some((child) =>
-      child.tagName === "SPAN" && child.className && String(child.className).includes("navIcon")
-    ) || Boolean(button.querySelector?.('span[class*="navIcon"]'));
+    const hasSlotIcon = Array.from(button.children).some((child) => {
+      if (!child || child.tagName !== "SPAN") return false;
+      const cls = String((child as Element).className || "");
+      const lower = cls.toLowerCase();
+      return (
+        cls.includes("navIcon") ||
+        cls.includes("bt-settings-icon") ||
+        cls.includes("dcu-sb-glyph") ||
+        lower.includes("navicon") ||
+        lower.includes("nav-icon") ||
+        lower.includes("settings-icon") ||
+        lower.includes("settingsicon") ||
+        lower.includes("settings_icon") ||
+        lower.includes("bt-settings") ||
+        (Boolean(isSlotSupported?.()) && Boolean((child as Element).querySelector?.("svg")))
+      );
+    }) || Boolean(button.querySelector?.('span[class*="navIcon"], span[class*="bt-settings-icon"], span[class*="settings-icon"], span[class*="settingsIcon"], span[class*="nav-icon"], span[class*="dcu-sb-glyph"]'));
     if (hasSlotIcon) {
       if (button.hasAttribute(PET_NAV_ICON_MARKER)) {
         button.removeAttribute(PET_NAV_ICON_MARKER);
@@ -121,7 +139,9 @@ export function restorePetSettingsIcon(button: Element): boolean {
   return true;
 }
 
-export function observePetSettingsIcon(): () => void {
+export function observePetSettingsIcon(
+  isSlotSupported?: () => boolean,
+): () => void {
   if (typeof document === "undefined" || document.body === null)
     return () => {};
   ensureNavIconStyle();
@@ -146,7 +166,7 @@ export function observePetSettingsIcon(): () => void {
     // 设置面板未打开且本插件没加过标记时跳过整页扫描（不再额外查询残留标记）。
     if (!surfaceOpen && markedRows.size === 0) return;
     for (const row of document.querySelectorAll(PET_NAV_ROW_SELECTOR)) {
-      applyPetSettingsIcon(row);
+      applyPetSettingsIcon(row, isSlotSupported);
       if (row.hasAttribute(PET_NAV_ICON_MARKER)) markedRows.add(row);
       else markedRows.delete(row);
     }

@@ -21,6 +21,8 @@ import type { TrayCommand } from "./notification-tray.tsx";
 import { createPetSession, type CreationSessions } from "./creation.ts";
 import { PetNavIcon, observePetSettingsIcon } from "./settings-icon.ts";
 import { GlobalOverlay } from "./global-overlay.tsx";
+let isSettingsNavIconSupported = false;
+
 interface ClientContext {
   locale: PetLocaleStore;
   sessions: ISessions;
@@ -119,7 +121,7 @@ function Overlay({
       sessions.releaseBindings();
     };
   }, [sessions, pending, petVisible]);
-  useEffect(observePetSettingsIcon, []);
+  useEffect(() => observePetSettingsIcon(() => isSettingsNavIconSupported), []);
   const command = async (value: TrayCommand) => {
     const engine = notifications.current;
     if (!engine) throw new Error("会话服务尚未就绪");
@@ -248,42 +250,169 @@ function Page({
     />
   );
 }
-function probe<T>(ctx: ClientContext, name: "uiSession" | "uiWorkspace"): T | undefined {
-  // Cordis 未注入的服务不能直接读 ctx.uiWorkspace，否则插件无法激活。
-  if (ctx.reflect) {
-    try { return ctx.reflect.get(name) as T | undefined; } catch { return undefined; }
+function probe<T>(ctx: unknown, name: string): T | undefined {
+  if (!ctx) return undefined;
+  // Cordis 4.2+ 未注入的服务直接读属性会抛错，优先通过 ctx.get(name, false) 或 ctx.reflect.get(name, false) 安全获取
+  try {
+    if (typeof (ctx as any).get === "function") {
+      const service = (ctx as any).get(name, false);
+      if (service) return service as T;
+    }
+  } catch {}
+  if ((ctx as any).reflect && typeof (ctx as any).reflect.get === "function") {
+    try {
+      const service = (ctx as any).reflect.get(name, false);
+      if (service) return service as T;
+    } catch {}
   }
-  return ctx[name] as T | undefined;
+  try {
+    const direct = (ctx as Record<string, unknown>)[name];
+    if (direct) return direct as T;
+  } catch {}
+  return undefined;
 }
 function liveSessionStatus(ctx: ClientContext): Store<ReadonlyMap<string, SessionStatusRow>> {
-  const resolve = () => {
-    const live = probe<UiSession>(ctx, "uiSession");
-    return live?.sessionStatus;
+  let sessionStatusScope: any = ctx;
+  let uiSessionScope: any = ctx;
+  let cachedStatus: Store<ReadonlyMap<string, SessionStatusRow>> | undefined;
+
+  const updateSessionStatusScope = (scope: any) => {
+    sessionStatusScope = scope;
+    try {
+      const live =
+        probe<Store<ReadonlyMap<string, SessionStatusRow>>>(scope, "uiSession.sessionStatus") ??
+        (scope.uiSession ? probe<Store<ReadonlyMap<string, SessionStatusRow>>>(scope.uiSession, "sessionStatus") : undefined);
+      if (live) {
+        cachedStatus = live;
+      }
+    } catch {}
   };
+
+  const updateUiSessionScope = (scope: any) => {
+    uiSessionScope = scope;
+    try {
+      const live =
+        (scope.uiSession ? probe<Store<ReadonlyMap<string, SessionStatusRow>>>(scope.uiSession, "sessionStatus") : undefined) ??
+        probe<Store<ReadonlyMap<string, SessionStatusRow>>>(scope, "uiSession.sessionStatus");
+      if (live) {
+        cachedStatus = live;
+      }
+    } catch {}
+  };
+
+  updateSessionStatusScope(ctx);
+  updateUiSessionScope(ctx);
+
+  if (typeof (ctx as any).inject === "function") {
+    try {
+      (ctx as any).inject(["uiSession.sessionStatus"], (scope: any) => {
+        updateSessionStatusScope(scope);
+      });
+    } catch {}
+    try {
+      (ctx as any).inject(["uiSession"], (scope: any) => {
+        updateUiSessionScope(scope);
+      });
+    } catch {}
+  }
+
+  const resolveStatus = (): Store<ReadonlyMap<string, SessionStatusRow>> | undefined => {
+    if (cachedStatus) return cachedStatus;
+    try {
+      const live =
+        probe<Store<ReadonlyMap<string, SessionStatusRow>>>(sessionStatusScope, "uiSession.sessionStatus") ??
+        probe<Store<ReadonlyMap<string, SessionStatusRow>>>(uiSessionScope, "uiSession.sessionStatus") ??
+        probe<Store<ReadonlyMap<string, SessionStatusRow>>>(ctx, "uiSession.sessionStatus") ??
+        (uiSessionScope.uiSession ? probe<Store<ReadonlyMap<string, SessionStatusRow>>>(uiSessionScope.uiSession, "sessionStatus") : undefined) ??
+        (ctx.uiSession ? probe<Store<ReadonlyMap<string, SessionStatusRow>>>(ctx.uiSession, "sessionStatus") : undefined);
+      if (live) {
+        cachedStatus = live;
+        return live;
+      }
+    } catch {}
+    return undefined;
+  };
+
+  const resolvePendingInteractions = (): Store<ReadonlyMap<string, any>> | undefined => {
+    try {
+      const uiSession = probe<any>(uiSessionScope, "uiSession") ?? probe<any>(ctx, "uiSession");
+      if (uiSession?.pendingInteractions) return uiSession.pendingInteractions;
+    } catch {}
+    return undefined;
+  };
+
   return {
-    getSnapshot() { return resolve()?.getSnapshot() ?? new Map(); },
+    getSnapshot() {
+      const base = resolveStatus()?.getSnapshot();
+      const extraPending = resolvePendingInteractions()?.getSnapshot();
+      if (!base && !extraPending) return new Map();
+      const result = new Map<string, SessionStatusRow>(base ?? []);
+      if (extraPending) {
+        for (const [id, interaction] of extraPending) {
+          const row = result.get(String(id));
+          if (row) {
+            if (!row.pendingInteraction) {
+              result.set(String(id), { ...row, pendingInteraction: interaction });
+            }
+          } else {
+            result.set(String(id), { pendingInteraction: interaction });
+          }
+        }
+      }
+      return result;
+    },
     subscribe(listener) {
-      let source = resolve();
-      let off = source?.subscribe(listener);
+      let sourceStatus: any;
+      let sourcePending: any;
+      let offStatus: (() => void) | undefined;
+      let offPending: (() => void) | undefined;
+      const bind = () => {
+        try {
+          const nextStatus = resolveStatus();
+          if (nextStatus !== sourceStatus) {
+            offStatus?.();
+            sourceStatus = nextStatus;
+            offStatus = nextStatus?.subscribe(listener);
+          }
+          const nextPending = resolvePendingInteractions();
+          if (nextPending !== sourcePending) {
+            offPending?.();
+            sourcePending = nextPending;
+            offPending = nextPending?.subscribe(listener);
+          }
+        } catch {}
+      };
+      bind();
       const timer = setInterval(() => {
-        const next = resolve();
-        if (next === source) return;
-        off?.();
-        source = next;
-        off = next?.subscribe(listener);
-        listener();
+        bind();
       }, 250);
-      return () => { clearInterval(timer); off?.(); };
+      return () => {
+        clearInterval(timer);
+        try { offStatus?.(); } catch {}
+        try { offPending?.(); } catch {}
+      };
     },
   };
 }
 export function apply(ctx: ClientContext): void {
+  let workspaceScope: any = ctx;
+  if (typeof (ctx as any).inject === "function") {
+    try {
+      (ctx as any).inject(["uiWorkspace"], (scope: any) => {
+        workspaceScope = scope;
+      });
+    } catch {}
+  }
+
   const status = liveSessionStatus(ctx);
   const sessions = compatibleSessions(
     ctx.sessions as unknown as Sessions,
     id => {
-      const uiWorkspace = probe<Pick<UiWorkspace, "openSession">>(ctx, "uiWorkspace");
-      if (uiWorkspace) return uiWorkspace.openSession(id as SessionTarget);
+      try {
+        const uiWorkspace = probe<Pick<UiWorkspace, "openSession">>(workspaceScope, "uiWorkspace")
+          ?? probe<Pick<UiWorkspace, "openSession">>(ctx, "uiWorkspace");
+        if (uiWorkspace) return uiWorkspace.openSession(id as SessionTarget);
+      } catch {}
     },
     status,
   );
@@ -300,15 +429,16 @@ export function apply(ctx: ClientContext): void {
       () => <Page sessions={sessions} locale={ctx.locale} />,
     ),
   );
-  (ctx.slots.inject as any)("settings.section.icon", () =>
-    (ctx.slots.register as any)(
+  (ctx.slots.inject as any)("settings.section.icon", () => {
+    isSettingsNavIconSupported = true;
+    return (ctx.slots.register as any)(
       {
         name: "settings.section.icon",
         id: "codex-pet",
       },
       PetNavIcon,
-    ),
-  );
+    );
+  });
   ctx.slots.inject("shell.overlay", () =>
     ctx.slots.register(
       { name: "shell.overlay", id: "michengai-codex-pet", order: 100 },

@@ -47,8 +47,10 @@ export async function testHost(repo, pkg, npmCli) {
   }
   const index = await fetch('https://registry.npmjs.org/@deepseek-ai/dsh', { signal: AbortSignal.timeout(30000) });
   if (!index.ok) throw new Error(`读取宿主发布时间失败：${index.status}`);
-  const publishedAt = (await index.json()).time?.[version];
-  if (!publishedAt) throw new Error(`缺少 ${version} 的发布时间`);
+  const publishedTime = (await index.json()).time?.[version];
+  if (!publishedTime) throw new Error(`缺少 ${version} 的发布时间`);
+  // 官方 monorepo 发布时子包间可能存在数十秒传播延迟，增加 5 分钟缓冲避免 --before 误伤同一发布批次的官方包
+  const publishedAt = new Date(Date.parse(publishedTime) + 300_000).toISOString();
   console.log(`隔离宿主 ${version}：固定 ${Object.keys(overrides).length} 个官方包，依赖不晚于 ${publishedAt}`);
   const dependencies = { ...peers };
   for (const [name, ver] of Object.entries(overrides)) {
